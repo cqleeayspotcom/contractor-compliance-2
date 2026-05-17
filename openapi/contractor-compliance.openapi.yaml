@@ -1,0 +1,1337 @@
+openapi: 3.0.3
+info:
+  title: Contractor Compliance API (Tuita-integrated)
+  description: |
+    SDK source for `frontend-tuita-contractor-compliance`.
+    GÉNÉRÉ HORS-LIGNE à partir des routes Laminas réelles du module
+    `platform-backend/module/ContractorCompliance/config/domains/*.config.php`.
+
+    IMPORTANT : ce spec n'est PAS produit par api-tools-documentation.
+    Source de vérité = les fichiers de configuration de routes du module.
+    Les schémas request/response sont volontairement génériques
+    (`type: object, additionalProperties: true`) — le SDK fournit la bonne
+    URL + méthode HTTP + paramètres de route ; les payloads restent
+    typés librement côté frontend.
+
+    Routes alignées Tuita (sans préfixe `/api/`).
+  version: '2.0.0'
+servers:
+  - url: ''
+    description: Backend Tuita (même origine, proxy géré par proxy.conf.json)
+security: []
+components:
+  securitySchemes:
+    contractorCookie:
+      type: apiKey
+      in: cookie
+      name: __contractor_ssid
+      description: |
+        Session contractor Tuita émise par `ContractorModule\V1\Rpc\ContractorAuthAction`
+        (PIN SMS via MySmsSender). Utilisée pour toutes les routes
+        `/contractor-compliance/*` HORS admin et HORS pay public.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: OAuth2
+      description: |
+        Bearer OAuth2 Tuita (api-tools-oauth2) + CLEARANCE_STAFF_ONLY.
+        Utilisée pour toutes les routes `/contractor-compliance/admin/*`.
+  schemas:
+    JsonObject:
+      type: object
+      additionalProperties: true
+    JsonArray:
+      type: array
+      items:
+        type: object
+        additionalProperties: true
+    Empty:
+      type: object
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        detail:
+          type: object
+          additionalProperties: true
+  parameters:
+    Uuid:
+      name: uuid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    SessionUuid:
+      name: sessionUuid
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PhoneId:
+      name: phone
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^P\d+$'
+      description: Identifiant contractor format `P<digits>` (Tuita phone-keyed).
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: integer
+    MissionRef:
+      name: missionRef
+      in: path
+      required: true
+      schema:
+        type: string
+    Ref:
+      name: ref
+      in: path
+      required: true
+      schema:
+        type: string
+    Attempt:
+      name: attempt
+      in: path
+      required: true
+      schema:
+        type: integer
+    Token:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-f0-9]{48}$'
+    KeyParam:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+    CodeParam:
+      name: code
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[A-Za-z0-9]{4}$'
+    ServiceParam:
+      name: service
+      in: path
+      required: true
+      schema:
+        type: string
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
+  responses:
+    JsonOk:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/JsonObject'
+    JsonError:
+      description: Erreur applicative
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+tags:
+  - name: Profile
+  - name: Dashboard
+  - name: Documents
+  - name: Billing
+  - name: Kyc
+  - name: KycMobile
+  - name: Invoices
+  - name: InvoicesFree
+  - name: Missions
+  - name: Certification
+  - name: PayPublic
+  - name: Admin
+  - name: AdminContractors
+  - name: AdminInvoices
+  - name: AdminFreeInvoices
+  - name: AdminKyc
+  - name: AdminPurchases
+  - name: AdminWebhooks
+  - name: AdminDocuments
+  - name: AdminCircuitBreakers
+  - name: AdminInvitationCodes
+  - name: AdminSettings
+  - name: AdminSupervision
+paths:
+
+  # ============================================================
+  # Domaine 01 — Auth / profile / dashboard
+  # ============================================================
+  /contractor-compliance/profile/logout:
+    post:
+      tags: [Profile]
+      operationId: profileLogout
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        default: { $ref: '#/components/responses/JsonError' }
+
+  /contractor-compliance/profile/notifications:
+    get:
+      tags: [Profile]
+      operationId: profileNotifications
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/dashboard:
+    get:
+      tags: [Dashboard]
+      operationId: dashboardIndex
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/notifications/preferences:
+    get:
+      tags: [Dashboard]
+      operationId: notificationsPreferencesGet
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+    post:
+      tags: [Dashboard]
+      operationId: notificationsPreferencesUpdate
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/profile/bank-details:
+    get:
+      tags: [Profile]
+      operationId: profileBankDetailsGet
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+    patch:
+      tags: [Profile]
+      operationId: profileBankDetailsUpdate
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # ============================================================
+  # Domaine 02 — Documents + billing
+  # ============================================================
+  /contractor-compliance/documents/upload:
+    post:
+      tags: [Documents]
+      operationId: documentsUpload
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                type: { type: string }
+                file: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/documents:
+    get:
+      tags: [Documents]
+      operationId: documentsList
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/documents/{uuid}:
+    get:
+      tags: [Documents]
+      operationId: documentsGet
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/documents/purchase:
+    post:
+      tags: [Documents]
+      operationId: documentsPurchase
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/billing/subscription:
+    get:
+      tags: [Billing]
+      operationId: billingSubscription
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/billing/subscribe:
+    post:
+      tags: [Billing]
+      operationId: billingSubscribe
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/billing/cancel:
+    post:
+      tags: [Billing]
+      operationId: billingCancel
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/billing/payment-history:
+    get:
+      tags: [Billing]
+      operationId: billingPaymentHistory
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # ============================================================
+  # Domaine 03 — KYC contractor
+  # ============================================================
+  /contractor-compliance/kyc/challenge:
+    get:
+      tags: [Kyc]
+      operationId: kycChallenge
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/kyc/video:
+    post:
+      tags: [Kyc]
+      operationId: kycVideo
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/kyc/status:
+    get:
+      tags: [Kyc]
+      operationId: kycStatus
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/kyc/mobile-link:
+    post:
+      tags: [Kyc]
+      operationId: kycMobileLink
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # ============================================================
+  # Domaine 03 — KYC mobile public (capability link)
+  # ============================================================
+  /contractor-compliance/kyc/mobile/{token}:
+    get:
+      tags: [KycMobile]
+      # Route publique (capability link). Pas de security -> security: []
+      # POURQUOI : le token 48-hex sert lui-meme de capability, pas de cookie.
+      operationId: kycMobileValidateToken
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Token' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        '404':
+          description: Token inconnu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '410':
+          description: Token expire ou deja consomme
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /contractor-compliance/kyc/mobile/{token}/video:
+    post:
+      tags: [KycMobile]
+      # Route publique : upload video KYC via capability link.
+      operationId: kycMobileSubmitVideo
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Token' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                video: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        '400':
+          description: Video invalide (taille, MIME, format)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Token inconnu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '410':
+          description: Token expire ou deja consomme
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  # ============================================================
+  # Domaine 05 — Invoices contractor + missions + certification
+  # ============================================================
+  /contractor-compliance/invoices/upload:
+    post:
+      tags: [Invoices]
+      operationId: invoicesUpload
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/invoices:
+    get:
+      tags: [Invoices]
+      operationId: invoicesList
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/invoices/{uuid}/timeline:
+    get:
+      tags: [Invoices]
+      operationId: invoicesTimeline
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/invoices/{uuid}:
+    get:
+      tags: [Invoices]
+      operationId: invoicesShow
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/missions/offers:
+    get:
+      tags: [Missions]
+      operationId: missionsOffers
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/missions/active:
+    get:
+      tags: [Missions]
+      operationId: missionsActive
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/missions/history:
+    get:
+      tags: [Missions]
+      operationId: missionsHistory
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/missions/{ref}:
+    get:
+      tags: [Missions]
+      operationId: missionsShow
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Ref' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/certification/status:
+    get:
+      tags: [Certification]
+      operationId: certificationStatus
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/certification/start:
+    post:
+      tags: [Certification]
+      operationId: certificationStart
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/certification/qcm/start:
+    post:
+      tags: [Certification]
+      operationId: certificationQcmStart
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/certification/qcm/{attempt}/submit:
+    post:
+      tags: [Certification]
+      operationId: certificationQcmSubmit
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Attempt' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/certification/qcm/{attempt}/heartbeat:
+    post:
+      tags: [Certification]
+      operationId: certificationQcmHeartbeat
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Attempt' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 06 — Free invoices (contractor)
+  # ============================================================
+  /contractor-compliance/invoices/free/eligible-missions:
+    get:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeEligibleMissions
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/invoices/free:
+    get:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeList
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/invoices/free/request:
+    post:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeRequest
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/invoices/free/{uuid}:
+    get:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeGet
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/invoices/free/{uuid}/cancel:
+    post:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeCancel
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/invoices/free/{uuid}/upload:
+    post:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeUpload
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 06 — Free invoices PUBLIC pay (capability uuid)
+  # ============================================================
+  /contractor-compliance/pay/free-invoice/{uuid}:
+    get:
+      tags: [PayPublic]
+      operationId: payFreeInvoiceShow
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/pay/free-invoice/{uuid}/intent:
+    post:
+      tags: [PayPublic]
+      operationId: payFreeInvoiceCreateIntent
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/pay/free-invoice/{uuid}/confirm:
+    post:
+      tags: [PayPublic]
+      operationId: payFreeInvoiceConfirm
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin supervision / settings
+  # ============================================================
+  /contractor-compliance/admin/health:
+    get:
+      tags: [AdminSupervision]
+      operationId: adminHealth
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/metrics:
+    get:
+      tags: [AdminSupervision]
+      operationId: adminMetrics
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/providers/ping:
+    get:
+      tags: [AdminSupervision]
+      operationId: adminProvidersPing
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/settings:
+    get:
+      tags: [AdminSettings]
+      operationId: adminSettingsList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+    patch:
+      tags: [AdminSettings]
+      operationId: adminSettingsBatchUpdate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/settings/{key}:
+    get:
+      tags: [AdminSettings]
+      operationId: adminSettingsGet
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/KeyParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+    put:
+      tags: [AdminSettings]
+      operationId: adminSettingsUpdate
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/KeyParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/settings/{key}/reset:
+    post:
+      tags: [AdminSettings]
+      operationId: adminSettingsReset
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/KeyParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin contractors (vue 360)
+  # ============================================================
+  /contractor-compliance/admin/contractors:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/documents:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsDocuments
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/kyc-sessions:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsKycSessions
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/invoices:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsInvoices
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/purchases:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsPurchases
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/missions:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsMissions
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/compliance-summary:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsComplianceSummary
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{phone}/timeline:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsTimeline
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{userId}/blocked:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsBlocked
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{userId}/unblock:
+    post:
+      tags: [AdminContractors]
+      operationId: adminContractorsUnblock
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/contractors/{userId}/purchase-document:
+    post:
+      tags: [AdminContractors]
+      operationId: adminContractorsPurchaseDocument
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin dashboard + invoices stats
+  # ============================================================
+  /contractor-compliance/admin/dashboard/overview:
+    get:
+      tags: [Admin]
+      operationId: adminDashboardOverview
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/stats/pipeline:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesStatsPipeline
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/stats/by-validator:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesStatsByValidator
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/stats/stuck-counts:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesStatsStuckCounts
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin invitation codes
+  # ============================================================
+  /contractor-compliance/admin/invitation-codes:
+    get:
+      tags: [AdminInvitationCodes]
+      operationId: adminInvitationCodesList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+    post:
+      tags: [AdminInvitationCodes]
+      operationId: adminInvitationCodesCreate
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invitation-codes/{code}:
+    get:
+      tags: [AdminInvitationCodes]
+      operationId: adminInvitationCodesShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/CodeParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invitation-codes/{code}/revoke:
+    post:
+      tags: [AdminInvitationCodes]
+      operationId: adminInvitationCodesRevoke
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/CodeParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invitation-codes/{code}/note:
+    patch:
+      tags: [AdminInvitationCodes]
+      operationId: adminInvitationCodesUpdateNote
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/CodeParam' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin misc
+  # ============================================================
+  /contractor-compliance/admin/signup-attempts:
+    get:
+      tags: [Admin]
+      operationId: adminSignupAttemptsList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/missions/{missionRef}:
+    get:
+      tags: [Admin]
+      operationId: adminMissionShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/MissionRef' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/compliance/stats:
+    get:
+      tags: [Admin]
+      operationId: adminComplianceStats
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin purchases
+  # ============================================================
+  /contractor-compliance/admin/purchases:
+    get:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/purchases/stats:
+    get:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesStats
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/purchases/stuck:
+    get:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesStuck
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/purchases/export:
+    get:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesExport
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/purchases/{uuid}:
+    get:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/purchases/{uuid}/retry:
+    post:
+      tags: [AdminPurchases]
+      operationId: adminPurchasesRetry
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin webhooks
+  # ============================================================
+  /contractor-compliance/admin/webhooks/logs:
+    get:
+      tags: [AdminWebhooks]
+      operationId: adminWebhooksLogs
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/webhooks/dead-letter:
+    get:
+      tags: [AdminWebhooks]
+      operationId: adminWebhooksDeadLetter
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/webhooks/dead-letter/replay-all:
+    post:
+      tags: [AdminWebhooks]
+      operationId: adminWebhooksReplayAllDeadLetter
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/webhooks/{id}/replay:
+    post:
+      tags: [AdminWebhooks]
+      operationId: adminWebhooksReplay
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 07 — Admin documents (stream binaire)
+  # ============================================================
+  /contractor-compliance/admin/documents/{uuid}:
+    get:
+      tags: [AdminDocuments]
+      operationId: adminDocumentsShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/documents/{uuid}/file:
+    get:
+      tags: [AdminDocuments]
+      operationId: adminDocumentsFile
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: Stream binaire document
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+
+  # ============================================================
+  # Domaine 07 — Admin circuit breakers
+  # ============================================================
+  /contractor-compliance/admin/circuit-breakers:
+    get:
+      tags: [AdminCircuitBreakers]
+      operationId: adminCircuitBreakersList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/circuit-breakers/{service}/reset:
+    post:
+      tags: [AdminCircuitBreakers]
+      operationId: adminCircuitBreakersReset
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/ServiceParam' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaines 03 + 05 — Admin KYC sessions
+  # ============================================================
+  /contractor-compliance/admin/kyc/sessions:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycSessions
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/kyc/rejections:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycRejections
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/kyc/sessions/{uuid}:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/kyc/{uuid}/artifacts/view:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycArtifactsView
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/kyc/{sessionUuid}/replay:
+    post:
+      tags: [AdminKyc]
+      operationId: adminKycReplay
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/SessionUuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/kyc/{sessionUuid}/force-approve:
+    post:
+      tags: [AdminKyc]
+      operationId: adminKycForceApprove
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/SessionUuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 06 — Admin free invoices
+  # ============================================================
+  /contractor-compliance/admin/free-invoices/pending:
+    get:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesPending
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/free-invoices:
+    get:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/free-invoices/{uuid}:
+    get:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesGet
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/free-invoices/{uuid}/approve:
+    post:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesApprove
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/free-invoices/{uuid}/reject:
+    post:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesReject
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/free-invoices/{uuid}/attachments:
+    get:
+      tags: [AdminFreeInvoices]
+      operationId: adminFreeInvoicesAttachments
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # ============================================================
+  # Domaine 05 — Admin invoices (mission) actions
+  # ============================================================
+  /contractor-compliance/admin/invoices:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesList
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/pending-validation:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesPendingValidation
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/ready-to-pay:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesReadyToPay
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/payment-in-progress:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesPaymentInProgress
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/today-payments:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesTodayPayments
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/paid-disputed:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesPaidDisputed
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesShow
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/pdf:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesPdf
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200':
+          description: PDF facture
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+
+  /contractor-compliance/admin/invoices/{uuid}/audit-trail:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesAuditTrail
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/mark-payment-in-progress:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesMarkPaymentInProgress
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/mark-paid:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesMarkPaid
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/reopen:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesReopen
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/resolve-dispute:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesResolveDispute
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/force-resend-webhook:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesForceResendWebhook
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/add-note:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesAddNote
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/validate:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesValidate
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/cancel:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesCancel
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/dispute:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesDispute
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/expire:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesExpire
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/reject:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesReject
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/export:
+    get:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesExport
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  /contractor-compliance/admin/invoices/{uuid}/send-validator-reminder:
+    post:
+      tags: [AdminInvoices]
+      operationId: adminInvoicesSendValidatorReminder
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }

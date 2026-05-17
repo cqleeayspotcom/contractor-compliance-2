@@ -1,0 +1,165 @@
+.profile-page {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 24px 16px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+
+    h1 { margin: 0; font-size: 22px; font-weight: 600; color: #0a3d62; }
+  }
+
+  &__loading {
+    text-align: center;
+    padding: 60px 0;
+    color: #64748b;
+  }
+}
+
+.profile-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 32px 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  &__avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: #e0f2f1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+
+    mat-icon { font-size: 36px; width: 36px; height: 36px; color: #00695c; }
+
+    // FIX-044 — Variante "initiales" : background gradient discret + lettres
+    // larges. S'active dès que first_name/last_name sont disponibles
+    // (post-OCR CNI + hydratation Pappers Company.name).
+    &--initials {
+      background: linear-gradient(135deg, #00695c 0%, #2e7d6a 100%);
+      box-shadow: 0 2px 8px rgba(0, 105, 92, 0.25);
+    }
+  }
+
+  &__avatar-text {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+  }
+
+  &__name {
+    text-align: center;
+    margin: 0 0 24px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #0a3d62;
+  }
+}
+
+.profile-section {
+  border-top: 1px solid #eef2f6;
+  padding: 20px 0;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  }
+
+  &__field { width: 100%; margin-bottom: 12px; }
+}
+
+.profile-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 10px 0;
+
+  &__icon { color: #64748b; flex-shrink: 0; }
+
+  &__body { display: flex; flex-direction: column; flex: 1; }
+
+  &__label { font-size: 12px; color: #94a3b8; }
+  &__value { font-size: 15px; color: #0f172a; font-weight: 500; }
+  &__hint  { font-size: 12px; color: #64748b; margin-top: 2px; }
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+
+  &:last-of-type { border-bottom: none; }
+
+  &__icon { color: #64748b; flex-shrink: 0; }
+  &__label { flex: 1; font-size: 14px; color: #0f172a; }
+}
+
+.save-button {
+  margin-top: 24px;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #00b894 0%, #009b7d 100%);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 184, 148, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 184, 148, 0.45);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &--disabled,
+  &:disabled {
+    background: #cbd5e1;
+    color: #f8fafc;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+}
+
+.logout-button {
+  width: 100%;
+  margin-top: 24px;
+  padding: 12px !important;
+  font-weight: 600;
+
+  mat-icon { margin-right: 8px; }
+}

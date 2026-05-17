@@ -1,0 +1,303 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: block;
+  background: $t-back-grey-medium;
+  min-height: 100vh;
+}
+
+.invitation-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+  font-family: $t-default-font;
+  color: $t-text-black;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: $t-logo-blue;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+      color: rgba($t-logo-blue, 0.7);
+      max-width: 720px;
+    }
+  }
+
+  &__filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__filter-spacer {
+    flex: 1 1 auto;
+  }
+
+  &__loader {
+    display: flex;
+    justify-content: center;
+    padding: 60px 0;
+  }
+
+  &__table-wrap {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: auto;
+    box-shadow: 0 1px 2px rgba($t-logo-blue, 0.04), 0 4px 12px rgba($t-logo-blue, 0.06);
+  }
+}
+
+.filter-chip {
+  border: 1px solid rgba($t-logo-blue, 0.18);
+  background: #ffffff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: rgba($t-logo-blue, 0.75);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: $t-logo-blue;
+    color: $t-logo-blue;
+  }
+
+  &--active {
+    background: $t-logo-blue;
+    color: #ffffff;
+    border-color: $t-logo-blue;
+  }
+}
+
+.root-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: rgba($t-logo-blue, 0.75);
+  cursor: pointer;
+
+  input { cursor: pointer; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  background: #ffffff;
+  border-radius: 14px;
+  color: rgba($t-logo-blue, 0.65);
+  text-align: center;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: rgba($t-logo-blue, 0.35);
+  }
+
+  p { max-width: 480px; }
+}
+
+// ── Table ────────────────────────────────────────────────────────────────
+.invitation-table {
+  width: 100%;
+
+  th {
+    background: $t-back-grey-medium !important;
+    color: rgba($t-logo-blue, 0.7) !important;
+    font-weight: 700 !important;
+    font-size: 0.75rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  td {
+    font-size: 0.875rem;
+    color: $t-text-black;
+    vertical-align: middle;
+  }
+
+  &__row {
+    cursor: pointer;
+    transition: background 0.12s ease;
+
+    &:hover {
+      background: rgba($t-logo-blue, 0.04);
+    }
+  }
+}
+
+.code-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba($t-logo-blue, 0.06);
+  border: 1px solid rgba($t-logo-blue, 0.12);
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover {
+    background: rgba($t-logo-blue, 0.1);
+    border-color: rgba($t-logo-blue, 0.3);
+  }
+
+  &__value {
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    color: $t-logo-blue;
+    font-size: 1rem;
+  }
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: rgba($t-logo-blue, 0.55);
+  }
+}
+
+.origin-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.825rem;
+  color: rgba($t-logo-blue, 0.85);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: rgba($t-logo-blue, 0.6);
+  }
+
+  &--root {
+    color: darken($t-base-green, 4%);
+    font-weight: 600;
+
+    mat-icon { color: darken($t-base-green, 4%); }
+  }
+}
+
+.lineage-cell {
+  font-size: 0.8125rem;
+  color: rgba($t-logo-blue, 0.65);
+
+  code {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    background: rgba($t-logo-blue, 0.06);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+
+  &--root {
+    color: rgba($t-logo-blue, 0.4);
+    font-style: italic;
+  }
+}
+
+.usage-cell {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+
+  strong {
+    font-size: 1rem;
+    color: $t-logo-blue;
+  }
+
+  &__children {
+    margin-left: 8px;
+    font-size: 0.7rem;
+    color: darken($t-base-green, 4%);
+    font-weight: 600;
+  }
+}
+
+.note-cell {
+  display: inline-block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: rgba($t-logo-blue, 0.7);
+  font-size: 0.8125rem;
+}
+
+.first-use-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: $t-logo-blue;
+
+  strong {
+    max-width: 160px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__match {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: darken($t-base-green, 4%);
+  }
+
+  &__mismatch {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: $t-base-orange;
+  }
+
+  &--empty {
+    color: rgba($t-logo-blue, 0.4);
+  }
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  &--ok {
+    background: rgba($t-base-green, 0.14);
+    color: darken($t-base-green, 8%);
+  }
+  &--warn {
+    background: rgba($t-base-orange, 0.14);
+    color: darken($t-base-orange, 4%);
+  }
+  &--bad {
+    background: rgba($t-base-orange, 0.85);
+    color: #ffffff;
+  }
+}

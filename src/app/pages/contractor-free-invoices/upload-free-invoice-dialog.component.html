@@ -1,0 +1,43 @@
+<h2 mat-dialog-title>Uploader la facture</h2>
+<mat-dialog-content>
+  <p class="summary">
+    <strong>{{ data.subject }}</strong><br />
+    Montant autorisé : <strong>{{ data.amount_authorized_ttc | number:'1.2-2' }} € TTC</strong><br />
+    Expire le : {{ data.expires_at | date:'dd/MM/yyyy' }}
+  </p>
+
+  <ul class="rules">
+    <li>
+      <mat-icon>account_balance</mat-icon>
+      <span>Le destinataire doit être <strong>Tuita SAS</strong>.</span>
+    </li>
+    <li>
+      <mat-icon>euro</mat-icon>
+      <span>
+        Le montant TTC de votre facture doit être
+        <strong>exactement {{ data.amount_authorized_ttc | number:'1.2-2' }} €</strong>.
+        Tout écart entraîne un rejet automatique.
+      </span>
+    </li>
+    <li>
+      <mat-icon>schedule</mat-icon>
+      <span>L'autorisation expire le <strong>{{ data.expires_at | date:'dd/MM/yyyy' }}</strong>.</span>
+    </li>
+  </ul>
+
+  <input type="file" accept=".pdf" (change)="onFile($event)" />
+  @if (file()) {
+    <p class="picked">{{ file()!.name }} ({{ (file()!.size / 1024) | number:'1.0-0' }} Ko)</p>
+  }
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close type="button">Annuler</button>
+  <button
+    mat-flat-button
+    color="primary"
+    (click)="submit()"
+    [disabled]="submitting() || !file()"
+  >
+    Envoyer la facture
+  </button>
+</mat-dialog-actions>

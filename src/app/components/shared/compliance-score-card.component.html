@@ -1,0 +1,132 @@
+<div [class]="cardClasses">
+  <!-- Card Header -->
+  <div class="score-card-header">
+    <h3 class="card-title">{{ title }}</h3>
+    <div
+      class="score-tooltip"
+      matTooltip="Your compliance score is calculated based on verified documents, completed KYC, and active subscription status."
+      matTooltipPosition="right"
+    >
+      <tuita-icon icon="info" size="sm"></tuita-icon>
+    </div>
+  </div>
+
+  <!-- Score Display -->
+  <div class="score-display">
+    <!-- Circular Progress -->
+    <div class="score-circle">
+      <svg class="score-svg" viewBox="0 0 100 100">
+        <!-- Background Circle -->
+        <circle
+          class="score-circle-bg"
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          stroke="#e5e7eb"
+          stroke-width="8"
+        ></circle>
+
+        <!-- Progress Circle -->
+        <circle
+          class="score-circle-progress"
+          cx="50"
+          cy="50"
+          r="45"
+          fill="none"
+          [attr.stroke]="strokeColor"
+          stroke-width="8"
+          stroke-linecap="round"
+          [attr.stroke-dasharray]="dashArray"
+          [attr.stroke-dashoffset]="dashOffset"
+          transform="rotate(-90 50 50)"
+        ></circle>
+      </svg>
+
+      <!-- Score Text -->
+      <div class="score-text">
+        <span class="score-value">{{ animatedScore }}</span>
+        <span class="score-percent">%</span>
+      </div>
+    </div>
+
+    <!-- Score Status -->
+    <div class="score-status">
+      <div class="status-badge" [ngClass]="scoreColor">
+        {{ scoreStatus }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Score Breakdown -->
+  <div *ngIf="showBreakdown && breakdown.length > 0" class="score-breakdown">
+    <h4 class="breakdown-title">Score Breakdown</h4>
+
+    <div class="breakdown-items">
+      <div
+        *ngFor="let item of breakdown"
+        [style.color]="item.color"
+        class="breakdown-item"
+      >
+        <div class="breakdown-header">
+          <tuita-icon [icon]="item.icon" size="sm" [class]="item.color"></tuita-icon>
+          <span class="breakdown-label">{{ item.label }}</span>
+          <span class="breakdown-value">{{ item.value }}/{{ item.total }}</span>
+        </div>
+
+        <div class="breakdown-progress">
+          <div
+            class="breakdown-progress-bar"
+            [style.backgroundColor]="item.color"
+            [style.width.%]="calculateBreakdownPercentage(item)"
+          ></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggestions Section -->
+  <div *ngIf="showSuggestions && hasSuggestions" class="score-suggestions">
+    <h4 class="suggestions-title">
+      <tuita-icon icon="lightbulb" size="sm" class="suggestions-icon"></tuita-icon>
+      Improve Your Score
+    </h4>
+
+    <div class="suggestions-list">
+      <div
+        *ngFor="let suggestion of suggestions"
+        (click)="onSuggestionClick(suggestion)"
+        [ngClass]="getSuggestionPriorityClass(suggestion)"
+        class="suggestion-item"
+        role="button"
+        tabindex="0"
+      >
+        <div class="suggestion-content">
+          <h5 class="suggestion-title">{{ suggestion.title }}</h5>
+          <p class="suggestion-description">{{ suggestion.description }}</p>
+        </div>
+
+        <button
+          class="suggestion-action"
+          type="button"
+          matTooltip="{{ suggestion.actionLabel }}"
+        >
+          <tuita-icon icon="arrow-forward" size="sm"></tuita-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Improve Button -->
+  <div *ngIf="showImproveButton" class="score-actions">
+    <button
+      (click)="onImproveClick()"
+      class="improve-button"
+      type="button"
+      [disabled]="isExcellentScore"
+    >
+      <tuita-icon icon="trending-up" size="sm"></tuita-icon>
+      <span>{{ isExcellentScore ? 'Great job!' : 'Improve Score' }}</span>
+    </button>
+  </div>
+</div>

@@ -1,0 +1,106 @@
+<section class="invoice-timeline" aria-label="Suivi du paiement de la facture">
+
+  <!-- En-tête : statut global + description explicite -->
+  <header class="invoice-timeline__header">
+    <h2 class="invoice-timeline__status">{{ statusLabel() }}</h2>
+    @if (statusDescription()) {
+      <p class="invoice-timeline__desc">{{ statusDescription() }}</p>
+    }
+  </header>
+
+  <!-- Timeline verticale — un <li> par étape, avec segment reliant au suivant -->
+  <ol class="timeline-list">
+    @for (s of normalizedSteps(); track trackByStep($index, s); let last = $last) {
+      <li
+        class="timeline-step"
+        [class]="stateClass(s.state)"
+        [attr.aria-label]="stepAriaLabel(s)"
+      >
+        <!-- Point + segment vers l'étape suivante -->
+        <div class="timeline-step__rail" aria-hidden="true">
+          <span class="timeline-step__dot">
+            @if (s.state === 'done') {
+              <mat-icon>check</mat-icon>
+            } @else if (s.state === 'rejected') {
+              <mat-icon>close</mat-icon>
+            } @else if (s.state === 'in_progress') {
+              <span class="timeline-step__dot-pulse"></span>
+            }
+          </span>
+          @if (!last) {
+            <span class="timeline-step__segment"></span>
+          }
+        </div>
+
+        <!-- Contenu de l'étape -->
+        <div class="timeline-step__body">
+          <div class="timeline-step__title">
+            <span class="timeline-step__emoji" aria-hidden="true">{{ stepEmoji(s.step) }}</span>
+            <span class="timeline-step__name">{{ stepLabel(s.step) }}</span>
+          </div>
+
+          @if (s.at) {
+            <div class="timeline-step__date">{{ s.at | relativeDate }}</div>
+          } @else if (s.state === 'pending' && s.eta) {
+            <div class="timeline-step__eta">Délai estimé : {{ s.eta }}</div>
+          }
+
+          @if (s.by) {
+            <div
+              class="timeline-step__by"
+              [matTooltip]="'Validé par ' + s.by"
+              matTooltipPosition="above"
+            >
+              <mat-icon>person</mat-icon>
+              <span>{{ s.by }}</span>
+            </div>
+          }
+
+          @if (s.comment) {
+            <div class="timeline-step__comment">« {{ s.comment }} »</div>
+          }
+
+          @if (s.step === 'payment_launched' && s.payment_ref_masked) {
+            <div class="timeline-step__payref" aria-label="Référence de virement masquée">
+              <mat-icon>credit_card</mat-icon>
+              <span>Réf : {{ s.payment_ref_masked }}</span>
+            </div>
+          }
+        </div>
+      </li>
+    }
+  </ol>
+
+  <!-- Prochaine action attendue — rassure le contractor -->
+  @if (expectedNext(); as next) {
+    <aside class="next-action" role="status">
+      <div class="next-action__header">
+        <mat-icon class="next-action__icon">hourglass_top</mat-icon>
+        <h3 class="next-action__title">Prochaine étape</h3>
+      </div>
+      <p class="next-action__what">{{ next.what }}</p>
+      <dl class="next-action__meta">
+        <div>
+          <dt>Par :</dt>
+          <dd>{{ next.who }}</dd>
+        </div>
+        <div>
+          <dt>Délai estimé :</dt>
+          <dd>{{ next.eta }}</dd>
+        </div>
+      </dl>
+    </aside>
+  }
+
+  <!-- Alerte "équipe prévenue" — on lui dit de ne pas appeler -->
+  @if (supportAlerted()) {
+    <aside class="support-alert" role="status">
+      <mat-icon class="support-alert__icon">notifications_active</mat-icon>
+      <div class="support-alert__body">
+        <strong>Notre équipe a été alertée du délai.</strong>
+        <span>Vous n'avez rien à faire - nous reviendrons vers vous.</span>
+      </div>
+    </aside>
+  }
+
+</section>

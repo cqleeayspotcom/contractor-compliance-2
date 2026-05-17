@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "releaseDate": "2026-04-15",
+  "backend": "1.0.0",
+  "frontend": "1.0.0",
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-04-15",
+      "type": "release",
+      "changes": [
+        {
+          "type": "feat",
+          "scope": "api",
+          "description": "Intégration API Pappers — refactorisation de la structure entreprise"
+        },
+        {
+          "type": "feat",
+          "scope": "email",
+          "description": "Templates email : vérification documents, onboarding employés, paiements, KYC"
+        },
+        {
+          "type": "feat",
+          "scope": "kyc",
+          "description": "Fonctionnalités KYC : liveness detection (MiniFASNet V2), face matching (DeepFace/ArcFace), mock provider"
+        },
+        {
+          "type": "feat",
+          "scope": "kyc",
+          "description": "Webhooks KYC — pipeline complet de traitement vidéo avec ffmpeg"
+        },
+        {
+          "type": "feat",
+          "scope": "frontend",
+          "description": "Web App Manifest PWA + unités tests TokenService"
+        },
+        {
+          "type": "feat",
+          "scope": "infra",
+          "description": "Configuration Docker Angular, migration colonnes manquantes factures"
+        },
+        {
+          "type": "feat",
+          "scope": "db",
+          "description": "Seeders : prestataires conformes/incomplets, simulation échec paiement Stripe, vérifications documents"
+        }
+      ]
+    }
+  ]
+}

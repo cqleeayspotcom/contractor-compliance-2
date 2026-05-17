@@ -1,0 +1,517 @@
+/* Tuita Status Badge Component */
+
+:host {
+  display: inline-block;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem; /* 14px */
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &-icon {
+    flex-shrink: 0;
+  }
+
+  &-text {
+    line-height: 1;
+  }
+
+  &-dot {
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Size variants */
+  &-sm {
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem; /* 12px */
+    gap: 0.25rem;
+
+    .status-badge-icon {
+      transform: scale(0.85);
+    }
+
+    .status-badge-dot {
+      width: 0.25rem;
+      height: 0.25rem;
+    }
+  }
+
+  &-md {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.875rem; /* 14px */
+    gap: 0.375rem;
+  }
+
+  &-lg {
+    padding: 0.375rem 0.75rem;
+    font-size: 1rem; /* 16px */
+    gap: 0.5rem;
+  }
+
+  /* Shape variants */
+  &-pill {
+    border-radius: 9999px;
+  }
+
+  &-rounded {
+    border-radius: 0.375rem;
+  }
+
+  &-square {
+    border-radius: 0;
+  }
+
+  /* Status color variants */
+
+  /* Pending - Blue */
+  &-pending {
+    background-color: #E3F2FD;
+    color: #073148;
+
+    .status-badge-icon {
+      color: #073148;
+    }
+
+    .status-badge-dot {
+      background-color: #073148;
+    }
+  }
+
+  /* In Progress - Blue with pulse */
+  &-in-progress {
+    background-color: #E3F2FD;
+    color: #073148;
+
+    .status-badge-icon {
+      color: #073148;
+    }
+
+    .status-badge-dot {
+      background-color: #073148;
+    }
+
+    .status-badge-icon {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+  }
+
+  /* Verified - Green */
+  &-verified {
+    background-color: #E8F5F0;
+    color: #0D5D45;
+
+    .status-badge-icon {
+      color: #04A777;
+    }
+
+    .status-badge-dot {
+      background-color: #04A777;
+    }
+  }
+
+  /* Rejected - Orange */
+  &-rejected {
+    background-color: #FFF4E5;
+    color: #A83800;
+
+    .status-badge-icon {
+      color: #F75C03;
+    }
+
+    .status-badge-dot {
+      background-color: #F75C03;
+    }
+  }
+
+  /* Approved - Green */
+  &-approved {
+    background-color: #E8F5F0;
+    color: #0D5D45;
+
+    .status-badge-icon {
+      color: #04A777;
+    }
+
+    .status-badge-dot {
+      background-color: #04A777;
+    }
+  }
+
+  /* Denied - Red/Orange */
+  &-denied {
+    background-color: #FFF4E5;
+    color: #A83800;
+
+    .status-badge-icon {
+      color: #F75C03;
+    }
+
+    .status-badge-dot {
+      background-color: #F75C03;
+    }
+  }
+
+  /* Active - Green */
+  &-active {
+    background-color: #E8F5F0;
+    color: #0D5D45;
+
+    .status-badge-icon {
+      color: #04A777;
+    }
+
+    .status-badge-dot {
+      background-color: #04A777;
+    }
+  }
+
+  /* Inactive - Grey */
+  &-inactive {
+    background-color: #F3F4F6;
+    color: #4B5563;
+
+    .status-badge-icon {
+      color: #6B7280;
+    }
+
+    .status-badge-dot {
+      background-color: #6B7280;
+    }
+  }
+
+  /* Suspended - Orange */
+  &-suspended {
+    background-color: #FFF4E5;
+    color: #A83800;
+
+    .status-badge-icon {
+      color: #F75C03;
+    }
+
+    .status-badge-dot {
+      background-color: #F75C03;
+    }
+  }
+
+  /* Expired - Red */
+  &-expired {
+    background-color: #FEF2F2;
+    color: #991B1B;
+
+    .status-badge-icon {
+      color: #DC2626;
+    }
+
+    .status-badge-dot {
+      background-color: #DC2626;
+    }
+  }
+
+  /* Draft - Grey */
+  &-draft {
+    background-color: #F3F4F6;
+    color: #4B5563;
+
+    .status-badge-icon {
+      color: #6B7280;
+    }
+
+    .status-badge-dot {
+      background-color: #6B7280;
+    }
+  }
+
+  /* Published - Green */
+  &-published {
+    background-color: #E8F5F0;
+    color: #0D5D45;
+
+    .status-badge-icon {
+      color: #04A777;
+    }
+
+    .status-badge-dot {
+      background-color: #04A777;
+    }
+  }
+
+  /* Archived - Grey */
+  &-archived {
+    background-color: #F3F4F6;
+    color: #4B5563;
+
+    .status-badge-icon {
+      color: #6B7280;
+    }
+
+    .status-badge-dot {
+      background-color: #6B7280;
+    }
+  }
+
+  /* Success - Green */
+  &-success {
+    background-color: #E8F5F0;
+    color: #0D5D45;
+
+    .status-badge-icon {
+      color: #04A777;
+    }
+
+    .status-badge-dot {
+      background-color: #04A777;
+    }
+  }
+
+  /* Error - Red/Orange */
+  &-error {
+    background-color: #FFF4E5;
+    color: #A83800;
+
+    .status-badge-icon {
+      color: #F75C03;
+    }
+
+    .status-badge-dot {
+      background-color: #F75C03;
+    }
+  }
+
+  /* Warning - Yellow */
+  &-warning {
+    background-color: #FFF8E1;
+    color: #8D5B00;
+
+    .status-badge-icon {
+      color: #FFA000;
+    }
+
+    .status-badge-dot {
+      background-color: #FFA000;
+    }
+  }
+
+  /* Info - Blue */
+  &-info {
+    background-color: #E3F2FD;
+    color: #073148;
+
+    .status-badge-icon {
+      color: #073148;
+    }
+
+    .status-badge-dot {
+      background-color: #073148;
+    }
+  }
+
+  /* Processing - Blue with pulse (OCR processing) */
+  &-processing {
+    background-color: #E3F2FD;
+    color: #073148;
+
+    .status-badge-icon {
+      color: #073148;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-badge-dot {
+      background-color: #073148;
+    }
+  }
+
+  /* Pending Manual Review - Orange */
+  &-pending_manual_review {
+    background-color: #FFF4E5;
+    color: #A83800;
+
+    .status-badge-icon {
+      color: #F75C03;
+    }
+
+    .status-badge-dot {
+      background-color: #F75C03;
+    }
+  }
+
+  /* Legally Outdated - Red */
+  &-legally_outdated {
+    background-color: #FEF2F2;
+    color: #991B1B;
+
+    .status-badge-icon {
+      color: #DC2626;
+    }
+
+    .status-badge-dot {
+      background-color: #DC2626;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .status-badge {
+    &-sm {
+      padding: 0.125rem 0.375rem;
+      font-size: 0.6875rem; /* 11px */
+    }
+
+    &-md {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8125rem; /* 13px */
+    }
+
+    &-lg {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.9375rem; /* 15px */
+    }
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .status-badge {
+    /* Pending - Blue */
+    &-pending {
+      background-color: rgba(7, 49, 72, 0.2);
+      color: #64B5F6;
+
+      .status-badge-icon {
+        color: #64B5F6;
+      }
+
+      .status-badge-dot {
+        background-color: #64B5F6;
+      }
+    }
+
+    /* In Progress - Blue */
+    &-in-progress {
+      background-color: rgba(7, 49, 72, 0.2);
+      color: #64B5F6;
+
+      .status-badge-icon {
+        color: #64B5F6;
+      }
+
+      .status-badge-dot {
+        background-color: #64B5F6;
+      }
+    }
+
+    /* Verified/Approved/Active/Published/Success - Green */
+    &-verified,
+    &-approved,
+    &-active,
+    &-published,
+    &-success {
+      background-color: rgba(4, 167, 119, 0.2);
+      color: #4DB6AC;
+
+      .status-badge-icon {
+        color: #4DB6AC;
+      }
+
+      .status-badge-dot {
+        background-color: #4DB6AC;
+      }
+    }
+
+    /* Rejected/Denied/Suspended/Error - Orange */
+    &-rejected,
+    &-denied,
+    &-suspended,
+    &-error {
+      background-color: rgba(247, 92, 3, 0.2);
+      color: #FFB366;
+
+      .status-badge-icon {
+        color: #FFB366;
+      }
+
+      .status-badge-dot {
+        background-color: #FFB366;
+      }
+    }
+
+    /* Inactive/Draft/Archived - Grey */
+    &-inactive,
+    &-draft,
+    &-archived {
+      background-color: rgba(107, 114, 128, 0.2);
+      color: #9CA3AF;
+
+      .status-badge-icon {
+        color: #9CA3AF;
+      }
+
+      .status-badge-dot {
+        background-color: #9CA3AF;
+      }
+    }
+
+    /* Expired - Red */
+    &-expired {
+      background-color: rgba(220, 38, 38, 0.2);
+      color: #F87171;
+
+      .status-badge-icon {
+        color: #F87171;
+      }
+
+      .status-badge-dot {
+        background-color: #F87171;
+      }
+    }
+
+    /* Warning - Yellow */
+    &-warning {
+      background-color: rgba(255, 160, 0, 0.2);
+      color: #FFB74D;
+
+      .status-badge-icon {
+        color: #FFB74D;
+      }
+
+      .status-badge-dot {
+        background-color: #FFB74D;
+      }
+    }
+
+    /* Info - Blue */
+    &-info {
+      background-color: rgba(7, 49, 72, 0.2);
+      color: #64B5F6;
+
+      .status-badge-icon {
+        color: #64B5F6;
+      }
+
+      .status-badge-dot {
+        background-color: #64B5F6;
+      }
+    }
+  }
+}

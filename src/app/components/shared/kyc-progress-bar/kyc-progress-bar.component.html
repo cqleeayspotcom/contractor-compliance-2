@@ -1,0 +1,34 @@
+@if (visible()) {
+  <nav class="kyc-progress"
+       role="progressbar"
+       aria-label="Progression de la vérification d'identité"
+       [attr.aria-valuemin]="1"
+       [attr.aria-valuemax]="3"
+       [attr.aria-valuenow]="(currentPhase() ?? 0) + 1">
+    <ol class="kyc-progress__phases">
+      @for (p of phases(); track p.index; let last = $last) {
+        <li class="kyc-progress__phase"
+            [class.kyc-progress__phase--past]="p.status === 'past'"
+            [class.kyc-progress__phase--active]="p.status === 'active'"
+            [class.kyc-progress__phase--future]="p.status === 'future'"
+            [attr.aria-current]="p.status === 'active' ? 'step' : null">
+          <span class="kyc-progress__dot" aria-hidden="true">
+            @if (p.status === 'past') {
+              <mat-icon>check</mat-icon>
+            } @else {
+              <mat-icon>{{ p.icon }}</mat-icon>
+            }
+          </span>
+          <span class="kyc-progress__label">{{ p.label }}</span>
+          @if (!last) {
+            <span class="kyc-progress__connector" aria-hidden="true"></span>
+          }
+        </li>
+      }
+    </ol>
+
+    @if (subtext(); as txt) {
+      <p class="kyc-progress__subtext" aria-live="polite">{{ txt }}</p>
+    }
+  </nav>
+}

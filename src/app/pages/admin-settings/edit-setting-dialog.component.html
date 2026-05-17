@@ -1,0 +1,65 @@
+<header class="dialog-header" mat-dialog-title>
+  <div class="dialog-header__main">
+    <mat-icon>edit</mat-icon>
+    <span class="dialog-header__title">Modifier le paramètre</span>
+  </div>
+  <button mat-icon-button (click)="cancel()" aria-label="Fermer" type="button">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<div mat-dialog-content class="edit-dlg">
+  <div class="edit-dlg__key">
+    <span class="edit-dlg__label">Clé</span>
+    <code class="edit-dlg__code">{{ data.key }}</code>
+  </div>
+
+  @if (data.description) {
+    <p class="edit-dlg__description">{{ data.description }}</p>
+  }
+
+  <div class="edit-dlg__meta">
+    <span><strong>Type :</strong> {{ data.type }}</span>
+    <span><strong>Source actuelle :</strong> {{ data.source === 'database' ? 'BDD' : '.env' }}</span>
+  </div>
+
+  @if (isBoolean()) {
+    <div class="edit-dlg__field">
+      <mat-slide-toggle [checked]="boolValue()" (change)="onBoolChange($event.checked)">
+        {{ boolValue() ? 'Activé' : 'Désactivé' }}
+      </mat-slide-toggle>
+    </div>
+  } @else {
+    <mat-form-field appearance="outline" class="edit-dlg__field">
+      <mat-label>Nouvelle valeur</mat-label>
+      <input
+        matInput
+        [ngModel]="textValue()"
+        (ngModelChange)="onTextChange($event)"
+        [type]="data.type === 'integer' || data.type === 'float' ? 'number' : 'text'"
+      />
+      @if (data.type === 'array') {
+        <mat-hint>Liste séparée par des virgules</mat-hint>
+      }
+    </mat-form-field>
+  }
+
+  <mat-form-field appearance="outline" class="edit-dlg__field">
+    <mat-label>Raison de la modification (audit)</mat-label>
+    <textarea
+      matInput
+      rows="3"
+      [ngModel]="reason()"
+      (ngModelChange)="onReasonChange($event)"
+      placeholder="Pourquoi modifiez-vous ce paramètre ? (10 caractères minimum)"
+    ></textarea>
+    <mat-hint>{{ reason().length }}/10 caractères minimum</mat-hint>
+  </mat-form-field>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Annuler</button>
+  <button mat-flat-button color="primary" [disabled]="!canSubmit()" (click)="submit()">
+    Enregistrer
+  </button>
+</div>

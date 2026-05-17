@@ -1,0 +1,780 @@
+@use '../../../styles/variables' as *;
+
+// ── Palette Tuita ─────────────────────────────────────────────────────────
+// $t-logo-blue      #073148   (texte + fonds sombres)
+// $t-base-green     #04A777   (succès / action)
+// $t-base-orange    #F75C03   (warning / bloquant)
+// $t-back-grey-*    fonds
+// ──────────────────────────────────────────────────────────────────────────
+
+$tile-radius: 18px;
+$tile-shadow: 0 1px 2px rgba($t-logo-blue, 0.04), 0 2px 6px rgba($t-logo-blue, 0.05);
+$tile-shadow-hover: 0 10px 24px rgba($t-logo-blue, 0.14), 0 3px 8px rgba($t-logo-blue, 0.08);
+
+// Pulse + halo vert sur les CTA importants (Pro upsell, etc.) — même grammaire
+// que le bouton « Commencer » du bandeau onboarding.
+@keyframes dashboard-cta-attract {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 4px 12px rgba($t-base-green, 0.35),
+      0 0 0 0 rgba($t-base-green, 0.55);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow:
+      0 6px 18px rgba($t-base-green, 0.5),
+      0 0 0 10px rgba($t-base-green, 0);
+  }
+}
+
+@keyframes dashboard-cta-arrow {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
+}
+
+// Animation pour le badge "À compléter" / "Bloqué" — pulsation discrète
+// pour attirer l'œil sur les actions à faire sans être agressif.
+@keyframes tile-badge-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 6px rgba($t-base-orange, 0.18);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow: 0 4px 12px rgba($t-base-orange, 0.32);
+  }
+}
+
+// ── Loading / error ───────────────────────────────────────────────────────
+.cdash__loading,
+.cdash__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 16px;
+  padding: 24px;
+  font-family: $t-default-font;
+
+  p {
+    font-size: 15px;
+    color: $t-color-light;
+    margin: 0;
+    text-align: center;
+  }
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    color: $t-base-orange;
+  }
+}
+
+// ── Container ─────────────────────────────────────────────────────────────
+.cdash {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px 48px;
+  font-family: $t-default-font;
+  color: $t-text-black;
+
+  @media (min-width: 768px) {
+    padding: 28px 24px 64px;
+  }
+
+  @media (min-width: 1024px) {
+    padding: 32px 32px 80px;
+  }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+// Desktop : tout sur une ligne (greeting à gauche, aide à droite).
+// Mobile (<640px) : grid 2 rangs — titre pleine largeur sur rang 1, chip plan
+// à gauche + bouton Aide à droite sur rang 2. Évite le bouton "?" orphelin
+// qui tombe seul sous le titre quand le greeting déborde.
+.cdash__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+
+  @media (max-width: 639px) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title title"
+      "plan  help";
+    align-items: center;
+    gap: 10px 12px;
+  }
+
+  @media (min-width: 768px) {
+    margin-bottom: 28px;
+  }
+}
+
+.cdash__greeting {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+
+  // Sur mobile, on "déplie" le wrapper greeting pour que h1 et le chip
+  // deviennent des enfants directs du grid header (display: contents).
+  // Pas de changement DOM, juste de la mise en page.
+  @media (max-width: 639px) {
+    display: contents;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 700;
+    color: $t-text-black;
+    letter-spacing: -0.01em;
+
+    @media (max-width: 639px) {
+      grid-area: title;
+      font-size: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      font-size: 1.625rem;
+    }
+  }
+}
+
+.cdash__plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: $t-back-grey-high;
+  color: $t-color;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  @media (max-width: 639px) {
+    grid-area: plan;
+    justify-self: start;
+  }
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+  }
+
+  &-chevron {
+    opacity: 0.5;
+    transition: transform 0.2s ease, opacity 0.15s ease;
+    margin-left: 2px;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background: $t-back-grey-high;
+
+    .cdash__plan-chevron {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid $t-base-green;
+    outline-offset: 2px;
+  }
+
+  &--pro {
+    background: rgba($t-base-green, 0.12);
+    color: $t-base-green;
+
+    &:hover {
+      background: rgba($t-base-green, 0.18);
+    }
+  }
+}
+
+.cdash__refresh {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  color: $t-color-light;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    background: $t-back-grey-high;
+    color: $t-text-black;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $t-base-green;
+    outline-offset: 2px;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// FIX-045 — Bandeaux alerte expiration sur la home compliance.
+// 2 tonalités : --danger (rouge, doc expired) et --warn (orange, J-30 et moins).
+// Toute la card est cliquable (routerLink vers /documents) pour réduire les
+// frictions : 1 tap = on arrive sur la liste pour racheter/réuploader.
+.cdash__alert {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 14px;
+  text-decoration: none;
+  border: 1.5px solid transparent;
+  transition: transform 120ms ease, box-shadow 160ms ease;
+  cursor: pointer;
+  margin-top: -8px;
+  margin-bottom: 8px;
+
+  &--danger {
+    background: linear-gradient(135deg, rgba(198, 40, 40, 0.06), rgba(198, 40, 40, 0.12));
+    border-color: rgba(198, 40, 40, 0.32);
+    color: #7f1d1d;
+    .cdash__alert-icon { color: #c62828; }
+  }
+
+  &--warn {
+    background: linear-gradient(135deg, rgba(239, 108, 0, 0.06), rgba(239, 108, 0, 0.13));
+    border-color: rgba(239, 108, 0, 0.32);
+    color: #6b3a00;
+    .cdash__alert-icon { color: #e65100; }
+  }
+
+  &:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06); }
+  &:active { transform: translateY(0); }
+}
+
+.cdash__alert-icon { font-size: 28px; width: 28px; height: 28px; flex: 0 0 auto; }
+.cdash__alert-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  strong { font-size: 1rem; line-height: 1.3; }
+  span { font-size: 0.875rem; line-height: 1.4; opacity: 0.85; }
+}
+.cdash__alert-chevron { flex: 0 0 auto; font-size: 22px; width: 22px; height: 22px; opacity: 0.7; }
+
+@media (max-width: 600px) {
+  .cdash__alert { gap: 10px; padding: 14px; }
+  .cdash__alert-icon { font-size: 24px; width: 24px; height: 24px; }
+  .cdash__alert-body strong { font-size: 0.9375rem; }
+  .cdash__alert-body span { font-size: 0.8125rem; }
+}
+
+// Bouton "Aide" du header — pill clair, libellé "Aide" visible (vs juste
+// l'icône "?") pour rassurer les artisans / secrétaires qui hésitent à
+// cliquer sur les pictos. Même tonalité que .cdash__plan pour homogénéité.
+.cdash__help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba($t-base-green, 0.25);
+  background: rgba($t-base-green, 0.08);
+  color: $t-base-green;
+  font-family: $t-default-font;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+  @media (max-width: 639px) {
+    grid-area: help;
+    justify-self: end;
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    line-height: 18px;
+  }
+
+  // Le label "Aide" reste visible même sur mobile : avec le nouveau grid
+  // 2 rangs, le bouton a sa propre rangée et largement la place. Plus
+  // rassurant qu'un "?" nu pour les artisans/secrétaires.
+  &-label {
+    display: inline;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba($t-base-green, 0.18);
+    background: rgba($t-base-green, 0.14);
+  }
+
+  &:focus-visible {
+    outline: 2px solid $t-base-green;
+    outline-offset: 2px;
+  }
+}
+
+// ── Grille responsive : 1 / 2 / 3 colonnes ────────────────────────────────
+// align-items: start -> les tuiles gardent leur hauteur naturelle, la tuile Pro
+// (plus haute à cause de la liste d'avantages + CTA) ne tire pas les autres
+// vers le bas. Combiné au min-height uniforme de .tile, toutes les cartes
+// statut restent à la meme hauteur, Pro etant la seule exception assumee.
+.cdash__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-auto-rows: 1fr;
+  align-items: stretch;
+  gap: 14px;
+
+  // Toutes les rangées ont la même hauteur (1fr = hauteur de la plus grande).
+  // La tuile « Passer en Pro » reste à sa hauteur naturelle en haut de sa case
+  // — elle ne "tire" pas les autres et n'est pas étirée non plus.
+  > .tile--pro {
+    align-self: start;
+  }
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  // Plafonné à 2 colonnes — au-delà les tuiles deviennent étirées sans
+  // gain d'info. Le contractor home compte 2-4 tuiles max, 2-col reste
+  // équilibré sur grand écran.
+  @media (min-width: 1024px) {
+    gap: 20px;
+  }
+}
+
+// ── Tuile — épurée, lisible, tactile ──────────────────────────────────────
+.tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 22px 20px;
+  min-height: 190px;
+  background: #ffffff;
+  border: 1px solid rgba($t-logo-blue, 0.08);
+  border-radius: $tile-radius;
+  box-shadow: $tile-shadow;
+  text-decoration: none !important;
+  color: $t-text-black;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+  // Halo décoratif top-right
+  &::after {
+    content: '';
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba($t-logo-blue, 0.06) 0%, transparent 70%);
+    z-index: -1;
+    transition: transform 0.3s ease, background 0.3s ease;
+  }
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: $tile-shadow-hover;
+    border-color: rgba($t-logo-blue, 0.18);
+
+    &::after {
+      transform: scale(1.15);
+    }
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 3px rgba($t-base-green, 0.35),
+      $tile-shadow-hover;
+  }
+
+  // ── Variante selon statut ──────────────────────────────────────────────
+  &[data-status='ok'] {
+    &::after  { background: radial-gradient(circle, rgba($t-base-green, 0.1) 0%, transparent 70%); }
+    &:hover   { border-color: rgba($t-base-green, 0.35); }
+  }
+
+  &[data-status='warn'] {
+    &::after  { background: radial-gradient(circle, rgba($t-base-orange, 0.1) 0%, transparent 70%); }
+    &:hover   { border-color: rgba($t-base-orange, 0.3); }
+  }
+
+  &[data-status='bad'] {
+    &::after  { background: radial-gradient(circle, rgba($t-base-orange, 0.14) 0%, transparent 70%); }
+    &:hover   { border-color: rgba($t-base-orange, 0.45); }
+  }
+
+  // ── Icône principale ───────────────────────────────────────────────────
+  &__ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba($t-logo-blue, 0.1) 0%, rgba($t-logo-blue, 0.04) 100%);
+    color: $t-logo-blue;
+    margin-bottom: 4px;
+    transition: transform 0.2s ease, background 0.2s ease;
+
+    mat-icon {
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  &:hover &__ico {
+    transform: scale(1.05) rotate(-2deg);
+  }
+
+  &[data-status='ok'] &__ico {
+    background: linear-gradient(135deg, rgba($t-base-green, 0.16) 0%, rgba($t-base-green, 0.06) 100%);
+    color: $t-base-green;
+  }
+
+  &[data-status='warn'] &__ico {
+    background: linear-gradient(135deg, rgba($t-base-orange, 0.16) 0%, rgba($t-base-orange, 0.06) 100%);
+    color: $t-base-orange;
+  }
+
+  &[data-status='bad'] &__ico {
+    background: linear-gradient(135deg, rgba($t-base-orange, 0.22) 0%, rgba($t-base-orange, 0.08) 100%);
+    color: darken($t-base-orange, 5%);
+  }
+
+  // ── Titre / sous-titre ─────────────────────────────────────────────────
+  &__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+
+  &__sub {
+    margin: 0;
+    flex: 1;
+    font-size: 0.875rem;
+    color: $t-color-light;
+    line-height: 1.45;
+  }
+
+  // ── Badge statut ───────────────────────────────────────────────────────
+  &__badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    text-transform: uppercase;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 2px 6px rgba($t-logo-blue, 0.08);
+
+    mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+      line-height: 12px;
+    }
+
+    &[data-status='ok'] {
+      background: rgba($t-base-green, 0.12);
+      color: darken($t-base-green, 6%);
+      border: 1px solid rgba($t-base-green, 0.25);
+    }
+    &[data-status='warn'] {
+      background: rgba($t-base-orange, 0.12);
+      color: darken($t-base-orange, 6%);
+      border: 1px solid rgba($t-base-orange, 0.25);
+    }
+    &[data-status='bad'] {
+      background: $t-base-orange;
+      color: #ffffff;
+      border: 1px solid darken($t-base-orange, 6%);
+    }
+
+    // ── Animation urgence ──
+    // Pulse sur le badge "À compléter" / "Bloqué" pour attirer l'œil de
+    // l'artisan dès son arrivée sur le dashboard. Désactivée si l'OS demande
+    // `prefers-reduced-motion` (accessibilité).
+    &--pulse {
+      animation: tile-badge-pulse 2.4s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+  }
+
+  // ── CTA ────────────────────────────────────────────────────────────────
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: auto;
+    padding-top: 10px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+    text-decoration: none;
+    letter-spacing: -0.005em;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s ease;
+    }
+  }
+
+  &:hover &__cta mat-icon {
+    transform: translateX(4px);
+  }
+
+  &[data-status='ok']   &__cta { color: $t-base-green; }
+  &[data-status='warn'] &__cta { color: $t-base-orange; }
+  &[data-status='bad']  &__cta { color: darken($t-base-orange, 5%); }
+
+  // ── Variante Pro (premium, sobre tuita) ────────────────────────────────
+  &--pro {
+    background:
+      radial-gradient(circle at top right, rgba($t-base-green, 0.35) 0%, transparent 55%),
+      linear-gradient(135deg, $t-logo-blue 0%, #0A4765 60%, #0D5A80 100%);
+    border-color: transparent;
+    color: #ffffff;
+
+    &::before {
+      background: $t-base-green !important;
+      opacity: 1;
+    }
+    &::after {
+      background: radial-gradient(circle, rgba($t-base-green, 0.25) 0%, transparent 70%) !important;
+    }
+
+    &:hover {
+      box-shadow: 0 14px 32px rgba($t-logo-blue, 0.4);
+      border-color: transparent;
+    }
+
+    .tile__ico {
+      background: linear-gradient(135deg, rgba($t-base-green, 0.35) 0%, rgba($t-base-green, 0.15) 100%);
+      color: #ffffff;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    }
+
+    .tile__title {
+      color: #ffffff;
+    }
+
+    .tile__sub {
+      color: rgba(255, 255, 255, 0.82);
+    }
+  }
+
+  &__benefits {
+    list-style: none;
+    padding: 0;
+    margin: 4px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8125rem;
+      color: rgba(255, 255, 255, 0.92);
+      line-height: 1.3;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        color: $t-base-green;
+        flex-shrink: 0;
+      }
+    }
+  }
+
+  &__cta--pro {
+    background: linear-gradient(135deg, $t-base-green 0%, darken($t-base-green, 6%) 100%);
+    color: #ffffff !important;
+    padding: 11px 16px;
+    border-radius: 12px;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.875rem;
+    box-shadow: 0 4px 12px rgba($t-base-green, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    animation: dashboard-cta-attract 2.4s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+
+    mat-icon {
+      color: #ffffff;
+      animation: dashboard-cta-arrow 1.6s ease-in-out infinite;
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+    }
+  }
+
+  &--pro:hover &__cta--pro {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba($t-base-green, 0.45);
+  }
+
+  // ── Variante Pro active (user deja abonne — gestion) ─────────────────────
+  // Tuile blanche classique + accent vert discret + badge "PRO" en haut a droite
+  // (miroir des badges orange "BLOQUÉ" / gris "VERROUILLÉ" des autres tuiles).
+  &--pro-active {
+    border-color: rgba($t-base-green, 0.25);
+
+    &::before {
+      background: $t-base-green !important;
+    }
+
+    .tile__ico {
+      background: linear-gradient(135deg, rgba($t-base-green, 0.16) 0%, rgba($t-base-green, 0.08) 100%);
+      color: $t-base-green;
+    }
+
+    .tile__cta {
+      color: $t-base-green;
+      font-weight: 700;
+
+      mat-icon {
+        color: $t-base-green;
+      }
+    }
+
+    &:hover {
+      border-color: rgba($t-base-green, 0.5);
+      box-shadow: 0 8px 24px rgba($t-base-green, 0.18);
+    }
+  }
+
+  &__badge--pro-active {
+    background: rgba($t-base-green, 0.12);
+    color: $t-base-green;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      color: $t-base-green;
+    }
+  }
+
+  // ── Variante verrouillée (certification en attente du KYC) ─────────────
+  &--locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+    user-select: none;
+
+    &:hover {
+      transform: none;
+      box-shadow: $tile-shadow;
+      border-color: rgba($t-logo-blue, 0.08);
+
+      &::after {
+        transform: none;
+      }
+    }
+
+    &:hover &__ico {
+      transform: none;
+    }
+
+    &:hover &__cta mat-icon {
+      transform: none;
+    }
+
+    .tile__badge {
+      background: $t-back-grey-high !important;
+      color: $t-color-light !important;
+      border-color: rgba($t-logo-blue, 0.1) !important;
+    }
+  }
+
+  // Variante "verrouillée mais actionnable" : utilisée quand la prochaine
+  // étape pour débloquer la tuile est accessible directement (ex : Identité
+  // verrouillée tant que la CNI n'est pas déposée → on emmène l'artisan sur
+  // /documents au clic au lieu d'un état purement passif).
+  // Override l'opacité et le cursor du --locked classique.
+  &--locked-actionable {
+    opacity: 1;
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: $tile-shadow-hover;
+      border-color: rgba($t-base-orange, 0.3);
+
+      &::after {
+        transform: scale(1.15);
+      }
+    }
+
+    &:hover &__ico {
+      transform: scale(1.05) rotate(-2deg);
+    }
+
+    &:hover &__cta mat-icon {
+      transform: translateX(4px);
+    }
+
+    .tile__cta {
+      color: $t-base-orange;
+    }
+  }
+
+}

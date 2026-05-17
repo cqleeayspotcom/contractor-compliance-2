@@ -1,0 +1,36 @@
+:host {
+  display: block;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #000;
+
+  .preview-label {
+    font-size: 0.9rem;
+    color: #e5e7eb;
+  }
+
+  button {
+    color: #fff;
+  }
+}
+
+.preview-body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  padding: 12px;
+
+  img {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+  }
+}

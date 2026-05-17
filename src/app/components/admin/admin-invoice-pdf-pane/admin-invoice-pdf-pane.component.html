@@ -1,0 +1,128 @@
+<div class="pdf-pane">
+  @if (invoice(); as inv) {
+    @if (inv.contractor_status) {
+      <section class="pane-section pane-section--status">
+        <app-contractor-status-banner
+          [status]="inv.contractor_status"
+          [phone]="inv.contractor_phone"
+          [contractorName]="inv.contractor_name"
+          [siren]="inv.contractor_siren"
+          (profileClick)="onProfileClick($event)" />
+      </section>
+    }
+    <!-- Section 1 : Identité -->
+    <header class="pane-section pane-section--identity">
+      <div class="identity-line">
+        <h2>{{ inv.number || (inv.uuid | slice:0:8) }}</h2>
+        <span class="status-pill" [class]="'status-' + inv.status">{{ statusLabel() }}</span>
+        @if (inv.age_days !== null && inv.age_days !== undefined) {
+          <span class="age">il y a {{ inv.age_days }} j</span>
+        }
+      </div>
+      <div class="identity-line muted">
+        <strong>{{ inv.contractor_name }}</strong>
+        @if (inv.contractor_siren) { <span> · SIREN {{ inv.contractor_siren }}</span> }
+        @if (inv.contractor_phone) {
+          <button mat-button class="phone-link" (click)="onProfileClick(inv.contractor_phone!)">
+            <mat-icon>person</mat-icon> {{ inv.contractor_phone | phoneDisplay }}
+          </button>
+        }
+      </div>
+    </header>
+
+    <!-- Section 2 : Montants -->
+    <section class="pane-section pane-section--amounts">
+      <div class="amount-main">{{ amountLabel(inv.amount_ttc) }} <span class="muted small">TTC</span></div>
+      @if (inv.amount_ht !== null && inv.amount_ht !== undefined) {
+        <div class="amount-sub muted">HT {{ amountLabel(inv.amount_ht) }} · TVA {{ amountLabel(inv.amount_tva) }}</div>
+      }
+      @if (inv.mission_ref) {
+        <div class="mission-line muted">
+          Mission : <code>{{ inv.mission_ref }}</code>
+          @if (inv.mission_snapshot?.expected_amount_ttc) {
+            <span> · attendu {{ amountLabel(inv.mission_snapshot!.expected_amount_ttc) }}</span>
+            @if (inv.mission_snapshot?.deviation_pct !== null && inv.mission_snapshot?.deviation_pct !== undefined) {
+              <span [class.bad]="(inv.mission_snapshot?.deviation_pct ?? 0) > 5 || (inv.mission_snapshot?.deviation_pct ?? 0) < -5">
+                (écart {{ inv.mission_snapshot!.deviation_pct }}%)
+              </span>
+            }
+          }
+        </div>
+      }
+    </section>
+
+    <!-- Section 3 : RIB -->
+    @if (inv.rib) {
+      <section class="pane-section pane-section--rib">
+        <h3>RIB du contractor</h3>
+        <app-rib-display [rib]="inv.rib" />
+      </section>
+    }
+
+    <!-- Section 4 : Validations -->
+    <section class="pane-section pane-section--validations">
+      <h3>Validations</h3>
+      <mat-chip-set>
+        <mat-chip [class]="validatorChipClass('compliance')">{{ validatorChipLabel('compliance') }}</mat-chip>
+        <mat-chip [class]="validatorChipClass('production')">{{ validatorChipLabel('production') }}</mat-chip>
+        <mat-chip [class]="validatorChipClass('accounting')">{{ validatorChipLabel('accounting') }}</mat-chip>
+      </mat-chip-set>
+    </section>
+
+    <!-- Section 5 : Actions -->
+    <section class="pane-section pane-section--actions">
+      @if (canMarkInProgress()) {
+        <button mat-flat-button color="primary" (click)="emitMarkInProgress()">
+          <mat-icon>send</mat-icon> Virement lancé <span class="kbd">[I]</span>
+        </button>
+      }
+      @if (canMarkPaid()) {
+        <button mat-flat-button color="primary" (click)="emitMarkPaid()">
+          <mat-icon>check_circle</mat-icon> Marquer payée <span class="kbd">[V]</span>
+        </button>
+      }
+      @if (inv.rib?.status === 'missing' && (inv.status === 'ready_to_pay' || inv.status === 'payment_in_progress')) {
+        <button mat-flat-button color="warn" disabled matTooltip="RIB du contractor manquant — virement bloqué">
+          <mat-icon>block</mat-icon> RIB manquant
+        </button>
+      }
+      <button mat-stroked-button (click)="emitDownload()" [disabled]="!pdfUrl()">
+        <mat-icon>download</mat-icon> PDF <span class="kbd">[D]</span>
+      </button>
+      <button mat-stroked-button (click)="emitOpenDetail()">
+        <mat-icon>open_in_full</mat-icon> Détail <span class="kbd">[O]</span>
+      </button>
+    </section>
+
+    <!-- Section 6 : Navigation -->
+    @if (total() > 0) {
+      <section class="pane-section pane-section--nav">
+        <button mat-icon-button (click)="prev.emit()" [disabled]="currentIndex() <= 0" matTooltip="Précédente (K)">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <span class="nav-position">{{ currentIndex() + 1 }} / {{ total() }}</span>
+        <button mat-icon-button (click)="next.emit()" [disabled]="currentIndex() >= total() - 1" matTooltip="Suivante (J)">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </section>
+    }
+
+    <!-- Section 7 : PDF -->
+    <section class="pane-section pane-section--pdf">
+      @if (pdfLoading()) {
+        <div class="pdf-loading"><mat-spinner diameter="40"></mat-spinner><span>Chargement PDF…</span></div>
+      } @else if (pdfError()) {
+        <div class="pdf-error"><mat-icon>error</mat-icon><span>{{ pdfError() }}</span></div>
+      } @else if (pdfUrl()) {
+        <iframe [src]="pdfUrl()" title="PDF facture"></iframe>
+      } @else {
+        <div class="pdf-empty muted">Aucun PDF disponible</div>
+      }
+    </section>
+  } @else {
+    <div class="empty-state muted">
+      <mat-icon>receipt_long</mat-icon>
+      <p>Sélectionne une facture pour afficher l'aperçu</p>
+    </div>
+  }
+</div>

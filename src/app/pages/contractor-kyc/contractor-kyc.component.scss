@@ -1,0 +1,1028 @@
+@use '../../../styles/variables' as *;
+
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  min-height: 100dvh; // dvh tient compte de la barre d'adresse mobile
+  background-color: $t-back-grey-light;
+}
+
+.kyc-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-40 $t-gap-32;
+  width: 100%;
+}
+
+.kyc-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: $t-gap-20;
+
+  h1 {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+  }
+
+  .hero-subtitle {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: -$t-gap-10 0 0;
+    max-width: 340px;
+    line-height: 1.5;
+  }
+}
+
+// Petit bouton "?" en coin : discret pour les pressés, présent pour les
+// perplexes. Clic → modal d'aide détaillée (KycHelpDialogComponent).
+.help-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba($primary-700, 0.2);
+  background: rgba($primary-700, 0.06);
+  color: $primary-700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  padding: 0;
+
+  &:hover {
+    background: rgba($primary-700, 0.14);
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Hero icon circle (top of card)
+.hero-icon-circle {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba($primary-600, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  .hero-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: $primary-700;
+  }
+
+  &--info {
+    background: rgba($t-base-green, 0.1);
+
+    .hero-icon {
+      color: $t-base-green;
+    }
+  }
+}
+
+// Dashed circle (idle state)
+.dashed-circle-container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: $t-gap-8 0;
+
+  .dashed-circle-svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .dashed-circle-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: $t-base-orange;
+    z-index: 1;
+  }
+}
+
+// Steps preview (idle state)
+.steps-preview {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-10;
+  width: 100%;
+  max-width: 360px;
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-14;
+    padding: $t-gap-14 $t-gap-20;
+    background: $t-back-grey-high;
+    border-radius: 10px;
+    text-align: left;
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: $primary-700;
+      color: #ffffff;
+      font-size: $t-body-3;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    span:not(.step-num) {
+      font-size: $t-body-2;
+      font-weight: 500;
+      color: $t-text-black;
+    }
+  }
+}
+
+// QR code (desktop state)
+.qr-container {
+  padding: $t-gap-16;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 2px solid $t-back-grey-high;
+
+  .qr-image {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+.qr-hint {
+  font-size: $t-body-3;
+  color: $t-color-light;
+  max-width: 300px;
+  margin: 0;
+}
+
+.qr-waiting {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-10;
+  font-size: $t-body-2;
+  color: $primary-700;
+}
+
+.kyc-secondary-btn {
+  font-size: $t-body-3;
+  color: $t-color-light;
+}
+
+// Live instruction during recording
+.live-instruction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-24;
+  background: rgba($primary-700, 0.06);
+  border: 1px solid rgba($primary-700, 0.15);
+  border-radius: 10px;
+  font-size: $t-body-1;
+  font-weight: 600;
+  color: $primary-700;
+  text-align: center;
+  width: 100%;
+  max-width: 360px;
+  animation: fade-in 0.3s ease;
+
+  .live-instruction-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  // Flèche pulsante pour les rotations gauche/droite/haut/bas — aide le
+  // contractor à comprendre quel mouvement est attendu (indicateur directionnel)
+  &[data-action="turn_left"] .live-instruction-icon {
+    animation: slide-left 1s ease-in-out infinite;
+  }
+  &[data-action="turn_right"] .live-instruction-icon {
+    animation: slide-right 1s ease-in-out infinite;
+  }
+  &[data-action="look_up"] .live-instruction-icon {
+    animation: slide-up 1s ease-in-out infinite;
+  }
+  &[data-action="look_down"] .live-instruction-icon {
+    animation: slide-down 1s ease-in-out infinite;
+  }
+  &[data-action="smile"] .live-instruction-icon,
+  &[data-action="blink"] .live-instruction-icon,
+  &[data-action="open_mouth"] .live-instruction-icon {
+    animation: pulse 1s ease-in-out infinite;
+  }
+}
+
+@keyframes slide-left {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-6px); }
+}
+@keyframes slide-right {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(6px); }
+}
+@keyframes slide-up {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+@keyframes slide-down {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(6px); }
+}
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+// Terms checkbox
+// FIX-036 (mobile) : on remplace flex inline par flex-wrap propre — la
+// checkbox restait alignée correctement mais le label "J'accepte les"
+// + lien "conditions..." se coupaient en deux blocs côte à côte au
+// lieu de former une phrase fluide. Le lien terms-link est maintenant
+// inline (display:inline) et underline visible pour signaler la
+// cliquabilité (pas seulement au hover, qui n'existe pas tactile).
+.terms-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  font-size: $t-body-2;
+  color: $t-text-black;
+  line-height: 1.5;
+
+  mat-checkbox {
+    flex: 0 0 auto;
+  }
+
+  .terms-link {
+    display: inline;
+    color: $primary-700;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-size: $t-body-3;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      text-decoration: underline;
+      color: darken($primary-700, 8%);
+    }
+  }
+}
+
+// Challenge list
+.challenge-list {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+  width: 100%;
+  max-width: 320px;
+}
+
+.challenge-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-14;
+  padding: $t-gap-14 $t-gap-16;
+  background: $t-back-grey-medium;
+  border-radius: 10px;
+
+  .challenge-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: $primary-700;
+    color: #ffffff;
+    font-size: $t-body-2;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .challenge-icon {
+    color: $primary-700;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+    margin-top: 2px; // aligne avec le label (first line)
+  }
+
+  .challenge-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0; // permet au text de wrapper correctement
+  }
+
+  .challenge-label {
+    font-size: $t-body-2;
+    font-weight: 600;
+    color: $t-text-black;
+    line-height: 1.3;
+  }
+
+  .challenge-hint {
+    font-size: $t-body-3;
+    font-weight: 400;
+    color: rgba($t-text-black, 0.65);
+    line-height: 1.4;
+  }
+}
+
+// Conseils préparatoires affichés avant l'enregistrement
+// Tips ultra-condensés : une ligne de 3 pastilles icône+texte. Aucun blabla.
+// Optimisé pour un artisan qui jette un œil 1s avant de cliquer Démarrer.
+.tips-row {
+  display: flex;
+  gap: $t-gap-8;
+  width: 100%;
+  max-width: 360px;
+  justify-content: space-between;
+
+  .tip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    padding: $t-gap-8 4px;
+    background: rgba($primary-700, 0.06);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: $primary-700;
+    text-align: center;
+    line-height: 1.2;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      color: $primary-700;
+    }
+  }
+}
+
+// Recording header
+.recording-header {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-10;
+
+  .recording-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: $base-warn-500;
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+
+  .recording-label {
+    font-size: $t-body-2;
+    font-weight: 600;
+    color: $base-warn-500;
+  }
+
+  .recording-timer {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-text-black;
+    min-width: 36px;
+  }
+}
+
+// Badge challenge en cours : numero (1/2) + countdown + barre progression
+// Affiche en gros pour que le contractor sache OU il en est dans la sequence
+// sans avoir besoin de compter mentalement les secondes.
+.challenge-badge {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  background: rgba($primary-700, 0.08);
+  border: 2px solid rgba($primary-700, 0.25);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 360px;
+
+  // Surbrillance quand on passe au challenge 2 : flash violet 1x + bordure
+  // plus marquee pour que le contractor voie bien la transition.
+  &[data-challenge="2"] {
+    animation: badge-transition-flash 0.8s ease-out;
+    border-color: rgba($primary-700, 0.5);
+  }
+
+  .challenge-badge-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: $t-gap-12;
+  }
+
+  .challenge-badge-num {
+    font-size: $t-body-2;
+    font-weight: 700;
+    color: $primary-700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .challenge-badge-countdown {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: $primary-700;
+    font-variant-numeric: tabular-nums; // alignement propre sur les chiffres
+  }
+
+  .challenge-badge-progress {
+    width: 100%;
+    height: 6px;
+    background: rgba($primary-700, 0.12);
+    border-radius: 3px;
+    overflow: hidden;
+
+    .challenge-badge-progress-bar {
+      height: 100%;
+      background: $primary-700;
+      border-radius: 3px;
+      transition: width 0.3s linear;
+    }
+  }
+}
+
+@keyframes badge-transition-flash {
+  0%   { background: rgba($primary-700, 0.35); transform: scale(1.03); }
+  100% { background: rgba($primary-700, 0.08); transform: scale(1); }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+// Video container — ovale portrait (240x320) aligné sur mobile.
+// Un ovale guide le contractor à centrer son visage à la bonne distance :
+// visage rempli l'ovale = bonne distance + bonne exposition. Évite les cas
+// backlight (visage trop loin, trop cramé par fenêtre derrière) qui font
+// rater MTCNN côté serveur.
+.video-container {
+  position: relative;
+  width: 240px;
+  height: 320px;
+  margin: $t-gap-8 0;
+
+  .video-preview {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: #000;
+    // Masque ovale via clip-path (SVG ellipse équivalent) — l'image est
+    // rognée à l'ellipse sans débordement au coin, et on voit quand même
+    // la zone autour en noir (repères visuels).
+    clip-path: ellipse(50% 50% at 50% 50%);
+    // Miroir côté affichage : le contractor se voit comme dans un miroir
+    // (naturel, pas déstabilisant). Le flux enregistré est AUSSI miroiré
+    // via un canvas côté JS — ce qui garantit que ce que voit l'utilisateur
+    // correspond à ce qu'analyse MediaPipe côté backend.
+    transform: scaleX(-1);
+  }
+
+  .video-oval-border {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+    animation: pulse-oval-border 2s ease-in-out infinite;
+  }
+
+  .video-guide-text {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 4px 12px;
+    font-size: .75rem;
+    font-weight: 500;
+    color: rgba(0, 0, 0, .7);
+    background: rgba(255, 255, 255, .9);
+    border-radius: 999px;
+    white-space: nowrap;
+    z-index: 3;
+  }
+}
+
+@keyframes pulse-oval-border {
+  0%, 100% { opacity: .6; }
+  50%      { opacity: 1; }
+}
+
+// Countdown overlay : gros chiffre 3→2→1 au-dessus de la vidéo pendant que
+// le contractor se positionne dans l'ovale avant le vrai recording. Animation
+// "pop" à chaque tick (key: la valeur change → l'élément est recréé → anim rejoue).
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.countdown-number {
+  font-size: 120px;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow:
+    0 4px 20px rgba(0, 0, 0, .6),
+    0 0 40px rgba(4, 167, 119, .4);
+  animation: countdown-pop 1s ease-out;
+}
+
+@keyframes countdown-pop {
+  0% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+// Processing animation
+.processing-animation {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.processing-ring {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid rgba($t-base-green, 0.15);
+  border-top-color: $t-base-green;
+  animation: spin 1.2s linear infinite;
+}
+
+.processing-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+  color: $primary-700;
+  animation: pulse-face 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse-face {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+// Processing steps
+.processing-steps {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-10;
+  width: 100%;
+  max-width: 340px;
+  text-align: left;
+}
+
+.processing-step {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-10;
+  padding: $t-gap-10 $t-gap-14;
+  border-radius: 8px;
+  font-size: $t-body-2;
+  color: $t-color-extra-light;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &--active {
+    color: $primary-700;
+    background: rgba($primary-700, 0.04);
+
+    mat-icon {
+      color: $t-base-green;
+    }
+  }
+
+  &--pulse span {
+    animation: text-pulse 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes text-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+// CTA button
+.kyc-cta {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: $t-body-1;
+  padding: $t-gap-12 $t-gap-24;
+  gap: $t-gap-8;
+  margin-top: $t-gap-8;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Result icons
+.result-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  &--success {
+    background: rgba($t-base-green, 0.1);
+
+    mat-icon {
+      color: $t-base-green;
+    }
+  }
+
+  &--failure {
+    background: rgba($base-warn-500, 0.1);
+
+    mat-icon {
+      color: $base-warn-500;
+    }
+  }
+}
+
+// Error message
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  background: rgba($base-warn-500, 0.08);
+  color: $base-warn-500;
+  border-radius: 8px;
+  font-size: $t-body-2;
+  font-weight: 500;
+  width: 100%;
+  max-width: 320px;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .page {
+    padding: $t-gap-16;
+  }
+
+  .kyc-card {
+    padding: $t-gap-24 $t-gap-16;
+  }
+
+  .dashed-circle-container {
+    width: 160px;
+    height: 160px;
+  }
+
+  .video-container {
+    width: 200px;
+    height: 280px;
+    // .video-preview hérite du top/left/width/height de 100% — rien à
+    // surcharger ici, le clip-path ellipse suit les dimensions.
+  }
+
+  // Pendant le recording, tout doit former une colonne visuelle homogène
+  // centrée sur l'ovale vidéo (200px de large) — sinon badge 360px > vidéo
+  // 200px créent un effet "étranglement" visuel désagréable sur mobile.
+  // On aligne challenge-badge + live-instruction + recording-header sur la
+  // même largeur maximale que la vidéo + un peu de marge lisible (280px).
+  .kyc-hero {
+    gap: $t-gap-12;                        // resserre l'écart vertical
+    width: 100%;
+  }
+
+  .recording-header,
+  .challenge-badge,
+  .live-instruction {
+    max-width: 280px;                      // aligné sur l'ovale (200px) + marge
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .recording-header {
+    justify-content: center;               // centré horizontalement dans sa largeur
+  }
+
+  // Bouton "Arrêter" : même largeur que les badges pour une colonne visuelle
+  // cohérente plutôt qu'un bouton auto-width qui casse l'alignement.
+  .kyc-hero .kyc-cta {
+    max-width: 280px;
+    width: 100%;
+  }
+}
+
+// ========== VERIFIED RECAP ==========
+.verified-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111;
+  margin-top: 8px;
+  margin-bottom: 4px;
+}
+
+.verified-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px auto 16px;
+  padding: 6px 12px;
+  background: rgba(4, 167, 119, 0.08);
+  border-radius: 999px;
+  font-size: 13px;
+  color: #04A777;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.verified-info {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+  max-width: 420px;
+  margin: 0 auto 24px;
+}
+
+.verified-redo-link {
+  display: block;
+  margin: 16px auto 0;
+  padding: 6px 10px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: #888;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    color: #555;
+  }
+}
+
+/* ---------- Debug block (local / staging / KYC_MOCK_BIOMETRIC) ---------- */
+.kyc-debug {
+  margin: 16px auto 8px;
+  max-width: 720px;
+  width: 100%;
+  text-align: left;
+  background: #fff8e1;
+  border: 1px solid #f6c344;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #4a3a00;
+
+  & > summary {
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    list-style: none;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__body {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__row {
+    margin: 0;
+    line-height: 1.4;
+
+    code {
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 12px;
+    }
+  }
+
+  &__json {
+    margin: 4px 0 0;
+    padding: 10px 12px;
+    background: #2b2b2b;
+    color: #f5f5f5;
+    border-radius: 6px;
+    font-family: 'Menlo', 'Consolas', monospace;
+    font-size: 11.5px;
+    line-height: 1.45;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  &__hint {
+    margin-top: 8px;
+    font-style: italic;
+    font-size: 11.5px;
+    color: #6b5400;
+  }
+}
+
+/* ---------- User-facing failure guide (visible en prod) ---------- */
+.kyc-failure-guide {
+  margin: 18px auto 8px;
+  max-width: 560px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #e0d4d4;
+  border-left: 4px solid #d32f2f;
+  border-radius: 8px;
+  padding: 14px 18px;
+  color: #2c2c2c;
+  font-size: 14px;
+  line-height: 1.5;
+
+  &__heading {
+    margin: 0 0 8px;
+    font-weight: 600;
+    color: #b71c1c;
+  }
+
+  &__list {
+    margin: 0 0 10px;
+    padding-left: 20px;
+
+    li {
+      margin: 4px 0;
+    }
+  }
+
+  &__code {
+    margin: 8px 0 0;
+    font-size: 12px;
+    color: #6b6b6b;
+
+    code {
+      background: rgba(0, 0, 0, 0.06);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-family: 'Menlo', 'Consolas', monospace;
+      font-size: 11.5px;
+      color: #b71c1c;
+    }
+  }
+}
+
+/* ---------- Processing — warning "ne fermez pas la page" ---------- */
+.processing-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 20px auto 0;
+  max-width: 480px;
+  width: 100%;
+  background: #fff8e1;
+  border: 1px solid #f6c344;
+  border-radius: 8px;
+  padding: 12px 16px;
+  text-align: left;
+  color: #5a4400;
+
+  mat-icon {
+    flex-shrink: 0;
+    color: #b8860b;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    margin-top: 1px;
+  }
+
+  &__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13.5px;
+    line-height: 1.45;
+
+    strong {
+      color: #4a3a00;
+      font-weight: 600;
+    }
+  }
+}
+
+.kyc-next-step {
+  margin: 24px 0 12px;
+}
+
+.kyc-secondary-link {
+  margin-top: 4px;
+  color: #6b7280;
+}

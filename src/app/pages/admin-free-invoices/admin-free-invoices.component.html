@@ -1,0 +1,113 @@
+<div class="page-wrapper">
+  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+  <header class="page-header">
+    <h1>Factures libres — Administration</h1>
+    <button mat-stroked-button (click)="refresh()">
+      <mat-icon>refresh</mat-icon> Actualiser
+    </button>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-wrapper">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+    <mat-tab-group animationDuration="150ms">
+      <!-- Tab 1 : À approuver -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          À approuver
+          @if (pending().length > 0) {
+            <span class="badge">{{ pending().length }}</span>
+          }
+        </ng-template>
+
+        @if (pending().length === 0) {
+          <div class="empty">
+            <mat-icon>check_circle_outline</mat-icon>
+            <p>Aucune demande en attente d'approbation.</p>
+          </div>
+        } @else {
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Contractor</th>
+                <th>Sujet</th>
+                <th>Montant demandé</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of pending(); track r.uuid) {
+                <tr (click)="openDetail(r.uuid, 'pending')" class="clickable">
+                  <td>{{ formatDate(r.created_at) }}</td>
+                  <td>
+                    <span class="contractor-name">{{ r.contractor?.name ?? '—' }}</span>
+                    @if (r.contractor?.siren) {
+                      <span class="contractor-meta">{{ r.contractor.siren }}</span>
+                    }
+                  </td>
+                  <td>{{ r.subject }}</td>
+                  <td class="amount">{{ r.requested_amount_ttc | number:'1.2-2' }} €</td>
+                  <td class="actions-cell">
+                    <button mat-stroked-button color="primary" (click)="$event.stopPropagation(); openDetail(r.uuid, 'pending')">
+                      Examiner
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </mat-tab>
+
+      <!-- Tab 2 : Toutes -->
+      <mat-tab label="Toutes">
+        @if (all().length === 0) {
+          <div class="empty">
+            <mat-icon>inbox</mat-icon>
+            <p>Aucune demande de facture libre.</p>
+          </div>
+        } @else {
+          <table class="t">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Contractor</th>
+                <th>Sujet</th>
+                <th>Montant</th>
+                <th>Statut demande</th>
+                <th>Facture</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of all(); track r.uuid) {
+                <tr (click)="openDetail(r.uuid, 'all')" class="clickable">
+                  <td>{{ formatDate(r.created_at) }}</td>
+                  <td>{{ r.contractor?.name ?? '—' }}</td>
+                  <td>{{ r.subject }}</td>
+                  <td class="amount">
+                    {{ (r.amount_authorized_ttc ?? r.requested_amount_ttc) | number:'1.2-2' }} €
+                  </td>
+                  <td>
+                    <span class="status-chip status-{{ r.status }}">{{ statusLabel(r.status) }}</span>
+                  </td>
+                  <td>
+                    <span class="invoice-chip {{ invoiceStatusClass(r.invoice_status) }}">
+                      {{ invoiceStatusLabel(r.invoice_status) }}
+                    </span>
+                  </td>
+                  <td class="actions-cell">
+                    <button mat-button (click)="$event.stopPropagation(); openDetail(r.uuid, 'all')">Voir</button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </mat-tab>
+    </mat-tab-group>
+  }
+</div>

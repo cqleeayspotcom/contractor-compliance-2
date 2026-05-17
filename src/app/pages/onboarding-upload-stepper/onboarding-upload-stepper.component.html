@@ -1,0 +1,718 @@
+@if (currentStep(); as step) {
+  <section class="stepper">
+
+    <!-- Vidéo : présentée en dialog plein-largeur à l'entrée sur le step
+         (cf. OnboardingVideoDialogComponent + effect d'auto-open).
+         Bouton « Revoir la vidéo » placé sous le contenu du step. -->
+
+    <!-- Progression : label + chevron en tête de rangée pour que les pastilles
+         soient immédiatement lisibles comme un stepper navigable, et pas comme
+         une décoration. -->
+    <nav class="stepper__progress" aria-label="Progression de l'inscription">
+      <span class="stepper__progress-label" aria-hidden="true">
+        Progression
+        <mat-icon class="stepper__progress-arrow">arrow_forward</mat-icon>
+      </span>
+      @for (s of steps(); track s.config.type) {
+        @let locked = isStepLocked(s.index);
+        <button type="button"
+                class="stepper__dot"
+                [class.stepper__dot--done]="s.done"
+                [class.stepper__dot--active]="s.index === step.index"
+                [class.stepper__dot--rejected]="s.rejected"
+                [class.stepper__dot--expiring]="s.expiringSoon"
+                [class.stepper__dot--expired]="s.expired"
+                [class.stepper__dot--skipped]="s.skipped && !s.done"
+                [class.stepper__dot--locked]="locked"
+                [attr.aria-label]="(locked ? 'Verrouillée - ' : s.expired ? 'Expiré, à renouveler : ' : s.expiringSoon ? 'Expire bientôt, à renouveler : ' : s.done ? 'Validé : ' : 'Étape ') + (s.index + 1) + ' - ' + s.config.title"
+                [attr.aria-current]="s.index === step.index ? 'step' : null"
+                [attr.aria-disabled]="locked ? 'true' : null"
+                [attr.title]="locked ? 'Termine d’abord l’étape précédente (ou clique « Je le ferai plus tard »)' : null"
+                (click)="goTo(s.index)">
+          @if (s.expired || (s.done && s.expiringSoon)) {
+            <!-- Doc à renouveler (déjà expiré OU expire dans ≤ 30 j).
+                 Horloge orange = signal d'urgence « à mettre à jour »,
+                 distinct du ✓ vert (validé pour de bon) et du numéro
+                 (jamais commencé). -->
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+          } @else if (s.done) {
+            <mat-icon aria-hidden="true">check</mat-icon>
+          } @else if (locked) {
+            <mat-icon aria-hidden="true">lock</mat-icon>
+          } @else {
+            <span aria-hidden="true">{{ s.index + 1 }}</span>
+          }
+        </button>
+      }
+    </nav>
+
+    <!-- Bloc principal de l'étape -->
+    <article class="stepper__step">
+      <header class="stepper__step-header">
+        <span class="stepper__step-emoji" aria-hidden="true">{{ step.config.emoji }}</span>
+        <div class="stepper__step-titles">
+          <p class="stepper__step-counter">Étape {{ step.index + 1 }} sur {{ step.total }}</p>
+          <h1 class="stepper__step-title">{{ step.config.title }}</h1>
+          <p class="stepper__step-hint" [innerHTML]="step.config.hint"></p>
+        </div>
+        <!-- Bouton « Revoir la vidéo » épinglé en haut à droite du header pour
+             être visible immédiatement sans scroller jusqu'au bas du step. -->
+        <button type="button"
+                class="stepper__replay-video stepper__replay-video--inline"
+                (click)="replayVideoModal()">
+          <mat-icon aria-hidden="true">play_circle</mat-icon>
+          <span>Revoir la vidéo</span>
+        </button>
+      </header>
+
+      <!-- Étape RIB : saisie manuelle Titulaire / IBAN / BIC. Pas d'upload de
+           document. Affiche un formulaire propre + un rappel anti-fraude « tu
+           dois être titulaire ». -->
+      @if (isCurrentBankDetailsStep()) {
+        <!-- FIX-049 — Texte condensé : 2 bandeaux verbeux fusionnés en 1
+             card simple. Les 3 idées essentielles tiennent en 2 lignes :
+             "titulaire = toi" + "Tuita vire ce que tu saisis" + "relis bien
+             ton IBAN". Le détail légal (responsabilité) est reformulé en
+             une phrase. -->
+        <div class="stepper__bank-warn" role="status">
+          <mat-icon aria-hidden="true">verified_user</mat-icon>
+          <div>
+            <strong>Saisis ton RIB à toi, sans erreur.</strong>
+            <span>
+              Un IBAN faux part chez un tiers et n'est pas récupérable. Relis bien.
+            </span>
+          </div>
+        </div>
+
+        @if (step.done) {
+          <div class="stepper__verdict stepper__verdict--ok" role="status">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+            <div>
+              <strong>Coordonnées enregistrées</strong>
+              <span>Tu peux passer à la suite - modifie-les ci-dessous si besoin.</span>
+            </div>
+          </div>
+        }
+
+        <form class="stepper__bank-form"
+              (ngSubmit)="submitBankDetails()"
+              novalidate>
+          <mat-form-field appearance="outline" class="stepper__bank-field">
+            <mat-label>Titulaire du compte</mat-label>
+            <input matInput
+                   name="bankHolder"
+                   autocomplete="name"
+                   inputmode="text"
+                   [disabled]="isSavingBankDetails()"
+                   [ngModel]="bankHolder()"
+                   (ngModelChange)="bankHolder.set($event)" />
+            <mat-hint>Ex : Jean Dupont - exactement comme sur ton RIB.</mat-hint>
+            @if (bankErrors().account_holder; as msg) {
+              <mat-error>{{ msg }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="stepper__bank-field">
+            <mat-label>IBAN</mat-label>
+            <input matInput
+                   name="bankIban"
+                   autocomplete="iban"
+                   inputmode="text"
+                   spellcheck="false"
+                   [disabled]="isSavingBankDetails()"
+                   [ngModel]="bankIban()"
+                   (ngModelChange)="bankIban.set($event)" />
+            <mat-hint>27 caractères commençant par FR.</mat-hint>
+            @if (bankErrors().iban; as msg) {
+              <mat-error>{{ msg }}</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="stepper__bank-field">
+            <mat-label>BIC / SWIFT</mat-label>
+            <input matInput
+                   name="bankBic"
+                   inputmode="text"
+                   spellcheck="false"
+                   [disabled]="isSavingBankDetails()"
+                   [ngModel]="bankBic()"
+                   (ngModelChange)="bankBic.set($event)" />
+            <mat-hint>Ex : BNPAFRPP.</mat-hint>
+            @if (bankErrors().bic; as msg) {
+              <mat-error>{{ msg }}</mat-error>
+            }
+          </mat-form-field>
+
+          <button type="submit"
+                  mat-flat-button
+                  color="primary"
+                  class="stepper__bank-submit"
+                  [disabled]="!canSubmitBankDetails()">
+            @if (isSavingBankDetails()) {
+              <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+              <span>On enregistre...</span>
+            } @else {
+              <mat-icon>save</mat-icon>
+              <span>Enregistrer mes coordonnées</span>
+            }
+          </button>
+        </form>
+      }
+      <!-- Doc déjà validé ET pas en train d'expirer : on confirme. Bouton
+           « Remplacer » pour permettre une mise à jour à tout moment
+           (changement de RIB, nouveau KBIS après modification statuts, etc.)
+           — révèle la dropzone via `replaceMode`. -->
+      @else if (step.done && !currentStepIsExpiring() && !replaceMode()) {
+        <div class="stepper__verdict stepper__verdict--ok" role="status">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <div>
+            <strong>Document déjà validé</strong>
+            <span>Tu peux passer à la suite - il n'y a rien à refaire.</span>
+          </div>
+        </div>
+        <button type="button"
+                class="stepper__replace-btn"
+                (click)="toggleReplaceMode()"
+                aria-label="Remplacer ce document par une nouvelle version">
+          <mat-icon aria-hidden="true">cached</mat-icon>
+          Remplacer ce document
+        </button>
+      } @else {
+        @if (step.done && replaceMode()) {
+          <!-- Bandeau « tu remplaces ton document validé » + bouton retour -->
+          <div class="stepper__verdict stepper__verdict--info" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">cached</mat-icon>
+            <div>
+              <strong>Tu remplaces ton document validé</strong>
+              <span>Le nouveau fichier remplacera automatiquement la version actuelle. <a href="javascript:void(0)" (click)="toggleReplaceMode()">Annuler</a></span>
+            </div>
+          </div>
+        }
+        <!-- Doc validé mais qui expire bientôt : bandeau d'alerte + dropzone
+             pour uploader la version renouvelée. Pas de redirection auto :
+             l'artisan vient justement pour ça. -->
+        @if (step.done && currentStepIsExpiring()) {
+          <div class="stepper__verdict stepper__verdict--warn" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">schedule</mat-icon>
+            <div>
+              <strong>
+                @if ((currentStepDaysUntilExpiry() ?? 0) <= 0) {
+                  Ce document expire aujourd'hui
+                } @else if (currentStepDaysUntilExpiry() === 1) {
+                  Ce document expire demain
+                } @else {
+                  Ce document expire dans {{ currentStepDaysUntilExpiry() }} jours
+                }
+                @if (currentStepExpiryDateLabel(); as date) {
+                  · échéance {{ date }}
+                }
+              </strong>
+              <span>Uploade ta version à jour ci-dessous - l'ancienne sera remplacée automatiquement.</span>
+            </div>
+          </div>
+        }
+        <!-- Doc déjà expiré (status='expired') : bannière rouge dédiée
+             pour expliquer pourquoi l'artisan se retrouve sur cette étape.
+             Sans ça il voit juste la dropzone vide sans contexte. -->
+        @if (currentStepExpired() && !lastVerdict()) {
+          <div class="stepper__verdict stepper__verdict--ko" role="status" aria-live="polite">
+            <mat-icon aria-hidden="true">error_outline</mat-icon>
+            <div>
+              <strong>
+                Ce document a expiré
+                @if (currentStepExpiryDateLabel(); as date) {
+                  · le {{ date }}
+                }
+              </strong>
+              <span>Tu es bloqué tant qu'il n'est pas renouvelé. Dépose la version à jour ci-dessous.</span>
+            </div>
+          </div>
+        }
+        <!-- Verdict du dernier upload -->
+        @if (lastVerdict(); as v) {
+          <div class="stepper__verdict"
+               [class.stepper__verdict--ok]="v.type === 'verified'"
+               [class.stepper__verdict--ko]="v.type === 'rejected'"
+               role="status"
+               aria-live="polite">
+            <mat-icon aria-hidden="true">
+              {{ v.type === 'verified' ? 'check_circle' : 'error_outline' }}
+            </mat-icon>
+            <div>
+              <strong>
+                {{ v.type === 'verified' ? 'Document validé !' : 'Document refusé' }}
+              </strong>
+              <span>{{ v.message }}</span>
+            </div>
+          </div>
+        }
+        <!-- Récupération du document officiel en cours après paiement Pappers.
+             Tant qu'il est affiché, on cache la dropzone (cf. condition plus bas)
+             pour éviter que l'artisan croit qu'il doit uploader quelque chose. -->
+        @if (isPurchasePolling()) {
+          <div class="stepper__verdict stepper__verdict--info"
+               role="status"
+               aria-live="polite">
+            <mat-progress-spinner mode="indeterminate" diameter="24"></mat-progress-spinner>
+            <div>
+              <strong>Récupération de ton document officiel...</strong>
+              <span>Ton paiement est confirmé. On télécharge le PDF officiel pour toi - quelques secondes.</span>
+            </div>
+          </div>
+        }
+
+        <!-- Step CNI : sélecteur de variante avant d'afficher la zone d'upload.
+             Permet à l'artisan de choisir entre CNI (recto/verso) et passeport
+             (1 seule photo). Tant qu'aucune carte n'est cliquée, on bloque
+             l'upload — on ne veut pas envoyer un passeport avec type=cni.
+             Cf. IDENTITY_VARIANTS et selectIdentityVariant() dans le .ts. -->
+        @if (showIdentityVariantPicker()) {
+          <div class="stepper__id-picker"
+               role="radiogroup"
+               aria-label="Quelle pièce d'identité as-tu sous la main ?">
+            <p class="stepper__id-picker-question">Laquelle as-tu sous la main ?</p>
+            <p class="stepper__id-picker-tip">
+              Choisis la plus récente - une photo qui te ressemble encore aide la vérification vidéo.
+            </p>
+            <div class="stepper__id-picker-cards">
+              @for (variant of identityVariants(); track variant.type) {
+                <button type="button"
+                        class="stepper__id-card"
+                        role="radio"
+                        [attr.aria-checked]="false"
+                        [attr.data-testid]="'identity-variant-' + variant.type"
+                        (click)="selectIdentityVariant(variant)">
+                  <mat-icon class="stepper__id-card-icon" aria-hidden="true">{{ variant.matIcon }}</mat-icon>
+                  <strong class="stepper__id-card-label">{{ variant.label }}</strong>
+                  <span class="stepper__id-card-hint">{{ variant.hint }}</span>
+                </button>
+              }
+            </div>
+
+            <!-- CTA achat exposé dès le sélecteur : l'artisan qui hésite entre
+                 « INPI / KBIS / SIRENE » est exactement celui qui n'a aucun des
+                 trois sous la main — on lui propose de le récupérer officiellement.
+                 Visible AVANT le choix de variante, pas après (sinon on rate la
+                 fenêtre de conversion). -->
+            @if (isCurrentPurchasable()) {
+              <div class="stepper__alt">
+                <span class="stepper__alt-or" aria-hidden="true">ou</span>
+                <button type="button"
+                        class="stepper__buy"
+                        [attr.data-testid]="'purchase-cta-picker'"
+                        (click)="openPurchase()">
+                  <mat-icon aria-hidden="true">verified</mat-icon>
+                  <span class="stepper__buy-text">
+                    <strong>Tu ne l'as pas sous la main ?</strong>
+                    <span>On te le récupère officiellement maintenant.</span>
+                  </span>
+                  <span class="stepper__buy-price">{{ extraitInpiPriceLabel() }}</span>
+                </button>
+              </div>
+            }
+          </div>
+        } @else {
+        <!-- Bandeau « tu as choisi X » + bouton pour revenir au sélecteur.
+             Visible sur tous les steps à variantes (CNI, immatriculation) une
+             fois la carte choisie. -->
+        @if (identityVariants().length > 0 && identityVariant(); as variant) {
+          <button type="button"
+                  class="stepper__id-chosen"
+                  [disabled]="isUploading()"
+                  (click)="clearIdentityVariant()"
+                  [attr.aria-label]="'Tu as choisi : ' + variant.label + ' - cliquer pour changer'">
+            <mat-icon aria-hidden="true">{{ variant.matIcon }}</mat-icon>
+            <span class="stepper__id-chosen-text">
+              <strong>{{ variant.label }}</strong>
+              <span>Changer</span>
+            </span>
+            <mat-icon class="stepper__id-chosen-chevron" aria-hidden="true">chevron_right</mat-icon>
+          </button>
+        }
+
+        @if (currentTwoSided()) {
+          <!-- P1-5 — Bannière « CNI nue requise » : rappel anti-annotation
+               manuscrite, anti-tampon, anti-mention « pour usage X ». Sans
+               ce rappel, certains artisans biffent leur carte au feutre rouge
+               pour se sécuriser (cas BILLOTET du batch prod) — ça casse le
+               face matching KYC en aval. -->
+
+          <!-- Recto / verso : deux photos prises au téléphone, fusionnées
+               côté client en un PDF mono-fichier (cf. IdentityFileFusionService).
+               UNIQUEMENT pour les pièces d'identité où ça a un sens (CNI,
+               futurs titres de séjour) — les docs administratifs restent en
+               single-zone bit-pour-bit (voir StepConfig.twoSided). -->
+          <div class="stepper__sides" role="group" aria-label="Recto et verso de la pièce d'identité">
+
+            <!-- Capture guidée : un seul tap, on enchaîne recto puis verso
+                 automatiquement (cf. startGuidedCapture). Sur desktop, ouvre
+                 le file picker recto puis verso en cascade — même UX. -->
+            <button type="button"
+                    mat-stroked-button
+                    color="primary"
+                    class="stepper__sides-guided"
+                    [disabled]="isUploading()"
+                    (click)="startGuidedCapture()">
+              <mat-icon>photo_camera</mat-icon>
+              <span>📸 Prendre mes 2 photos</span>
+            </button>
+
+            <p class="stepper__sides-or" aria-hidden="true">ou ajoute-les manuellement</p>
+
+            <label class="stepper__side"
+                   [class.stepper__side--filled]="rectoFile()"
+                   [attr.aria-label]="'Photo du recto - ' + (rectoFile() ? 'remplacer' : 'à prendre')">
+              <input type="file"
+                     accept="image/*"
+                     capture="environment"
+                     hidden
+                     data-testid="rectoFileInput"
+                     [disabled]="isUploading()"
+                     (change)="onSlotFile('recto', $event)">
+              @if (rectoFile(); as f) {
+                <span class="stepper__side-thumb" aria-hidden="true">
+                  <mat-icon>check_circle</mat-icon>
+                </span>
+                <strong class="stepper__side-label">Recto ✓</strong>
+                <span class="stepper__side-name">{{ f.name }}</span>
+                <button type="button"
+                        class="stepper__side-clear"
+                        mat-icon-button
+                        aria-label="Retirer le recto"
+                        [disabled]="isUploading()"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); clearSlot('recto')">
+                  <mat-icon>close</mat-icon>
+                </button>
+              } @else {
+                <span class="stepper__side-thumb" aria-hidden="true">
+                  <mat-icon>photo_camera</mat-icon>
+                </span>
+                <strong class="stepper__side-label">Recto</strong>
+                <span class="stepper__side-hint">Le côté avec ta photo</span>
+              }
+            </label>
+
+            <label class="stepper__side"
+                   [class.stepper__side--filled]="versoFile()"
+                   [attr.aria-label]="'Photo du verso - ' + (versoFile() ? 'remplacer' : 'à prendre')">
+              <input type="file"
+                     accept="image/*"
+                     capture="environment"
+                     hidden
+                     data-testid="versoFileInput"
+                     [disabled]="isUploading()"
+                     (change)="onSlotFile('verso', $event)">
+              @if (versoFile(); as f) {
+                <span class="stepper__side-thumb" aria-hidden="true">
+                  <mat-icon>check_circle</mat-icon>
+                </span>
+                <strong class="stepper__side-label">Verso ✓</strong>
+                <span class="stepper__side-name">{{ f.name }}</span>
+                <button type="button"
+                        class="stepper__side-clear"
+                        mat-icon-button
+                        aria-label="Retirer le verso"
+                        [disabled]="isUploading()"
+                        (click)="$event.preventDefault(); $event.stopPropagation(); clearSlot('verso')">
+                  <mat-icon>close</mat-icon>
+                </button>
+              } @else {
+                <span class="stepper__side-thumb" aria-hidden="true">
+                  <mat-icon>photo_camera</mat-icon>
+                </span>
+                <strong class="stepper__side-label">Verso</strong>
+                <span class="stepper__side-hint">Le côté avec les chevrons &lt;&lt;&lt;</span>
+              }
+            </label>
+
+            <button type="button"
+                    mat-flat-button
+                    color="primary"
+                    class="stepper__sides-submit"
+                    [disabled]="!canSubmitTwoSided() || isUploading()"
+                    (click)="submitTwoSided()">
+              @if (isUploading()) {
+                <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+                <span>On vérifie...</span>
+              } @else {
+                <mat-icon>send</mat-icon>
+                <span>Envoyer ma pièce d'identité</span>
+              }
+            </button>
+
+            <!-- Chemin alternatif : l'artisan a déjà un fichier scanné
+                 (PDF flatbed, image complète). On bypass la fusion et on
+                 envoie le fichier original bit-pour-bit (intégrité forensique
+                 préservée — métadonnées scanner, signatures électroniques). -->
+            <label class="stepper__sides-direct"
+                   [class.stepper__sides-direct--disabled]="isUploading()">
+              <input type="file"
+                     accept=".pdf,image/*"
+                     hidden
+                     [disabled]="isUploading()"
+                     (change)="onDirectFileSelected($event)">
+              <mat-icon aria-hidden="true">attach_file</mat-icon>
+              <span class="stepper__sides-direct-text">
+                <strong>J'ai déjà un fichier complet</strong>
+                <span>PDF scanné ou image avec recto + verso</span>
+              </span>
+              <mat-icon class="stepper__sides-direct-chevron" aria-hidden="true">chevron_right</mat-icon>
+            </label>
+          </div>
+        } @else if (currentSingleShotIdentity()) {
+          <!-- Passeport : 1 seule photo (la page avec photo + MRZ). L'artisan
+               la prend au téléphone donc on ouvre la caméra arrière directement
+               (`capture="environment"`) et la photo passe par jscanify
+               (auto-crop + redressement perspective) comme la CNI. Pas de
+               recto/verso à fusionner : la validation du scanner enchaîne
+               directement sur l'upload. Chemin alternatif PDF dispo en
+               dessous (bit-pour-bit, intégrité forensique préservée). -->
+          <label class="stepper__dropzone"
+                 [class.stepper__dropzone--uploading]="isUploading()"
+                 [attr.aria-busy]="isUploading()">
+            <input type="file"
+                   accept="image/*"
+                   capture="environment"
+                   hidden
+                   [disabled]="isUploading()"
+                   (change)="onPassportFile($event)">
+            @if (isUploading()) {
+              <mat-spinner diameter="48" strokeWidth="4"></mat-spinner>
+              <p class="stepper__dropzone-title">On vérifie ton passeport...</p>
+              <p class="stepper__dropzone-hint">Quelques secondes - ne ferme pas la page.</p>
+            } @else {
+              <span class="stepper__dropzone-icon" aria-hidden="true">
+                <mat-icon>photo_camera</mat-icon>
+              </span>
+              <p class="stepper__dropzone-title">📸 Prendre la photo</p>
+              <p class="stepper__dropzone-hint">La page avec ta photo.</p>
+            }
+          </label>
+
+          <label class="stepper__sides-direct"
+                 [class.stepper__sides-direct--disabled]="isUploading()">
+            <input type="file"
+                   accept=".pdf,image/*"
+                   hidden
+                   [disabled]="isUploading()"
+                   (change)="onDirectFileSelected($event)">
+            <mat-icon aria-hidden="true">attach_file</mat-icon>
+            <span class="stepper__sides-direct-text">
+              <strong>J'ai déjà un fichier complet</strong>
+              <span>PDF scanné de la page passeport</span>
+            </span>
+            <mat-icon class="stepper__sides-direct-chevron" aria-hidden="true">chevron_right</mat-icon>
+          </label>
+        } @else {
+          <!-- Aide URSSAF : visible uniquement sur le step URSSAF. On ne peut
+               pas la récupérer pour lui (API Entreprise réservée aux acteurs
+               publics, Tuita refusée), donc on le GUIDE pas-à-pas vers son
+               espace urssaf.fr. 3 chemins selon profil — l'artisan choisit la
+               carte qui lui parle. Toujours visible (low-literacy : zéro
+               friction, pas de toggle à comprendre). -->
+          @if (step.config.type === 'urssaf') {
+            <section class="stepper__urssaf-help" aria-labelledby="urssaf-help-title">
+              <header class="stepper__urssaf-help-header">
+                <mat-icon aria-hidden="true">help_outline</mat-icon>
+                <div>
+                  <h2 id="urssaf-help-title">Tu ne l'as pas encore ?</h2>
+                  <p>On te montre où la récupérer - c'est gratuit, 2 minutes.</p>
+                </div>
+              </header>
+
+              <!-- Bloc unique pour tous les profils (auto-entrepreneur, artisan,
+                   indépendant, employeur). urssaf.fr redirige automatiquement
+                   chaque profil vers son bon espace après login — pas la peine
+                   d'éclater en 3 cartes qui prennent toute la page. -->
+              <a class="stepper__urssaf-card stepper__urssaf-card--single"
+                 href="https://www.urssaf.fr"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                <ol>
+                  <li>Connecte-toi sur <strong>urssaf.fr</strong> avec ton compte</li>
+                  <li>Va dans <strong>« Mes documents »</strong> ou <strong>« Documents &amp; Démarches »</strong></li>
+                  <li>Choisis <strong>« Attestation de vigilance »</strong></li>
+                  <li>Télécharge le PDF, reviens ici pour le déposer</li>
+                </ol>
+                <span class="stepper__urssaf-card-cta">
+                  Ouvrir mon espace URSSAF
+                  <mat-icon aria-hidden="true">open_in_new</mat-icon>
+                </span>
+              </a>
+
+              <p class="stepper__urssaf-help-foot">
+                <mat-icon aria-hidden="true">info</mat-icon>
+                <span>
+                  Si l'URSSAF ne te le donne pas tout de suite, tu reçois un
+                  email dès que le PDF est prêt. Reviens ici pour le déposer.
+                </span>
+              </p>
+            </section>
+          }
+
+          <!-- Drop zone classique pour tous les autres docs : KBIS / extrait
+               INPI / URSSAF / RC / RIB. L'original PDF est envoyé bit-pour-bit
+               au backend pour préserver l'authenticité forensique (QR codes,
+               signatures, hash provider) en cas de litige ou tentative de fraude. -->
+          <label class="stepper__dropzone"
+                 [class.stepper__dropzone--uploading]="isUploading()"
+                 (dragover)="onDragOver($event)"
+                 (drop)="onDrop($event)"
+                 [attr.aria-busy]="isUploading()">
+            <input type="file"
+                   accept=".pdf,.jpg,.jpeg,.png,.webp"
+                   hidden
+                   [disabled]="isUploading()"
+                   (change)="onFileSelected($event)">
+            @if (isUploading()) {
+              <mat-spinner diameter="48" strokeWidth="4"></mat-spinner>
+              <p class="stepper__dropzone-title">On vérifie ton document...</p>
+              <p class="stepper__dropzone-hint">Quelques secondes - ne ferme pas la page.</p>
+            } @else {
+              <span class="stepper__dropzone-icon" aria-hidden="true">
+                <mat-icon>cloud_upload</mat-icon>
+              </span>
+              <p class="stepper__dropzone-title">Déposer le document</p>
+              <p class="stepper__dropzone-hint">Clique ou glisse ton fichier ici.</p>
+            }
+          </label>
+        }
+
+        <!-- Zone alternatives : achat (si étape immatriculation) + plus tard -->
+        @if (isCurrentPurchasable()) {
+          <div class="stepper__alt">
+            <span class="stepper__alt-or" aria-hidden="true">ou</span>
+            <button type="button"
+                    class="stepper__buy"
+                    [disabled]="isUploading()"
+                    (click)="openPurchase()">
+              <mat-icon aria-hidden="true">verified</mat-icon>
+              <span class="stepper__buy-text">
+                <strong>Tu ne l'as pas sous la main ?</strong>
+                <span>On te le récupère officiellement maintenant.</span>
+              </span>
+              <span class="stepper__buy-price">{{ extraitInpiPriceLabel() }}</span>
+            </button>
+          </div>
+        }
+        }
+      }
+
+      <!-- ──────────────────────────────────────────────────────────────────
+           Bloc SECONDAIRE optionnel (ex: garantie décennale dans le step
+           assurances). Dropzone toujours visible à côté du bloc principal —
+           pas de question oui/non intermédiaire (règle UX low-literacy :
+           zéro friction entre l'artisan et l'action). Badge "Bonus" + icône
+           distincte 🏗️ pour ne JAMAIS confondre avec la RC Pro.
+           ────────────────────────────────────────────────────────────── -->
+      @if (step.config.secondary; as sec) {
+        <div class="stepper__secondary"
+             [class.stepper__secondary--done]="secondaryDone()">
+          <div class="stepper__secondary-divider" aria-hidden="true"></div>
+
+          <header class="stepper__secondary-header">
+            <span class="stepper__secondary-emoji" aria-hidden="true">🏗️</span>
+            <div class="stepper__secondary-titles">
+              <span class="stepper__secondary-badge">Bonus optionnel</span>
+              <h2 class="stepper__secondary-title">{{ sec.title }}</h2>
+              <p class="stepper__secondary-hint">{{ sec.hint }}</p>
+              <p class="stepper__secondary-badge-hint">{{ sec.badgeHint }}</p>
+            </div>
+          </header>
+
+          @if (secondaryDone()) {
+            <div class="stepper__verdict stepper__verdict--ok" role="status">
+              <mat-icon aria-hidden="true">verified</mat-icon>
+              @if (secondaryDerivedFromRc()) {
+                <div>
+                  <strong>Décennale incluse dans votre RC Pro ✓</strong>
+                  <span>Pas besoin d'upload - votre attestation couvre déjà les deux. Badge « Décennale ✓ » actif.</span>
+                </div>
+              } @else {
+                <div>
+                  <strong>Décennale ajoutée</strong>
+                </div>
+              }
+            </div>
+          } @else {
+            @if (secondaryVerdict(); as v) {
+              <div class="stepper__verdict"
+                   [class.stepper__verdict--ok]="v.type === 'verified'"
+                   [class.stepper__verdict--ko]="v.type === 'rejected'"
+                   role="status"
+                   aria-live="polite">
+                <mat-icon aria-hidden="true">
+                  {{ v.type === 'verified' ? 'check_circle' : 'error_outline' }}
+                </mat-icon>
+                <div>
+                  <strong>
+                    {{ v.type === 'verified' ? 'Décennale validée !' : 'Décennale refusée' }}
+                  </strong>
+                  <span>{{ v.message }}</span>
+                </div>
+              </div>
+            }
+
+            <!-- Dropzone toujours visible. Backend type = `assurance_decennale`,
+                 distinct de `rc`. -->
+            <label class="stepper__dropzone stepper__dropzone--secondary"
+                   [class.stepper__dropzone--uploading]="isUploadingSecondary()"
+                   (dragover)="onDragOver($event)"
+                   (drop)="onSecondaryDrop($event)"
+                   [attr.aria-busy]="isUploadingSecondary()">
+              <input type="file"
+                     accept=".pdf,.jpg,.jpeg,.png,.webp"
+                     hidden
+                     [disabled]="isUploadingSecondary()"
+                     (change)="onSecondaryFileSelected($event)">
+              @if (isUploadingSecondary()) {
+                <mat-spinner diameter="40" strokeWidth="4"></mat-spinner>
+                <p class="stepper__dropzone-title">On vérifie ta décennale...</p>
+              } @else {
+                <span class="stepper__dropzone-icon" aria-hidden="true">
+                  <mat-icon>cloud_upload</mat-icon>
+                </span>
+                <p class="stepper__dropzone-title">Déposer ta décennale</p>
+                <p class="stepper__dropzone-hint">PDF ou image. Tu peux aussi cliquer <strong>Suivant</strong> si tu n'en as pas.</p>
+              }
+            </label>
+          }
+        </div>
+      }
+    </article>
+
+    <!-- Footer navigation -->
+    <footer class="stepper__nav">
+      <button type="button"
+              mat-button
+              class="stepper__nav-btn stepper__nav-btn--back"
+              [disabled]="step.index === 0 || isUploading()"
+              (click)="previous()">
+        <mat-icon>chevron_left</mat-icon>
+        Précédent
+      </button>
+
+      <button type="button"
+              class="stepper__nav-btn stepper__nav-btn--later"
+              [disabled]="isUploading()"
+              (click)="later()">
+        Je le ferai plus tard
+      </button>
+
+      <button type="button"
+              mat-flat-button
+              color="primary"
+              class="stepper__nav-btn stepper__nav-btn--next"
+              [disabled]="isUploading()"
+              (click)="next()">
+        @if (step.index + 1 >= step.total) {
+          Terminer
+        } @else {
+          Suivant
+        }
+        <mat-icon iconPositionEnd>chevron_right</mat-icon>
+      </button>
+    </footer>
+
+  </section>
+}

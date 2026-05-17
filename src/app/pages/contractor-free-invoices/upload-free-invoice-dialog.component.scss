@@ -1,0 +1,53 @@
+@use '../../../styles/variables' as *;
+
+.summary {
+  background: $t-back-grey-high;
+  padding: $t-gap-12 $t-gap-16;
+  border-radius: $t-card-border-radius;
+  margin-bottom: $t-gap-16;
+  font-size: $t-body-2;
+  line-height: 1.6;
+}
+
+.rules {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 $t-gap-16;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-8;
+
+  li {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-10;
+    padding: $t-gap-10 $t-gap-12;
+    background: rgba($t-logo-blue, 0.04);
+    border-left: 3px solid $t-logo-blue;
+    border-radius: 4px;
+    font-size: $t-body-2;
+    line-height: 1.45;
+    color: $t-color;
+  }
+
+  mat-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+    color: $t-logo-blue;
+    margin-top: 1px;
+  }
+
+  strong {
+    font-weight: 600;
+    color: $t-color;
+  }
+}
+
+.picked {
+  font-size: $t-body-2;
+  color: $t-color;
+  margin-top: $t-gap-8;
+}

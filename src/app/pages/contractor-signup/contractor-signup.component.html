@@ -1,0 +1,184 @@
+<section class="signup-page">
+
+  <div class="signup-page__card">
+
+    <!-- ── Étape 1 : Code d'invitation ───────────────────────────────────── -->
+    @if (step() === 'code') {
+      <header class="signup-page__header">
+        <h1>Bienvenue chez Tuita</h1>
+        <p class="signup-page__lede">
+          Pour t'inscrire, tu as besoin d'un <strong>code d'invitation</strong>
+          que t'a donné Tuita.
+        </p>
+      </header>
+
+      <form class="signup-form" (submit)="$event.preventDefault(); verifyCode()">
+        <div class="signup-form__steps" aria-hidden="true">
+          <span class="signup-form__step signup-form__step--active">1. Mon code</span>
+          <span class="signup-form__step">2. Mes infos</span>
+        </div>
+
+        <div class="signup-form__code-block">
+          <label for="signup-code">Saisis ton code d'invitation</label>
+          <input id="signup-code"
+                 type="text"
+                 class="code-input"
+                 autocomplete="off"
+                 inputmode="text"
+                 maxlength="4"
+                 placeholder="A B 2 3"
+                 [value]="code()"
+                 (input)="onCodeInput($any($event.target).value)"
+                 (keydown.enter)="$event.preventDefault(); verifyCode()"
+                 aria-describedby="code-hint">
+          <p class="code-hint" id="code-hint">
+            4 caractères - lettres et chiffres mélangés.
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="signup-form__error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <button mat-flat-button color="primary" type="submit"
+                class="signup-form__submit tui-attract"
+                [class.signup-form__submit--loading]="isVerifyingCode()"
+                [disabled]="!canVerifyCode()">
+          @if (isVerifyingCode()) {
+            <span class="signup-form__submit-loading">
+              <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
+              <span>Vérification...</span>
+            </span>
+          } @else {
+            <span>Vérifier mon code</span>
+            <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          }
+        </button>
+
+        <!-- <p class="signup-form__legal">
+          Pas de code ? Demande-le à la personne Tuita ou au confrère qui
+          t'a parlé de la plateforme.
+        </p> -->
+
+        <a routerLink="/login" class="signup-form__login-link">
+          J'ai déjà un compte
+        </a>
+      </form>
+    }
+
+    <!-- ── Étape 2 : Téléphone + Email ──────────────────────────────────── -->
+    @if (step() === 'identity') {
+      <header class="signup-page__header">
+        <h1>Ton numéro et ton email, c'est parti</h1>
+        <div class="code-confirmed">
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+          <span>Ton code <strong>{{ code() }}</strong> est valide</span>
+          <button type="button" class="code-confirmed__change" (click)="backToCode()">
+            Modifier
+          </button>
+        </div>
+      </header>
+
+      <form class="signup-form" (submit)="$event.preventDefault(); submitIdentity()">
+        <div class="signup-form__steps" aria-hidden="true">
+          <span class="signup-form__step signup-form__step--done">1. Mon code ✓</span>
+          <span class="signup-form__step signup-form__step--active">2. Mes coordonnées</span>
+        </div>
+
+        <p class="signup-form__intro">
+          Ton numéro de téléphone et ton adresse email - pour créer ton compte
+          et te prévenir quand on te paie. Ton identité et celle de ton
+          entreprise seront récupérées automatiquement quand tu déposeras
+          tes documents.
+        </p>
+
+        <mat-form-field appearance="outline" class="signup-form__full">
+          <mat-label>Ton numéro de téléphone</mat-label>
+          <input matInput
+                 type="tel"
+                 [value]="phoneRaw()"
+                 (input)="onPhoneInput($any($event.target).value)"
+                 placeholder="06 12 34 56 78"
+                 autocomplete="tel"
+                 inputmode="tel">
+          @if (phoneRaw() && isPhoneValid()) {
+            <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          }
+          @if (!phoneRaw() || !isPhoneValid()) {
+            <mat-hint>Ex. 06 12 34 56 78</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="signup-form__full">
+          <mat-label>Ton adresse email</mat-label>
+          <input matInput
+                 type="email"
+                 [value]="email()"
+                 (input)="onEmailInput($any($event.target).value)"
+                 placeholder="jean.dupont@exemple.fr"
+                 autocomplete="email"
+                 inputmode="email">
+          @if (email() && isEmailValid()) {
+            <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          }
+          @if (!email() || !isEmailValid()) {
+            <mat-hint>Pour te prévenir quand on te paie et quand un document expire</mat-hint>
+          }
+        </mat-form-field>
+
+        @if (errorMessage()) {
+          <div class="signup-form__error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <button mat-flat-button color="primary" type="submit"
+                class="signup-form__submit tui-attract"
+                [class.signup-form__submit--loading]="isSubmittingSignup()"
+                [disabled]="!canSubmitIdentity()">
+          @if (isSubmittingSignup()) {
+            <span class="signup-form__submit-loading">
+              <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
+              <span>Création...</span>
+            </span>
+          } @else {
+            <mat-icon>arrow_forward</mat-icon>
+            Créer mon compte
+          }
+        </button>
+
+        <p class="signup-form__legal">
+          Tes nom, prénom, SIREN et raison sociale seront extraits de ta
+          pièce d'identité et de ton extrait d'immatriculation.
+        </p>
+      </form>
+    }
+
+    <!-- ── Étape 3 : Succès ───────────────────────────────────────────────── -->
+    @if (step() === 'success') {
+      <header class="signup-page__header">
+        <div class="success-icon" aria-hidden="true">
+          <mat-icon>celebration</mat-icon>
+        </div>
+        <h1>C'est bon, bienvenue !</h1>
+        <p>
+          Ton compte est créé. Tu peux maintenant déposer tes documents et
+          finaliser ton dossier.
+        </p>
+      </header>
+
+      <button mat-flat-button color="primary" type="button"
+              class="success-cta tui-attract"
+              (click)="goToDashboard()">
+        <mat-icon>arrow_forward</mat-icon>
+        Continuer vers mon espace
+      </button>
+    }
+
+  </div>
+
+</section>

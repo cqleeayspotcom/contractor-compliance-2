@@ -1,0 +1,1096 @@
+@use '../../../styles/variables' as *;
+
+// ---------------------------------------------------------------------------
+// Auth gate
+// ---------------------------------------------------------------------------
+
+.cadmin__auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: $t-back-grey-light;
+  padding: $t-gap-24;
+}
+
+.cadmin__auth-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-48;
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+
+  h1 {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: $t-gap-16 0 $t-gap-8;
+  }
+
+  p {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: 0 0 $t-gap-24;
+  }
+}
+
+.cadmin__auth-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: $t-logo-blue;
+}
+
+.cadmin__auth-error {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  background: rgba($base-warn-500, 0.08);
+  border-radius: 8px;
+  color: $base-warn-500;
+  font-size: $t-body-2;
+  margin-bottom: $t-gap-16;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+.cadmin__auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+}
+
+.cadmin__auth-input {
+  width: 100%;
+}
+
+.cadmin__auth-btn {
+  background: linear-gradient(135deg, $t-logo-blue, #0a4a6e) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  border-radius: 8px;
+  padding: $t-gap-12 $t-gap-24;
+  font-size: $t-body-1;
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard layout
+// ---------------------------------------------------------------------------
+
+.cadmin {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: $t-gap-24 $t-gap-24 $t-gap-64;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-32;
+  min-height: 100vh;
+  background: $t-back-grey-light;
+  position: relative;
+}
+
+// ---------------------------------------------------------------------------
+// Header
+// ---------------------------------------------------------------------------
+
+.cadmin__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: $t-gap-16;
+}
+
+.cadmin__header-left {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-12;
+
+  h1 {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+  }
+
+  p {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: 0;
+  }
+}
+
+.cadmin__header-icon {
+  font-size: 36px;
+  width: 36px;
+  height: 36px;
+  color: $t-logo-blue;
+}
+
+.cadmin__header-actions {
+  display: flex;
+  gap: $t-gap-8;
+
+  button {
+    border-radius: 8px;
+    font-weight: 600;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Quick nav
+// ---------------------------------------------------------------------------
+
+.cadmin__quicknav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $t-gap-8;
+  padding: $t-gap-12;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.cadmin__quicknav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: $t-gap-6;
+  padding: $t-gap-8 $t-gap-14;
+  border-radius: 8px;
+  text-decoration: none;
+  color: $t-text-black;
+  font-size: $t-body-2;
+  font-weight: 600;
+  background: $t-back-grey-medium;
+  transition: background 0.15s, color 0.15s;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: $t-logo-blue;
+  }
+
+  &:hover {
+    background: rgba($t-base-green, 0.10);
+    color: $t-base-green;
+
+    mat-icon { color: $t-base-green; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sections
+// ---------------------------------------------------------------------------
+
+.cadmin__section {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+}
+
+.cadmin__section-title {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  font-size: $t-headline-6;
+  font-weight: 700;
+  color: $t-text-black;
+  margin: 0;
+
+  mat-icon {
+    color: $t-logo-blue;
+  }
+
+  &--alert mat-icon {
+    color: $base-warn-500;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Productivity KPI tiles (top of dashboard)
+// ---------------------------------------------------------------------------
+
+.prod-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $t-gap-16;
+}
+
+.prod-tile {
+  appearance: none;
+  border: none;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-6;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-top: 4px solid $t-logo-blue;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+  &:not(.prod-tile--neutral):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-3;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    color: $t-color-light;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__count {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    color: $t-text-black;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__amount {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-logo-blue;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__sub {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 500;
+  }
+
+  &--green {
+    border-top-color: $t-base-green;
+    .prod-tile__head mat-icon { color: $t-base-green; }
+    .prod-tile__amount { color: $t-base-green; }
+  }
+
+  &--orange {
+    border-top-color: $t-base-orange;
+    .prod-tile__head mat-icon { color: $t-base-orange; }
+    .prod-tile__amount { color: $t-base-orange; }
+  }
+
+  &--blue {
+    border-top-color: $t-logo-blue;
+    .prod-tile__head mat-icon { color: $t-logo-blue; }
+  }
+
+  &--neutral {
+    cursor: default;
+    background: $t-back-grey-medium;
+    border-top-color: #cbd5e1;
+    .prod-tile__head mat-icon { color: $t-base-green; }
+    .prod-tile__amount { color: $t-base-green; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Alert cards (red/orange — only when count > 0)
+// ---------------------------------------------------------------------------
+
+.alert-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: $t-gap-12;
+}
+
+.alert-card {
+  appearance: none;
+  border: none;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: $t-gap-12;
+  padding: $t-gap-14 $t-gap-16;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: transform 0.12s ease;
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  &__count {
+    font-size: 22px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  &__label {
+    flex: 1;
+    font-size: $t-body-3;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &--red {
+    background: rgba($base-warn-500, 0.08);
+    border-left: 4px solid $base-warn-500;
+    color: $base-warn-500;
+    mat-icon, .alert-card__count { color: $base-warn-500; }
+    .alert-card__label { color: #7f1d1d; }
+  }
+
+  &--orange {
+    background: rgba($t-base-orange, 0.08);
+    border-left: 4px solid $t-base-orange;
+    color: $t-base-orange;
+    mat-icon, .alert-card__count { color: $t-base-orange; }
+    .alert-card__label { color: #7c2d12; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline horizontal flow
+// ---------------------------------------------------------------------------
+
+.pipeline-row {
+  display: flex;
+  align-items: stretch;
+  gap: $t-gap-8;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: $t-gap-20;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  overflow-x: auto;
+}
+
+.pipe-step {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: $t-gap-12;
+  border-radius: 10px;
+  background: $t-back-grey-medium;
+  border-top: 3px solid $t-logo-blue;
+  text-align: center;
+
+  &__count {
+    font-size: 28px;
+    font-weight: 800;
+    color: $t-text-black;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__label {
+    font-size: $t-body-2;
+    font-weight: 700;
+    color: $t-text-black;
+  }
+
+  &__sub {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--green {
+    border-top-color: $t-base-green;
+    background: rgba($t-base-green, 0.06);
+    .pipe-step__count { color: $t-base-green; }
+  }
+
+  &--blue {
+    border-top-color: $t-logo-blue;
+    background: rgba($t-logo-blue, 0.06);
+    .pipe-step__count { color: $t-logo-blue; }
+  }
+}
+
+.pipe-arrow {
+  align-self: center;
+  color: #cbd5e1;
+}
+
+// ---------------------------------------------------------------------------
+// Infrastructure collapse toggle
+// ---------------------------------------------------------------------------
+
+.cadmin__collapse-toggle {
+  appearance: none;
+  border: 1px solid $t-outline-color;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: $t-gap-12 $t-gap-16;
+  display: flex;
+  align-items: center;
+  gap: $t-gap-10;
+  width: 100%;
+  cursor: pointer;
+  font-size: $t-body-2;
+  font-weight: 600;
+  color: $t-text-black;
+  font-family: inherit;
+  transition: background 0.15s;
+
+  mat-icon {
+    color: $t-logo-blue;
+  }
+
+  &:hover {
+    background: $t-back-grey-medium;
+  }
+}
+
+.cadmin__collapse-hint {
+  margin-left: auto;
+  font-size: $t-body-3;
+  color: $t-color-light;
+  font-weight: 500;
+}
+
+// ---------------------------------------------------------------------------
+// Shared card
+// ---------------------------------------------------------------------------
+
+.cadmin__card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-24;
+
+  &--mt {
+    margin-top: $t-gap-16;
+  }
+}
+
+.cadmin__card-title {
+  font-size: $t-body-1;
+  font-weight: 700;
+  color: $t-text-black;
+  margin: 0 0 $t-gap-16;
+}
+
+// ---------------------------------------------------------------------------
+// Empty state
+// ---------------------------------------------------------------------------
+
+.cadmin__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-32;
+  color: $t-color-light;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+
+  span {
+    font-size: $t-body-2;
+  }
+
+  &--inline {
+    padding: $t-gap-24;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Loading bar
+// ---------------------------------------------------------------------------
+
+.cadmin__loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
+
+// ---------------------------------------------------------------------------
+// 1. Health grid
+// ---------------------------------------------------------------------------
+
+.cadmin__health-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $t-gap-16;
+}
+
+.health-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+  }
+
+  &__icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: $t-logo-blue;
+  }
+
+  &__name {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-text-black;
+  }
+
+  &__body {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+  }
+
+  &__dot {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &__status {
+    font-size: $t-body-2;
+    font-weight: 600;
+  }
+
+  &__latency {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Queue bars
+// ---------------------------------------------------------------------------
+
+.queue-bars {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+}
+
+.queue-bar {
+  &__label {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+    margin-bottom: $t-gap-6;
+    font-size: $t-body-2;
+    color: $t-text-black;
+
+    strong {
+      margin-left: auto;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+    &--pending { background: $t-base-green; }
+    &--processing { background: $t-base-orange; }
+    &--failed { background: $base-warn-500; }
+  }
+
+  &__progress {
+    border-radius: 6px;
+    height: 8px;
+
+    &--pending {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        border-color: $t-base-green;
+      }
+    }
+
+    &--processing {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        border-color: $t-base-orange;
+      }
+    }
+
+    &--failed {
+      ::ng-deep .mdc-linear-progress__bar-inner {
+        border-color: $base-warn-500;
+      }
+    }
+  }
+}
+
+.queue-actions {
+  margin-top: $t-gap-20;
+  display: flex;
+  justify-content: flex-end;
+
+  &__retry {
+    background: $base-warn-500 !important;
+    color: #ffffff !important;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3. Webhooks
+// ---------------------------------------------------------------------------
+
+.webhook-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $t-gap-8;
+  margin-bottom: $t-gap-16;
+
+  &__chip {
+    border-radius: 20px !important;
+    font-size: $t-body-3;
+    font-weight: 600;
+    min-height: 32px;
+
+    &--active {
+      background: $t-logo-blue !important;
+      color: #ffffff !important;
+      border-color: $t-logo-blue !important;
+    }
+  }
+}
+
+.webhook-table-wrap {
+  overflow-x: auto;
+  margin: 0 (-$t-gap-24);
+  padding: 0 $t-gap-24;
+}
+
+.webhook-table {
+  width: 100%;
+
+  th.mat-mdc-header-cell {
+    font-weight: 700;
+    color: $t-text-black;
+    font-size: $t-body-3;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  td.mat-mdc-cell {
+    font-size: $t-body-2;
+    color: $t-color;
+  }
+}
+
+.webhook-badge {
+  display: inline-block;
+  padding: $t-gap-2 $t-gap-10;
+  border-radius: 12px;
+  color: #ffffff;
+  font-size: $t-body-3;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+// ---------------------------------------------------------------------------
+// 4. Circuit breakers
+// ---------------------------------------------------------------------------
+
+.cadmin__circuits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: $t-gap-16;
+}
+
+.circuit-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-10;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+
+  &--open {
+    border-color: rgba($base-warn-500, 0.3);
+    background: rgba($base-warn-500, 0.02);
+  }
+
+  &--half {
+    border-color: rgba($t-base-orange, 0.3);
+    background: rgba($t-base-orange, 0.02);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+
+    mat-icon {
+      color: $t-logo-blue;
+    }
+  }
+
+  &__name {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-text-black;
+    text-transform: capitalize;
+  }
+
+  &__status {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+  }
+
+  &__dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  &__state-label {
+    font-size: $t-body-2;
+    font-weight: 700;
+  }
+
+  &__info {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  &__failures {
+    font-size: $t-body-3;
+    color: $base-warn-500;
+    font-weight: 600;
+  }
+
+  &__btn {
+    margin-top: $t-gap-4;
+    border-radius: 8px;
+    font-size: $t-body-3;
+    font-weight: 600;
+    color: $base-warn-500;
+    border-color: $base-warn-500;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 5. Compliance stats
+// ---------------------------------------------------------------------------
+
+.cadmin__kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $t-gap-16;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $t-gap-8;
+  text-align: center;
+
+  &__icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: $t-logo-blue;
+  }
+
+  &--green &__icon {
+    color: $t-base-green;
+  }
+
+  &__value {
+    font-size: $t-headline-4;
+    font-weight: 800;
+    color: $t-text-black;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &--green &__value {
+    color: $t-base-green;
+  }
+
+  &__label {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 600;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// State bars (account state breakdown)
+// ---------------------------------------------------------------------------
+
+.state-bars {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-14;
+}
+
+.state-bar {
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $t-gap-4;
+  }
+
+  &__label {
+    font-size: $t-body-2;
+    color: $t-text-black;
+    font-weight: 600;
+  }
+
+  &__value {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__track {
+    height: 8px;
+    background: $t-back-grey-high;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    min-width: 2px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Responsive
+// ---------------------------------------------------------------------------
+// 6. Stuck invoices widget (top of dashboard)
+// ---------------------------------------------------------------------------
+
+.cadmin__stuck-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $t-gap-16;
+}
+
+.stuck-badge {
+  appearance: none;
+  border: none;
+  background: #ffffff;
+  border-left: 4px solid #d1d5db;
+  border-radius: 12px;
+  padding: $t-gap-16 $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: $t-gap-4;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+  }
+
+  &__count {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0a3d62;
+    line-height: 1;
+
+    small {
+      font-size: 16px;
+      font-weight: 500;
+      color: #94a3b8;
+      margin-left: 4px;
+    }
+  }
+
+  &__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+  }
+
+  &--red {
+    border-left-color: #dc2626;
+    .stuck-badge__count { color: #dc2626; }
+  }
+
+  &--orange {
+    border-left-color: #f59e0b;
+    .stuck-badge__count { color: #d97706; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 7. Dead-letter queue card (above webhook table)
+// ---------------------------------------------------------------------------
+
+.cadmin__dlq-card {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  padding: $t-gap-20 $t-gap-24;
+  margin-bottom: $t-gap-20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $t-gap-20;
+  flex-wrap: wrap;
+}
+
+.cadmin__dlq-text {
+  flex: 1;
+  min-width: 220px;
+}
+
+.cadmin__dlq-title {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #991b1b;
+
+  mat-icon {
+    color: #dc2626;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.cadmin__dlq-desc {
+  margin: 0;
+  font-size: 13px;
+  color: #7f1d1d;
+}
+
+.cadmin__dlq-btn {
+  flex-shrink: 0;
+}
+
+// ---------------------------------------------------------------------------
+
+@media (max-width: 900px) {
+  .cadmin__health-grid,
+  .cadmin__kpi-grid,
+  .cadmin__stuck-grid,
+  .prod-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .pipeline-row {
+    flex-wrap: wrap;
+  }
+
+  .pipe-arrow { display: none; }
+}
+
+@media (max-width: 600px) {
+  .cadmin {
+    padding: $t-gap-16 $t-gap-16 $t-gap-48;
+    gap: $t-gap-24;
+  }
+
+  .cadmin__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cadmin__header-actions {
+    width: 100%;
+
+    button {
+      flex: 1;
+    }
+  }
+
+  .cadmin__health-grid,
+  .cadmin__kpi-grid,
+  .cadmin__stuck-grid,
+  .prod-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cadmin__dlq-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cadmin__circuits-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cadmin__card {
+    padding: $t-gap-16;
+  }
+
+  .cadmin__auth-card {
+    padding: $t-gap-24;
+  }
+
+  .webhook-table-wrap {
+    margin: 0 (-$t-gap-16);
+    padding: 0 $t-gap-16;
+  }
+}

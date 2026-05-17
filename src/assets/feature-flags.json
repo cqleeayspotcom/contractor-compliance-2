@@ -1,0 +1,4 @@
+{
+  "_doc": "Feature flags runtime — overrident environment.ts au boot. Modifiable à chaud sans rebuild (kill-switch prod). Voir FEATURE-FLAG.md.",
+  "contractorComplianceEnabled": true
+}

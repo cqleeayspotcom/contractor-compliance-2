@@ -1,0 +1,26 @@
+<div class="cmc">
+  <div class="cmc__header">
+    <strong>{{ fullName }}</strong>
+    <span class="cmc__plan" [class.cmc__plan--pro]="contractor.plan === 'pro'">{{ contractor.plan }}</span>
+  </div>
+  <div class="cmc__row">
+    <mat-icon>business</mat-icon><span>{{ contractor.company_name || '—' }} · SIREN {{ contractor.siren || '—' }}</span>
+  </div>
+  <div class="cmc__row">
+    <mat-icon>phone</mat-icon><span>{{ (contractor.phone | phoneDisplay) || '—' }}</span>
+  </div>
+  <div class="cmc__badges">
+    <span class="badge" [class.badge--ok]="contractor.kyc_status === 'approved'"
+                       [class.badge--ko]="contractor.kyc_status !== 'approved'">
+      KYC {{ contractor.kyc_status === 'approved' ? '✓' : '✗' }}
+    </span>
+    <span class="badge">Compliance {{ contractor.compliance_score }}%</span>
+    <span class="badge">Docs {{ contractor.documents_verified }}/{{ contractor.documents_required }}</span>
+    <span class="badge" [class.badge--ok]="contractor.has_iban" [class.badge--ko]="!contractor.has_iban">
+      IBAN {{ contractor.has_iban ? '✓' : '✗' }}
+    </span>
+  </div>
+  <button mat-stroked-button (click)="openProfile.emit(contractor.uuid)" class="cmc__cta">
+    <mat-icon>person</mat-icon> Fiche complète
+  </button>
+</div>

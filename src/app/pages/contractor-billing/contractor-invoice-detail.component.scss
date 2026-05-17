@@ -1,0 +1,365 @@
+@use '../../../styles/variables' as *;
+
+.detail-loading {
+  display: flex;
+  justify-content: center;
+  padding: $t-gap-48;
+}
+
+.detail-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-20;
+}
+
+.back-btn {
+  align-self: flex-start;
+  color: $t-color-light;
+  font-size: $t-body-2;
+  font-weight: 500;
+  gap: $t-gap-6;
+  border-radius: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-14;
+
+  &__icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: $primary-700;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+
+  &__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  h1 {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+    font-family: monospace;
+  }
+
+  &__source {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $t-gap-4;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: $t-body-3;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.badge--green { background: rgba($base-green-600, 0.1); color: $base-green-800; }
+.badge--orange { background: rgba($base-orange-900, 0.08); color: $base-orange-900; }
+.badge--red { background: rgba($base-warn-500, 0.1); color: $base-warn-500; }
+.badge--grey { background: $t-back-grey-high; color: $t-color-light; }
+
+.amount-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-20;
+
+  &__main {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  &__label {
+    font-size: $t-body-2;
+    color: $t-color-light;
+  }
+
+  &__value {
+    font-size: $t-headline-4;
+    font-weight: 700;
+    color: $t-text-black;
+  }
+
+  &__detail {
+    display: flex;
+    justify-content: flex-end;
+    gap: $t-gap-16;
+    margin-top: $t-gap-8;
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+}
+
+.info-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+
+    > mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      color: $primary-700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    > div {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  &__label {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    margin-bottom: 2px;
+  }
+
+  &__value {
+    font-size: $t-body-1;
+    color: $t-text-black;
+    font-weight: 500;
+  }
+}
+
+.mission-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-20;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+
+  &:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); }
+
+  h2 {
+    font-size: $t-body-3;
+    font-weight: 600;
+    color: $t-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 $t-gap-10;
+  }
+
+  &__content {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+
+    > mat-icon:first-child {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      color: $primary-700;
+      flex-shrink: 0;
+    }
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__detail {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  &__chevron {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: $t-color-light;
+    flex-shrink: 0;
+  }
+}
+
+.detail-actions {
+  display: flex;
+  gap: $t-gap-12;
+
+  button {
+    border-radius: 8px;
+    font-weight: 600;
+    gap: $t-gap-8;
+  }
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-10 $t-gap-14;
+  background: rgba($base-warn-500, 0.08);
+  color: $base-warn-500;
+  border-radius: 8px;
+  font-size: $t-body-2;
+  font-weight: 500;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $t-gap-48;
+  color: $t-color-extra-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: $t-gap-12;
+  }
+
+  p {
+    margin: 0;
+    font-size: $t-body-1;
+    color: $t-text-black;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Bloc rejet facture — affichage prominent + orienté action.
+// La copy user-friendly (titre, desc, label action) vient de
+// invoice-rejection-messages.ts selon `rejection_reason` backend.
+// Exemple critique : `invoice_too_many_pages` affiche le nombre de pages
+// réel du PDF + rappel "max 5 pages".
+// ─────────────────────────────────────────────────────────────────────────
+.rejection-block {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+  padding: $t-gap-16 $t-gap-20;
+  margin: $t-gap-16 0;
+  background: #fff4f4;
+  border-left: 4px solid #d32f2f;
+  border-radius: 8px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+  }
+
+  &__icon {
+    color: #d32f2f;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $t-subtitle-1;
+    color: #a01010;
+    font-weight: 600;
+  }
+
+  &__desc {
+    margin: 0;
+    font-size: $t-body-2;
+    color: $t-text-black;
+    line-height: 1.5;
+  }
+
+  &__details {
+    font-size: $t-body-2;
+    color: $t-text-black;
+
+    strong {
+      display: block;
+      margin-bottom: $t-gap-4;
+      color: #a01010;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: $t-gap-20;
+    }
+
+    li + li {
+      margin-top: $t-gap-4;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+    margin: 0;
+    padding: $t-gap-8 $t-gap-12;
+    background: rgba(#d32f2f, 0.08);
+    border-radius: 6px;
+    font-size: $t-caption;
+    color: $t-text-black;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    strong {
+      color: #a01010;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .detail-page { padding: $t-gap-16; }
+  .amount-card__main { flex-direction: column; gap: $t-gap-4; }
+  .detail-actions { flex-direction: column; }
+  .rejection-block { padding: $t-gap-12; }
+}

@@ -1,0 +1,173 @@
+<div class="page">
+
+  <!-- ── Chargement ─────────────────────────────────── -->
+  @if (step() === 'loading') {
+    <div class="center-card">
+      <mat-spinner diameter="48" />
+      <p>Vérification du lien...</p>
+    </div>
+  }
+
+  <!-- ── Écran d'introduction ────────────────────────── -->
+  @if (step() === 'intro') {
+    <div class="center-card intro-card">
+      <img src="/assets/tuita-logo.svg" alt="Tuita" class="intro-logo" />
+      <h2>Vérification d'identité</h2>
+      <p class="intro-subtitle">Pour valider votre identité, nous allons vous demander d'effectuer 2 mouvements face à la caméra.</p>
+
+      <div class="intro-steps">
+        <div class="intro-step">
+          <div class="intro-step-number">1</div>
+          <div class="intro-step-content">
+            <strong>{{ currentLabel() }}</strong>
+            <span>Suivez l'instruction pendant 4 secondes</span>
+          </div>
+        </div>
+        <div class="intro-step">
+          <div class="intro-step-number">2</div>
+          <div class="intro-step-content">
+            <strong>Second mouvement</strong>
+            <span>Une nouvelle instruction sera affichée</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="intro-tips">
+        <div class="intro-tip">
+          <mat-icon>light_mode</mat-icon>
+          <span>Bon éclairage</span>
+        </div>
+        <div class="intro-tip">
+          <mat-icon>face</mat-icon>
+          <span>Visage bien visible</span>
+        </div>
+        <div class="intro-tip">
+          <mat-icon>stay_current_portrait</mat-icon>
+          <span>Tenez le téléphone stable</span>
+        </div>
+      </div>
+
+
+      <button mat-flat-button class="cta-btn intro-cta" (click)="startVerification()">
+        <mat-icon>videocam</mat-icon>
+        Commencer la vérification
+      </button>
+    </div>
+  }
+
+  <!-- ── Caméra active (tous les steps avec vidéo) ─── -->
+  @if (isCameraStep()) {
+    <div class="camera-page">
+
+      <video #videoEl autoplay muted playsinline class="camera"></video>
+
+      <!-- Cadre ovale de guidage visage -->
+      <div class="face-guide">
+        <div class="face-oval"></div>
+        @if (!isRecordingStep() && !isCountdownStep()) {
+          <p class="face-guide-text">Placez votre visage dans l'ovale</p>
+        }
+      </div>
+
+      <!-- Overlay haut : logo + pill challenge -->
+      <div class="overlay-top">
+        <img src="/assets/tuita-logo.svg" alt="Tuita" class="logo" />
+
+        <!-- Indicateur étape -->
+        <div class="step-dots">
+          <span class="dot" [class.active]="isChallenge1Step()"></span>
+          <span class="dot" [class.active]="isChallenge2Step()"></span>
+        </div>
+
+        <!-- Transition entre 2 challenges -->
+        @if (step() === 'transition') {
+          <div class="transition-pill">
+            <mat-icon>check_circle</mat-icon>
+            <span>Parfait ! Prochain mouvement...</span>
+          </div>
+        } @else {
+          <div class="challenge-pill"
+               [class.recording]="isRecordingStep()"
+               [class.countdown]="isCountdownStep()"
+               [attr.data-action]="currentAction()">
+            <mat-icon class="challenge-pill-icon">{{ currentIcon() }}</mat-icon>
+            <span class="challenge-pill-label">{{ currentLabel() }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Countdown 3-2-1 -->
+      @if (isCountdownStep()) {
+        <div class="countdown-overlay">
+          <div class="countdown-number">{{ countdown() }}</div>
+        </div>
+      }
+
+      <!-- Badge REC -->
+      @if (isRecordingStep()) {
+        <div class="rec-badge">
+          <span class="dot-rec"></span>
+          {{ recordingSecs() }}s / 4s
+        </div>
+      }
+
+      <!-- Overlay bas -->
+      <div class="overlay-bottom">
+        @if (step() === 'challenge_1' || step() === 'challenge_2') {
+          @if (currentHint()) {
+            <p class="challenge-hint-live">{{ currentHint() }}</p>
+          }
+          <p class="hint">Regardez la caméra et préparez-vous</p>
+          <button mat-flat-button class="cta-btn" (click)="startCountdown()">
+            <mat-icon>fiber_manual_record</mat-icon>
+            Je suis prêt - Enregistrer
+          </button>
+        }
+        @if (isCountdownStep()) {
+          <p class="hint hint-countdown">Préparez-vous...</p>
+        }
+        @if (isRecordingStep()) {
+          <button mat-flat-button class="cta-btn cta-stop" (click)="stopCurrentRecording()">
+            <mat-icon>stop</mat-icon>
+            Terminer
+          </button>
+        }
+        @if (step() === 'transition') {
+          <!-- pas de bouton — automatique -->
+        }
+      </div>
+
+    </div>
+  }
+
+  <!-- ── Upload ──────────────────────────────────────── -->
+  @if (step() === 'uploading') {
+    <div class="center-card">
+      <mat-spinner diameter="48" />
+      <p>Envoi en cours...</p>
+      <p class="small">Ne fermez pas cette page.</p>
+    </div>
+  }
+
+  <!-- ── Succès ──────────────────────────────────────── -->
+  @if (step() === 'success') {
+    <div class="center-card success">
+      <mat-icon class="big-icon">check_circle</mat-icon>
+      <h2>Vidéo reçue !</h2>
+      <p>Votre vérification est en cours d'analyse.</p>
+      <p class="small">Vous pouvez fermer cette page.</p>
+    </div>
+  }
+
+  <!-- ── Erreur ──────────────────────────────────────── -->
+  @if (step() === 'error') {
+    <div class="center-card error">
+      <mat-icon class="big-icon">error_outline</mat-icon>
+      <p>{{ errorMsg() }}</p>
+      @if (canRetry()) {
+        <button mat-flat-button (click)="retry()">Réessayer</button>
+      }
+    </div>
+  }
+
+</div>

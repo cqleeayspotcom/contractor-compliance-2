@@ -1,0 +1,247 @@
+@use '../../../../styles/variables' as *;
+
+:host {
+  display: block;
+}
+
+.ccs {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+  padding: $t-gap-12;
+  background: $t-back-grey-light;
+  border: 1px solid rgba($t-text-black, 0.08);
+  border-radius: $t-card-border-radius;
+
+  &--loading,
+  &--error {
+    flex-direction: row;
+    align-items: center;
+    gap: $t-gap-12;
+    color: $t-color-light;
+  }
+
+  &--error {
+    color: $t-base-orange;
+    background: rgba($t-base-orange, 0.06);
+    border-color: rgba($t-base-orange, 0.2);
+
+    mat-icon {
+      color: $t-base-orange;
+    }
+  }
+
+  // Bandeau de risque — change le ton de la card selon riskLevel
+  &[data-risk='ok'] {
+    border-left: 4px solid $t-base-green;
+  }
+  &[data-risk='warning'] {
+    border-left: 4px solid #FFA000;
+  }
+  &[data-risk='danger'] {
+    border-left: 4px solid $t-base-orange;
+  }
+
+  // ---------- Bandeau ----------
+  &__banner {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+
+    &-icon {
+      width: 28px;
+      height: 28px;
+      font-size: 28px;
+      line-height: 28px;
+      flex-shrink: 0;
+
+      [data-risk='ok'] & { color: $t-base-green; }
+      [data-risk='warning'] & { color: #FFA000; }
+      [data-risk='danger'] & { color: $t-base-orange; }
+    }
+
+    &-text {
+      display: flex;
+      flex-direction: column;
+
+      strong {
+        font-size: $t-body-1;
+        color: $t-color;
+      }
+
+      span {
+        font-size: $t-body-3;
+        color: $t-color-light;
+      }
+    }
+  }
+
+  // ---------- Identité ----------
+  &__identity {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: $t-gap-12;
+    margin: 0;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    dt {
+      font-size: $t-body-3;
+      font-weight: 500;
+      color: $t-color-light;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    dd {
+      margin: 0;
+      font-size: $t-body-2;
+      font-weight: 500;
+      color: $t-color;
+    }
+  }
+
+  &__plan-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: $t-body-3;
+    font-weight: 600;
+
+    &[data-plan='paid'] {
+      background: rgba($t-base-green, 0.12);
+      color: $t-base-green;
+    }
+    &[data-plan='free'] {
+      background: rgba($t-text-black, 0.06);
+      color: $t-color-light;
+    }
+  }
+
+  // ---------- Metrics ----------
+  &__metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: $t-gap-12;
+  }
+
+  &__metric {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-4;
+    padding: $t-gap-12;
+    border-radius: $t-border-radius * 2;
+    background: white;
+    border: 1px solid rgba($t-text-black, 0.06);
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: $t-gap-6;
+
+      mat-icon {
+        width: 18px;
+        height: 18px;
+        font-size: 18px;
+        line-height: 18px;
+      }
+    }
+
+    &-label {
+      font-size: $t-body-3;
+      font-weight: 500;
+      color: $t-color-light;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    &-value {
+      font-size: $t-headline-6;
+      font-weight: 600;
+      color: $t-color;
+      line-height: 1.3;
+    }
+
+    &-hint {
+      font-size: $t-body-3;
+      color: $t-color-light;
+
+      &--fail {
+        color: $t-base-orange;
+      }
+    }
+
+    &[data-badge='ok'] header mat-icon { color: $t-base-green; }
+    &[data-badge='pending'] header mat-icon { color: #FFA000; }
+    &[data-badge='ko'], &[data-badge='missing'] {
+      header mat-icon { color: $t-base-orange; }
+    }
+  }
+
+  // ---------- Docs ----------
+  &__docs-title {
+    margin: 0 0 $t-gap-8;
+    font-size: $t-body-2;
+    font-weight: 600;
+    color: $t-color;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  &__docs-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $t-gap-6;
+  }
+
+  &__doc-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    background: white;
+    border: 1px solid rgba($t-text-black, 0.08);
+    border-radius: 999px;
+    font-size: $t-body-3;
+    color: $t-color;
+    cursor: help;
+
+    &[data-badge='ok'] {
+      .ccs__doc-icon { color: $t-base-green; }
+    }
+    &[data-badge='expired'] {
+      .ccs__doc-icon { color: #FFA000; }
+      background: rgba(#FFA000, 0.08);
+      border-color: rgba(#FFA000, 0.2);
+    }
+    &[data-badge='ko'], &[data-badge='missing'] {
+      .ccs__doc-icon { color: $t-base-orange; }
+      background: rgba($t-base-orange, 0.08);
+      border-color: rgba($t-base-orange, 0.2);
+    }
+    &[data-badge='pending'] {
+      .ccs__doc-icon { color: $t-color-light; }
+    }
+  }
+
+  &__doc-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+    line-height: 14px;
+  }
+
+  &__doc-type {
+    color: $t-color;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+}

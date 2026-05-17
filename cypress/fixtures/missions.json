@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "data": [
+    {
+      "mid": "MIS-2026-042",
+      "caseNumber": "CASE-2026-042",
+      "missionTitle": "Diagnostic amiante avant travaux",
+      "operationType": "DAAT",
+      "operationTypeLabel": "Diagnostic Amiante Avant Travaux",
+      "price": 1250.00,
+      "targetAddress": "12 rue de la Paix",
+      "city": "Paris",
+      "visitDateConfirmed": "2026-03-28T09:00:00Z",
+      "signedAt": "2026-03-28T17:00:00Z",
+      "canRun": true,
+      "invoice_status": "uploaded"
+    },
+    {
+      "mid": "MIS-2026-043",
+      "caseNumber": "CASE-2026-043",
+      "missionTitle": "Diagnostic plomb",
+      "operationType": "DPB",
+      "operationTypeLabel": "Diagnostic Plomb",
+      "price": 890.00,
+      "targetAddress": "5 avenue des Champs",
+      "city": "Lyon",
+      "visitDateConfirmed": "2026-04-05T14:00:00Z",
+      "signedAt": "2026-04-05T18:00:00Z",
+      "canRun": true,
+      "invoice_status": "none"
+    }
+  ],
+  "meta": { "total": 2, "completed": 2, "invoiceable": 1, "invoiced": 1 }
+}

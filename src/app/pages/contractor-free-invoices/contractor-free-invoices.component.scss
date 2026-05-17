@@ -1,0 +1,326 @@
+@use '../../../styles/variables' as *;
+
+.page-wrapper {
+  padding: $t-gap-24;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+// Bascule onglets factures mission / factures libres (mirror de /invoices)
+.invoice-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: $t-gap-16;
+  border-bottom: 1px solid rgba($t-text-black, 0.1);
+
+  a {
+    padding: $t-gap-8 $t-gap-16;
+    text-decoration: none;
+    color: $t-color-light;
+    border-bottom: 2px solid transparent;
+    font-size: $t-body-2;
+    transition: color 0.2s, border-color 0.2s;
+
+    &.active {
+      color: $primary-800;
+      border-bottom-color: $primary-800;
+      font-weight: 500;
+    }
+
+    &:hover:not(.active) {
+      color: $t-color;
+    }
+  }
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $t-gap-24;
+  gap: $t-gap-16;
+
+  // FIX-045 — Sur mobile (≤600 px), le bouton "+ Nouvelle demande" devient
+  // un FAB icône-seule (+) circulaire à droite du titre. Le label texte
+  // est masqué via .sr-only style — screen-readers le lisent toujours via
+  // aria-label sur le button. Plus de wrap mal aligné, hit target 40 px,
+  // pattern mobile classique (Gmail / Notes / Trello).
+  @media (max-width: 600px) {
+    gap: 8px;
+    align-items: center;
+
+    .page-header__add-cta {
+      min-width: 0 !important;
+      width: 44px !important;
+      height: 44px !important;
+      padding: 0 !important;
+      border-radius: 50% !important;
+      flex-shrink: 0;
+
+      mat-icon {
+        margin: 0 !important;
+      }
+    }
+
+    .page-header__add-cta-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+  }
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+    flex-wrap: wrap;
+  }
+
+  h1 {
+    font-size: $t-headline-5;
+    color: $t-text-black;
+    margin: 0;
+
+    // FIX-046 — Titre "Mes factures libres" trop gros sur mobile (occupait
+    // 2 lignes en plein écran). Réduit à 1.25 rem sous 600 px pour tenir
+    // sur une seule ligne sans casser la lisibilité.
+    @media (max-width: 600px) {
+      font-size: 1.25rem;
+      line-height: 1.3;
+    }
+  }
+}
+
+.intro {
+  color: $t-color-light;
+  font-size: $t-body-2;
+  margin-bottom: $t-gap-32;
+  max-width: 700px;
+
+  // FIX-046 bis — Paragraphe d'explication compacté sur mobile : font
+  // legèrement réduite et margin-bottom réduite pour ne pas pousser
+  // l'empty state trop bas.
+  @media (max-width: 600px) {
+    font-size: 0.875rem;
+    line-height: 1.5;
+    margin-bottom: 16px;
+  }
+}
+
+.empty {
+  text-align: center;
+  padding: $t-gap-48;
+  color: $t-color-light;
+
+  mat-icon {
+    font-size: 3rem;
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: $t-gap-12;
+    opacity: 0.4;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.cards {
+  display: grid;
+  gap: $t-gap-16;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-16;
+  margin-top: $t-gap-24;
+  flex-wrap: wrap;
+
+  &__btn {
+    min-height: 44px;
+    padding: 0 $t-gap-16;
+    font-weight: 600;
+  }
+
+  &__info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: $t-body-2;
+    color: $t-color;
+
+    strong {
+      font-size: $t-body-1;
+      font-weight: 700;
+    }
+  }
+
+  &__page {
+    color: $t-color-light;
+    font-size: 0.85rem;
+  }
+}
+
+.card {
+  background: #fff;
+  border: 1px solid rgba($t-text-black, 0.1);
+  border-radius: $t-card-border-radius * 2;
+  padding: $t-gap-20;
+
+  &.status-rejected {
+    border-left: 4px solid $base-warn-500;
+  }
+
+  &.status-authorized {
+    border-left: 4px solid $base-green-600;
+  }
+
+  &.status-pending_admin_approval {
+    border-left: 4px solid $base-orange-500;
+  }
+
+  &.status-consumed {
+    border-left: 4px solid $primary-600;
+  }
+
+  &.status-expired,
+  &.status-cancelled {
+    border-left: 4px solid $base-foreground-grey-300;
+    opacity: 0.75;
+  }
+
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: $t-gap-12;
+    gap: $t-gap-12;
+
+    h3 {
+      font-size: $t-headline-6;
+      margin: 0;
+      color: $t-text-black;
+      flex: 1;
+    }
+  }
+
+  .badge {
+    font-size: $t-body-3;
+    padding: 0.25rem 0.5rem;
+    background: $t-back-grey-high;
+    border-radius: 999px;
+    white-space: nowrap;
+    color: $t-color-light;
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem $t-gap-12;
+    font-size: $t-body-2;
+    margin: 0;
+  }
+
+  dt {
+    color: $t-color-light;
+  }
+
+  dd {
+    margin: 0;
+    color: $t-color;
+  }
+
+  .reject-reason {
+    color: $base-warn-500;
+  }
+
+  .next-step {
+    margin: $t-gap-16 0 0;
+    padding: $t-gap-12 $t-gap-14;
+    background: rgba($base-green-600, 0.08);
+    border-left: 3px solid $base-green-600;
+    border-radius: $t-card-border-radius;
+    color: $t-color;
+    font-size: $t-body-2;
+    line-height: 1.5;
+
+    strong {
+      color: $t-text-black;
+      font-weight: 600;
+    }
+  }
+
+  footer {
+    display: flex;
+    gap: $t-gap-8;
+    margin-top: $t-gap-16;
+    justify-content: flex-end;
+  }
+}
+
+// Bandeau de statut de la dernière facture rattachée à la demande.
+// Affiché entre <dl> et <footer> pour que le contractor voie immédiatement
+// pourquoi sa précédente tentative a échoué (et donc quoi corriger).
+.invoice-state {
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-10;
+  padding: $t-gap-10 $t-gap-12;
+  margin-top: $t-gap-16;
+  border-radius: $t-card-border-radius;
+  font-size: $t-body-2;
+
+  mat-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    font-size: 22px;
+    line-height: 22px;
+    margin-top: 1px;
+  }
+
+  &__text {
+    flex: 1;
+
+    strong {
+      display: block;
+      font-weight: 600;
+      color: $t-color;
+    }
+  }
+
+  &__detail {
+    margin: 4px 0 0;
+    font-size: $t-body-3;
+    color: $t-color-light;
+    line-height: 1.4;
+  }
+
+  &--ok {
+    background: rgba($base-green-600, 0.08);
+    mat-icon { color: $base-green-600; }
+  }
+
+  &--pending {
+    background: rgba($base-orange-500, 0.08);
+    mat-icon { color: $base-orange-500; }
+  }
+
+  &--ko {
+    background: rgba($base-warn-500, 0.08);
+    mat-icon { color: $base-warn-500; }
+
+    .invoice-state__detail {
+      color: $base-warn-500;
+    }
+  }
+}

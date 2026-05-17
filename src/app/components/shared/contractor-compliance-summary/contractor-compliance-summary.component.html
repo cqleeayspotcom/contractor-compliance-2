@@ -1,0 +1,110 @@
+@if (loading()) {
+  <div class="ccs ccs--loading">
+    <mat-spinner diameter="32"></mat-spinner>
+    <span>Chargement du statut contractor…</span>
+  </div>
+} @else if (error()) {
+  <div class="ccs ccs--error">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ error() }}</span>
+  </div>
+} @else if (summary(); as s) {
+  <section class="ccs" [attr.data-risk]="riskLevel()">
+    <!-- Bandeau de risque global -->
+    <header class="ccs__banner">
+      <mat-icon class="ccs__banner-icon">
+        @switch (riskLevel()) {
+          @case ('ok') { verified }
+          @case ('warning') { warning }
+          @case ('danger') { gpp_bad }
+        }
+      </mat-icon>
+      <div class="ccs__banner-text">
+        <strong>Statut contractor</strong>
+        <span>{{ riskMessage() }}</span>
+      </div>
+    </header>
+
+    <!-- Identité -->
+    <dl class="ccs__identity">
+      <div>
+        <dt>Nom</dt>
+        <dd>{{ s.identity.first_name }} {{ s.identity.last_name }}</dd>
+      </div>
+      <div>
+        <dt>Société</dt>
+        <dd>{{ s.identity.company_name ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>SIREN</dt>
+        <dd>{{ s.identity.siren ?? '—' }}</dd>
+      </div>
+      <div>
+        <dt>Téléphone</dt>
+        <dd>{{ s.identity.phone_masked | phoneDisplay }}</dd>
+      </div>
+      <div>
+        <dt>Plan</dt>
+        <dd>
+          <span class="ccs__plan-pill" [attr.data-plan]="s.identity.plan">
+            {{ s.identity.plan === 'paid' ? 'Pro' : 'Gratuit' }}
+          </span>
+        </dd>
+      </div>
+    </dl>
+
+    <mat-divider></mat-divider>
+
+    <!-- Trois indicateurs clés en colonnes -->
+    <div class="ccs__metrics">
+      <!-- KYC -->
+      <article class="ccs__metric" [attr.data-badge]="s.kyc.badge">
+        <header>
+          <mat-icon>{{ badgeIcon(s.kyc.badge) }}</mat-icon>
+          <span class="ccs__metric-label">KYC</span>
+        </header>
+        <div class="ccs__metric-value">{{ s.kyc.status_label }}</div>
+      </article>
+
+      <!-- Compliance -->
+      <article class="ccs__metric" [attr.data-badge]="s.compliance.is_fully_compliant ? 'ok' : 'pending'">
+        <header>
+          <mat-icon>{{ s.compliance.is_fully_compliant ? 'check_circle' : 'pie_chart' }}</mat-icon>
+          <span class="ccs__metric-label">Compliance</span>
+        </header>
+        <div class="ccs__metric-value">
+          {{ s.compliance.score !== null ? s.compliance.score + ' %' : '—' }}
+        </div>
+      </article>
+
+      <!-- Activité factures -->
+      <article class="ccs__metric ccs__metric--activity">
+        <header>
+          <mat-icon>receipt_long</mat-icon>
+          <span class="ccs__metric-label">Factures</span>
+        </header>
+        <div class="ccs__metric-value">{{ s.activity.total }} total</div>
+        <div class="ccs__metric-hint">
+          ✓ {{ s.activity.paid }} · ⏳ {{ s.activity.in_progress + s.activity.in_validation }} · ✕ {{ s.activity.rejected }}
+        </div>
+      </article>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Documents (chips compactes) -->
+    <section class="ccs__docs">
+      <h4 class="ccs__docs-title">Documents critiques</h4>
+      <ul class="ccs__docs-list">
+        @for (doc of s.documents; track doc.type) {
+          <li class="ccs__doc-chip"
+              [attr.data-badge]="doc.badge"
+              [title]="doc.type_label + ' — ' + docStatusLabel(doc)">
+            <mat-icon class="ccs__doc-icon">{{ badgeIcon(doc.badge) }}</mat-icon>
+            <span class="ccs__doc-type">{{ doc.type_label }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+  </section>
+}

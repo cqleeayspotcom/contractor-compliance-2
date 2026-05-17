@@ -1,0 +1,24 @@
+<div [ngClass]="hostClasses" [class.loading-spinner-has-message]="message.length > 0">
+  <svg
+    class="loading-spinner-svg"
+    [style.width.px]="spinnerSize"
+    [style.height.px]="spinnerSize"
+    viewBox="0 0 50 50"
+    aria-hidden="true"
+  >
+    <circle
+      class="loading-spinner-circle"
+      cx="25"
+      cy="25"
+      r="20"
+      fill="none"
+      [attr.stroke-width]="strokeWidth"
+    />
+  </svg>
+
+  @if (message) {
+    <p [ngClass]="messageClass" class="loading-spinner-message-text">
+      {{ message }}
+    </p>
+  }
+</div>

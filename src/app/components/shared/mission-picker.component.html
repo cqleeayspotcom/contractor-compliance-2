@@ -1,0 +1,55 @@
+@if (!isLocked()) {
+  <mat-form-field appearance="outline" class="mission-picker__field">
+    <mat-label>Sélectionner la mission à facturer</mat-label>
+    <input matInput
+           [(ngModel)]="search"
+           [matAutocomplete]="missionAuto"
+           placeholder="Tapez une référence, un titre ou une ville">
+    <mat-icon matSuffix>search</mat-icon>
+    <mat-autocomplete #missionAuto="matAutocomplete"
+                      [displayWith]="displayMission"
+                      (optionSelected)="onSelected($event)">
+      @if (missionsLoading()) {
+        <mat-option disabled>
+          <mat-spinner diameter="16"></mat-spinner>
+          Chargement...
+        </mat-option>
+      } @else if (filtered().length === 0) {
+        <mat-option disabled>
+          Aucune mission à facturer
+        </mat-option>
+      } @else {
+        @for (m of filtered(); track m.mid) {
+          <mat-option [value]="m">
+            <div class="mission-option">
+              <div class="mission-option__line">
+                <strong>{{ m.caseNumber }}</strong>
+                <span class="mission-option__price">{{ formatPrice(m.price) }}</span>
+              </div>
+              <div class="mission-option__sub">
+                {{ m.missionTitle }} - {{ m.city }}
+              </div>
+            </div>
+          </mat-option>
+        }
+      }
+    </mat-autocomplete>
+  </mat-form-field>
+} @else {
+  <div class="mission-picker__locked">
+    <mat-form-field appearance="outline">
+      <mat-label>Réf. mission</mat-label>
+      <input matInput [value]="displayedRef()" readonly>
+      @if (allowClear && !locked) {
+        <button mat-icon-button matSuffix type="button" (click)="clear()" aria-label="Changer de mission">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Montant TTC</mat-label>
+      <input matInput [value]="displayedAmount()" readonly>
+      <span matSuffix>&euro;</span>
+    </mat-form-field>
+  </div>
+}

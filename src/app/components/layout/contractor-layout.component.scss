@@ -1,0 +1,27 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.contractor-content {
+  flex: 1;
+  background-color: $t-back-grey-medium; // #F7F8FC
+  padding: $t-gap-32 $t-gap-24;
+
+  // Center the page content with a max width
+  > ::ng-deep * {
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+// Responsive -- less padding on small screens
+@media (max-width: 600px) {
+  .contractor-content {
+    padding: $t-gap-16 $t-gap-12;
+  }
+}

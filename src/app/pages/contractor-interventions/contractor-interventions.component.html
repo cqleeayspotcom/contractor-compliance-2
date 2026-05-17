@@ -1,0 +1,137 @@
+<div class="page">
+
+  <div class="page__header">
+    <div class="page__title-block">
+      <div class="page__title-row">
+        <app-back-button />
+        <h1>Missions</h1>
+      </div>
+    </div>
+  </div>
+
+  <div class="page__toolbar">
+    <label class="search-pill" [class.search-pill--filled]="searchInput()">
+      <mat-icon class="search-pill__icon">search</mat-icon>
+      <input
+        type="search"
+        class="search-pill__input"
+        placeholder="Rechercher (titre, n° dossier, ville, adresse)"
+        [ngModel]="searchInput()"
+        (ngModelChange)="onSearchChange($event)"
+        aria-label="Rechercher dans les missions"
+      />
+      @if (searchInput()) {
+        <button type="button" class="search-pill__clear" aria-label="Effacer la recherche" (click)="clearSearch()">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </label>
+
+    <div class="filter-chips" role="tablist" aria-label="Filtrer par statut de facture">
+      @for (f of filters; track trackByFilter($index, f)) {
+        @let count = filterCount(f);
+        <button
+          type="button"
+          class="filter-chip"
+          role="tab"
+          [class.filter-chip--active]="activeFilterId() === f.id"
+          [class.filter-chip--empty]="count === 0"
+          [attr.aria-selected]="activeFilterId() === f.id"
+          (click)="selectFilter(f.id)">
+          <span class="filter-chip__label">{{ f.label }}</span>
+          @if (count !== null && count > 0) {
+            <span class="filter-chip__count">{{ count }}</span>
+          }
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <div class="page__loading">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+  } @else {
+
+    @if (missions().length === 0) {
+      <div class="empty-state">
+        <mat-icon>{{ hasActiveFilters() ? 'search_off' : 'inbox' }}</mat-icon>
+        @if (hasActiveFilters()) {
+          <p>Aucune mission ne correspond à ta recherche</p>
+          <button mat-stroked-button type="button" (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            Réinitialiser les filtres
+          </button>
+        } @else {
+          <p>Aucune mission réalisée pour le moment</p>
+          <span class="empty-state__hint">Tes missions à venir et les offres apparaissent sur ton tableau de bord.</span>
+        }
+      </div>
+    } @else {
+      <div class="missions-list">
+        @for (m of missions(); track trackByMid($index, m)) {
+          @let badge = invoiceBadge(m.invoice_status);
+          <div class="mission-card mission-card--clickable" (click)="openMission(m)">
+
+            <div class="mission-card__header">
+              <mat-icon class="mission-card__type-icon">{{ operationIcon(m.operationType) }}</mat-icon>
+              <div class="mission-card__info">
+                <span class="mission-card__type-label">{{ m.operationTypeLabel }}</span>
+                <span class="mission-card__title">{{ m.missionTitle }}</span>
+                <span class="mission-card__ref">{{ m.caseNumber }}</span>
+              </div>
+              <span class="invoice-badge invoice-badge--{{ badge.tone }}">
+                <mat-icon>{{ badge.icon }}</mat-icon>
+                {{ badge.label }}
+              </span>
+            </div>
+
+            <div class="mission-card__details">
+              <div class="mission-card__detail">
+                <mat-icon>place</mat-icon>
+                <span>{{ m.city }} - {{ m.targetAddress }}</span>
+              </div>
+              @if (m.visitDateConfirmed) {
+                <div class="mission-card__detail">
+                  <mat-icon>event</mat-icon>
+                  <span>{{ formatDate(m.visitDateConfirmed) }} · {{ formatTime(m.visitDateConfirmed) }}</span>
+                </div>
+              }
+              @if (m.price > 0) {
+                <div class="mission-card__detail mission-card__detail--price">
+                  <mat-icon>euro</mat-icon>
+                  <span>{{ formatPrice(m.price) }}</span>
+                </div>
+              }
+            </div>
+
+            @if (needsInvoice(m)) {
+              <div class="mission-card__actions">
+                <button mat-flat-button color="primary" type="button" (click)="joinInvoice(m, $event)">
+                  <mat-icon>upload_file</mat-icon>
+                  {{ m.invoice_status === 'rejected' ? 'Refaire ma facture' : 'Joindre ma facture' }}
+                </button>
+              </div>
+            }
+
+          </div>
+        }
+      </div>
+
+      @if (lastPage() > 1) {
+        <nav class="pagination" aria-label="Pagination des missions">
+          <button mat-button type="button" (click)="goToPage(currentPage() - 1)" [disabled]="!hasPrev()">
+            <mat-icon>chevron_left</mat-icon> Précédent
+          </button>
+          <span class="pagination__info">
+            Page {{ currentPage() }} sur {{ lastPage() }}
+            <span class="pagination__total">({{ filteredTotal() }} mission{{ filteredTotal() > 1 ? 's' : '' }})</span>
+          </span>
+          <button mat-button type="button" (click)="goToPage(currentPage() + 1)" [disabled]="!hasNext()">
+            Suivant <mat-icon iconPositionEnd>chevron_right</mat-icon>
+          </button>
+        </nav>
+      }
+    }
+  }
+</div>

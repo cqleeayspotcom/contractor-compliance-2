@@ -1,0 +1,1015 @@
+@use '../../../styles/variables' as *;
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-24;
+  min-height: 100vh;
+  background-color: $t-back-grey-light;
+}
+
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: $t-gap-16;
+
+  p {
+    font-size: $t-body-1;
+    color: $t-color-light;
+    margin: 0;
+  }
+}
+
+.page__header {
+  h1 {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+  }
+
+  p {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: $t-gap-4 0 0;
+  }
+}
+
+// Error
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  background: rgba($base-warn-500, 0.08);
+  color: $base-warn-500;
+  border-radius: 8px;
+  font-size: $t-body-2;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Plans grid
+.plans-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: $t-gap-20;
+}
+
+.plan-card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: $t-gap-32 $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+  position: relative;
+  border: 2px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &--active {
+    border-color: $t-base-green;
+    box-shadow: 0 2px 12px rgba($t-base-green, 0.15);
+  }
+}
+
+.plan-badge {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: $t-base-green;
+  color: #ffffff;
+  font-size: $t-body-3;
+  font-weight: 700;
+  padding: $t-gap-4 $t-gap-14;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.plan-name {
+  font-size: $t-headline-6;
+  font-weight: 700;
+  color: $t-text-black;
+  margin: 0;
+  text-align: center;
+}
+
+.plan-price {
+  text-align: center;
+  margin-bottom: $t-gap-8;
+
+  &__amount {
+    font-size: $t-headline-4;
+    font-weight: 800;
+    color: $t-text-black;
+  }
+
+  &__period {
+    font-size: $t-body-2;
+    color: $t-color-light;
+  }
+}
+
+// Features list
+.plan-features {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-10;
+  flex: 1;
+}
+
+.plan-feature {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-10;
+  font-size: $t-body-2;
+  color: $t-text-black;
+
+  &__icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+
+    &--check {
+      color: $t-base-green;
+    }
+
+    &--cross {
+      color: $t-color-extra-light;
+    }
+  }
+
+  &--excluded {
+    color: $t-color-light;
+  }
+}
+
+// Plan button
+.plan-btn {
+  width: 100%;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: $t-body-1;
+  padding: $t-gap-10 $t-gap-24;
+  margin-top: auto;
+
+  &--current {
+    border-color: $t-base-green;
+    color: $t-base-green;
+  }
+}
+
+// Bandeau "Vous etes sur le Pro" — affiche a la place des cartes plans
+// pour un user deja abonne (evite la redondance visuelle).
+.pro-status {
+  display: flex;
+  gap: $t-gap-16;
+  align-items: flex-start;
+  padding: $t-gap-20 $t-gap-24;
+  background: linear-gradient(135deg, rgba($t-base-green, 0.06) 0%, rgba($t-base-green, 0.12) 100%);
+  border: 1px solid rgba($t-base-green, 0.25);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba($t-base-green, 0.08);
+
+  &__badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: $t-base-green;
+    flex-shrink: 0;
+
+    mat-icon {
+      color: #ffffff;
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: $t-gap-12;
+    flex-wrap: wrap;
+  }
+
+  &__title {
+    font-size: $t-headline-6;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  &__price {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-base-green;
+    white-space: nowrap;
+    flex: 1;
+  }
+
+  &__price-period {
+    font-size: $t-body-3;
+    font-weight: 500;
+    color: $t-color-light;
+  }
+
+  &__desc {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    line-height: 1.5;
+    margin: $t-gap-6 0 0;
+  }
+
+  // Bouton "Gerer" : sans encadré mais clairement cliquable
+  // — couleur verte + underline constant qui s'intensifie au hover
+  &__manage {
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-size: $t-body-3;
+    font-weight: 600;
+    color: $t-base-green;
+    cursor: pointer;
+    font-family: inherit;
+    flex-shrink: 0;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: color 0.15s, text-decoration-thickness 0.15s;
+
+    &:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $t-base-green;
+      outline-offset: 3px;
+      border-radius: 3px;
+    }
+  }
+}
+
+// =============================================================================
+// Factures d'abonnement Tuita Pro (Stripe)
+// Visuellement distinct des factures de mission — badge "Stripe" + disclaimer
+// =============================================================================
+.subscription-invoices {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: $t-gap-16;
+    flex-wrap: wrap;
+  }
+
+  &__title-block {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+    font-size: $t-headline-6;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      color: $t-base-green;
+    }
+  }
+
+  &__subtitle {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    margin: $t-gap-4 0 0;
+    line-height: 1.5;
+  }
+
+  &__retention {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: $t-color-extra-light;
+    margin-top: 2px;
+
+    mat-icon {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  &__total {
+    background: rgba($t-base-green, 0.08);
+    border-radius: 8px;
+    padding: $t-gap-10 $t-gap-16;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  &__total-label {
+    font-size: 11px;
+    color: $t-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  &__total-amount {
+    font-size: $t-headline-6;
+    font-weight: 800;
+    color: $t-base-green;
+  }
+
+  // Disclaimer — barre info pour differencier des factures de mission
+  &__disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-10;
+    padding: $t-gap-12 $t-gap-14;
+    background: rgba(#2196F3, 0.07);
+    border-left: 3px solid #2196F3;
+    border-radius: 6px;
+    font-size: $t-body-3;
+    color: $t-text-black;
+    line-height: 1.5;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #2196F3;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    strong {
+      font-weight: 700;
+    }
+  }
+
+  &__disclaimer-link {
+    color: #2196F3;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover {
+      color: #1976D2;
+    }
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: $t-gap-12;
+    padding: $t-gap-32 $t-gap-16;
+    color: $t-color-light;
+    font-size: $t-body-2;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $t-gap-12;
+    padding: $t-gap-32 $t-gap-16;
+    text-align: center;
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+      color: $t-color-extra-light;
+    }
+
+    p {
+      font-size: $t-body-2;
+      color: $t-color-light;
+      margin: 0;
+      max-width: 400px;
+      line-height: 1.5;
+    }
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-8;
+  }
+
+  // Barre "Tout deplier / Tout replier"
+  &__controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: $t-gap-4 $t-gap-4 $t-gap-8;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  }
+
+  &__controls-hint {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 500;
+  }
+
+  &__toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: $t-gap-4 $t-gap-10;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    font-size: $t-body-3;
+    font-weight: 600;
+    color: $t-color-light;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: rgba($t-base-green, 0.05);
+      border-color: $t-base-green;
+      color: $t-base-green;
+    }
+  }
+
+  // Astuce compta pour artisans/secretaires
+  &__tip {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-10;
+    padding: $t-gap-12 $t-gap-14;
+    background: rgba(#FFA726, 0.08);
+    border-radius: 8px;
+    font-size: $t-body-3;
+    color: $t-text-black;
+    line-height: 1.5;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #FF8F00;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    strong {
+      font-weight: 700;
+      color: #E65100;
+    }
+  }
+}
+
+// =============================================================================
+// Groupe-annee (accordeon par annee fiscale)
+// =============================================================================
+.year-groups {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-10;
+}
+
+.year-group {
+  background: $t-back-grey-light;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: background 0.15s, border-color 0.15s;
+
+  &--current {
+    border-color: rgba($t-base-green, 0.3);
+    background: rgba($t-base-green, 0.03);
+  }
+
+  &--expanded {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $t-gap-16;
+    padding: $t-gap-14 $t-gap-16;
+    width: 100%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    transition: background 0.12s;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    &:focus-visible {
+      outline: 2px solid $t-base-green;
+      outline-offset: -2px;
+    }
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-10;
+    min-width: 0;
+  }
+
+  &__chevron {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    color: $t-color-light;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+
+  &--expanded &__chevron {
+    color: $t-base-green;
+  }
+
+  &__year {
+    font-size: $t-headline-6;
+    font-weight: 700;
+    color: $t-text-black;
+    letter-spacing: 0.5px;
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-14;
+    flex-shrink: 0;
+  }
+
+  &__count {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &__total {
+    font-size: $t-body-2;
+    font-weight: 700;
+    color: $t-text-black;
+    padding: 2px $t-gap-10;
+    background: rgba($t-base-green, 0.1);
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    padding: 0 $t-gap-10 $t-gap-10;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-8;
+    animation: year-expand 0.2s ease-out;
+  }
+}
+
+@keyframes year-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Invoice row
+.invoice-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: $t-gap-16;
+  align-items: center;
+  padding: $t-gap-14 $t-gap-16;
+  background: $t-back-grey-light;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+
+  &:hover {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  &__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-4;
+  }
+
+  &__date {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 500;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__desc {
+    font-size: $t-body-2;
+    font-weight: 600;
+    color: $t-text-black;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: $t-gap-4;
+  }
+
+  &__amount {
+    font-size: $t-body-1;
+    font-weight: 700;
+    color: $t-text-black;
+  }
+
+  &__status {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    padding: 2px 8px;
+    border-radius: 10px;
+
+    &.status--paid {
+      background: rgba($t-base-green, 0.12);
+      color: $t-base-green;
+    }
+
+    &.status--pending {
+      background: rgba(#FF9800, 0.12);
+      color: #E68A00;
+    }
+
+    &.status--failed {
+      background: rgba($base-warn-500, 0.12);
+      color: $base-warn-500;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    gap: $t-gap-6;
+  }
+
+  &__btn {
+    min-width: 0;
+    padding: 4px $t-gap-12;
+    font-size: $t-body-3;
+    font-weight: 600;
+    border-radius: 6px;
+    line-height: 1.5;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+
+    &--download {
+      border-color: $t-base-green;
+      color: $t-base-green;
+    }
+
+    &--view {
+      color: $t-color-light;
+    }
+  }
+}
+
+// Cancel success message
+.cancel-success-msg {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  background: rgba($t-base-green, 0.08);
+  color: $t-base-green;
+  border-radius: 8px;
+  font-size: $t-body-2;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// Cancel section: discreet, at the very bottom
+.cancel-section {
+  display: flex;
+  justify-content: center;
+  padding-top: $t-gap-16;
+}
+
+.cancel-confirm {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: $t-gap-20;
+  max-width: 400px;
+  width: 100%;
+
+  &__title {
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+    margin: 0 0 $t-gap-8;
+  }
+
+  &__text {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    line-height: 1.5;
+    margin: 0 0 $t-gap-16;
+  }
+
+  &__actions {
+    display: flex;
+    gap: $t-gap-12;
+    justify-content: flex-end;
+  }
+
+  &__keep {
+    font-weight: 600;
+    border-radius: 6px;
+  }
+
+  &__confirm {
+    font-size: 12px;
+    color: $t-color-light;
+    font-weight: 400;
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .page {
+    padding: $t-gap-16;
+    gap: $t-gap-16;
+  }
+
+  .plans-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card {
+    padding: $t-gap-24 $t-gap-20;
+  }
+
+  .subscription-invoices {
+    padding: $t-gap-16;
+  }
+
+  .year-group {
+    &__header {
+      padding: $t-gap-12 $t-gap-14;
+    }
+
+    &__meta {
+      gap: $t-gap-8;
+    }
+
+    &__total {
+      font-size: $t-body-3;
+    }
+
+    &__list {
+      padding: 0 $t-gap-8 $t-gap-8;
+    }
+  }
+
+  .invoice-row {
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'main   meta'
+      'actions actions';
+    gap: $t-gap-10;
+
+    &__main { grid-area: main; }
+    &__meta { grid-area: meta; }
+    &__actions {
+      grid-area: actions;
+      justify-content: flex-end;
+    }
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Carte unique « Passer en Pro » — remplace l'ancienne grille comparative
+// 2 cartes ✓/✗. Règle UX low-literacy artisans BTP : une décision, 3
+// bénéfices visuels, zéro liste à comparer en parallèle.
+// ─────────────────────────────────────────────────────────────────────────
+.pro-card {
+  max-width: 560px;
+  margin: 24px auto 32px;
+  padding: 28px 24px;
+  background: linear-gradient(135deg, #f0fdf9 0%, #d1fae5 100%);
+  border: 2px solid #04A777;
+  border-radius: 18px;
+  box-shadow: 0 8px 28px rgba(7, 49, 72, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 6px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: #073148;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-radius: 999px;
+
+    mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  }
+
+  &__title {
+    margin: 4px 0 0;
+    font-size: 1.65rem;
+    font-weight: 800;
+    color: #073148;
+    letter-spacing: -0.02em;
+  }
+
+  &__price {
+    margin: 0;
+    font-size: 1rem;
+    color: #073148;
+
+    strong { font-size: 1.4rem; font-weight: 800; }
+    span { opacity: 0.75; }
+  }
+
+  &__benefits {
+    list-style: none;
+    margin: 4px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    li {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: start;
+
+      strong {
+        display: block;
+        font-size: 1rem;
+        color: #073148;
+        margin-bottom: 2px;
+      }
+
+      span {
+        font-size: 0.875rem;
+        color: #334155;
+        line-height: 1.4;
+      }
+    }
+  }
+
+  &__benefit-icon {
+    color: #04A777;
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+  }
+
+  &__cta {
+    height: 52px;
+    font-size: 1rem;
+    font-weight: 700;
+    background-color: #04A777 !important;
+    color: #ffffff !important;
+    animation: pro-cta-pulse 1.8s ease-in-out infinite;
+    will-change: transform, box-shadow;
+
+    mat-icon { margin-right: 6px; }
+
+    &:hover,
+    &:focus-visible {
+      animation-play-state: paused;
+    }
+  }
+
+  &__reassure {
+    margin: 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #073148;
+    opacity: 0.65;
+  }
+}
+
+@keyframes pro-cta-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(4, 167, 119, 0.35);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 8px 22px rgba(4, 167, 119, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pro-card__cta {
+    animation: none;
+  }
+}

@@ -1,0 +1,563 @@
+<!-- ================================================================== -->
+<!-- AUTH GATE                                                          -->
+<!-- ================================================================== -->
+
+@if (!isAuthenticated()) {
+  <div class="cadmin__auth">
+    <div class="cadmin__auth-card">
+      <mat-icon class="cadmin__auth-icon">admin_panel_settings</mat-icon>
+      <h1>Supervision Tuita</h1>
+      <p>Entrez votre cle d'administration pour acceder au tableau de bord.</p>
+
+      @if (error()) {
+        <div class="cadmin__auth-error">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ error() }}</span>
+        </div>
+      }
+
+      <div class="cadmin__auth-form">
+        <mat-form-field appearance="outline" class="cadmin__auth-input">
+          <mat-label>Clé d'administration</mat-label>
+          <input matInput type="password" [(ngModel)]="apiKeyInput"
+                 (keyup.enter)="submitApiKey()" placeholder="sk-admin-..." />
+          <mat-icon matSuffix>vpn_key</mat-icon>
+        </mat-form-field>
+        <button mat-flat-button class="cadmin__auth-btn" (click)="submitApiKey()"
+                [disabled]="!apiKeyInput.trim()">
+          Acceder
+        </button>
+      </div>
+    </div>
+  </div>
+} @else {
+
+<!-- ================================================================== -->
+<!-- DASHBOARD                                                          -->
+<!-- ================================================================== -->
+
+<div class="cadmin">
+
+  <!-- Header -->
+  <div class="cadmin__header">
+    <div class="cadmin__header-left">
+      <mat-icon class="cadmin__header-icon">dashboard</mat-icon>
+      <div>
+        <h1>Tableau de bord Tuita</h1>
+        <p>Productivité &amp; supervision compliance</p>
+      </div>
+    </div>
+    <div class="cadmin__header-actions">
+      <button mat-stroked-button (click)="refreshAll()">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+      <button mat-stroked-button color="warn" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Déconnexion
+      </button>
+    </div>
+  </div>
+
+  <!-- Quick nav to operational pages -->
+  <nav class="cadmin__quicknav">
+    <a class="cadmin__quicknav-link" routerLink="/admin/invoices">
+      <mat-icon>fact_check</mat-icon>
+      <span>Factures</span>
+    </a>
+    <a class="cadmin__quicknav-link" routerLink="/admin/free-invoices">
+      <mat-icon>receipt_long</mat-icon>
+      <span>Factures libres</span>
+    </a>
+    <a class="cadmin__quicknav-link" routerLink="/admin/purchases">
+      <mat-icon>shopping_cart</mat-icon>
+      <span>Achats documents</span>
+    </a>
+    <a class="cadmin__quicknav-link" routerLink="/admin/contractors">
+      <mat-icon>groups</mat-icon>
+      <span>Prestataires</span>
+    </a>
+    <a class="cadmin__quicknav-link" routerLink="/admin/invitation-codes">
+      <mat-icon>vpn_key</mat-icon>
+      <span>Codes d'invitation</span>
+    </a>
+  </nav>
+
+  <!-- ================================================================ -->
+  <!-- 0. PRODUCTIVITÉ DU JOUR (KPIs cliquables)                        -->
+  <!-- ================================================================ -->
+
+  @if (overview(); as ov) {
+    <section class="cadmin__section">
+      <h2 class="cadmin__section-title">
+        <mat-icon>today</mat-icon>
+        Aujourd'hui
+      </h2>
+
+      <div class="prod-grid">
+        <!-- 1. À valider (3 validateurs) -->
+        <button type="button" class="prod-tile prod-tile--orange" (click)="goToInvoicesTab('pending')">
+          <div class="prod-tile__head">
+            <mat-icon>fact_check</mat-icon>
+            <span>1. À valider</span>
+          </div>
+          <div class="prod-tile__count">{{ ov.pipeline.pending_payment_validation.count }}</div>
+          <div class="prod-tile__amount">{{ formatEur(ov.pipeline.pending_payment_validation.total_amount) }}</div>
+          @if (ov.pipeline.pending_payment_validation.aging_buckets; as ab) {
+            <div class="prod-tile__sub">
+              {{ ab['0_3d'] }} récentes · {{ ab['3_7d'] }} &gt; 3j · {{ ab['7_plus'] }} &gt; 7j
+            </div>
+          }
+        </button>
+
+        <!-- 2. Bon Pour Paiement (READY_TO_PAY) -->
+        <button type="button" class="prod-tile prod-tile--green" (click)="goToInvoicesTab('ready')">
+          <div class="prod-tile__head">
+            <mat-icon>flag</mat-icon>
+            <span>2. Bon Pour Paiement</span>
+          </div>
+          <div class="prod-tile__count">{{ ov.today_to_pay.count }}</div>
+          <div class="prod-tile__amount">{{ formatEur(ov.today_to_pay.total_amount) }}</div>
+          @if (agingDays(ov.today_to_pay.oldest_ready_since); as d) {
+            <div class="prod-tile__sub">la plus vieille : {{ d }}j</div>
+          }
+        </button>
+
+        <!-- 3. Virements en cours -->
+        <button type="button" class="prod-tile prod-tile--blue" (click)="goToInvoicesTab('inprogress')">
+          <div class="prod-tile__head">
+            <mat-icon>schedule_send</mat-icon>
+            <span>3. Virements en cours</span>
+          </div>
+          <div class="prod-tile__count">{{ ov.pipeline.payment_in_progress.count }}</div>
+          <div class="prod-tile__amount">{{ formatEur(ov.pipeline.payment_in_progress.total_amount) }}</div>
+          <div class="prod-tile__sub">en attente de confirmation banque</div>
+        </button>
+
+        <!-- 4. Payées aujourd'hui -->
+        <button type="button" class="prod-tile prod-tile--neutral" (click)="goToInvoicesTab('all')">
+          <div class="prod-tile__head">
+            <mat-icon>verified</mat-icon>
+            <span>4. Payées aujourd'hui</span>
+          </div>
+          <div class="prod-tile__count">{{ ov.pipeline.paid_today.count }}</div>
+          <div class="prod-tile__amount">{{ formatEur(ov.pipeline.paid_today.total_amount) }}</div>
+          <div class="prod-tile__sub">
+            {{ ov.pipeline.rejected_today.count }} rejetées · {{ formatEur(ov.pipeline.rejected_today.total_amount) }}
+          </div>
+        </button>
+      </div>
+    </section>
+  }
+
+  <!-- ================================================================ -->
+  <!-- 1. ALERTES (cartes conditionnelles, uniquement si > 0)           -->
+  <!-- ================================================================ -->
+
+  @if (overview(); as ov) {
+    @if (hasAnyAlert()) {
+      <section class="cadmin__section">
+        <h2 class="cadmin__section-title cadmin__section-title--alert">
+          <mat-icon>warning_amber</mat-icon>
+          Actions nécessaires
+        </h2>
+
+        <div class="alert-grid">
+          @if (ov.alerts.stuck_pending_validation_critical > 0) {
+            <button type="button" class="alert-card alert-card--red" (click)="goToStuckInvoices('pending')">
+              <mat-icon>hourglass_bottom</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.stuck_pending_validation_critical }}</div>
+              <div class="alert-card__label">Validation bloquée &gt; 7j</div>
+            </button>
+          }
+          @if (ov.alerts.stuck_ready_to_pay_critical > 0) {
+            <button type="button" class="alert-card alert-card--red" (click)="goToStuckInvoices('ready')">
+              <mat-icon>flag_circle</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.stuck_ready_to_pay_critical }}</div>
+              <div class="alert-card__label">Bon pour paiement &gt; 14j</div>
+            </button>
+          }
+          @if (ov.alerts.stuck_payment_in_progress_critical > 0) {
+            <button type="button" class="alert-card alert-card--red" (click)="goToStuckInvoices('inprogress')">
+              <mat-icon>error_outline</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.stuck_payment_in_progress_critical }}</div>
+              <div class="alert-card__label">Virement bloqué &gt; 10j</div>
+            </button>
+          }
+          @if (ov.alerts.paid_disputed_open_count > 0) {
+            <a class="alert-card alert-card--orange" routerLink="/admin/invoices" [queryParams]="{ tab: 'disputed' }">
+              <mat-icon>gavel</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.paid_disputed_open_count }}</div>
+              <div class="alert-card__label">Litiges post-paiement</div>
+            </a>
+          }
+          @if ((ov.alerts.free_invoices_pending_count ?? 0) > 0) {
+            <button type="button" class="alert-card alert-card--orange" (click)="goToFreeInvoicesPending()">
+              <mat-icon>receipt_long</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.free_invoices_pending_count }}</div>
+              <div class="alert-card__label">
+                Factures libres à approuver · {{ formatEur(ov.alerts.free_invoices_pending_amount) }}
+              </div>
+            </button>
+          }
+          @if ((ov.alerts.stuck_purchases_count ?? 0) > 0) {
+            <button type="button" class="alert-card alert-card--red" (click)="goToStuckPurchases()">
+              <mat-icon>shopping_cart_checkout</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.stuck_purchases_count }}</div>
+              <div class="alert-card__label">Achats payés non livrés &gt; 10min</div>
+            </button>
+          }
+          @if (ov.alerts.failed_jobs_count > 0) {
+            <button type="button" class="alert-card alert-card--orange" (click)="retryAllFailed()">
+              <mat-icon>replay</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.failed_jobs_count }}</div>
+              <div class="alert-card__label">Jobs échoués · cliquer pour relancer</div>
+            </button>
+          }
+          @if (ov.alerts.webhooks_dead_count > 0) {
+            <button type="button" class="alert-card alert-card--orange" (click)="replayAllDeadLetters()">
+              <mat-icon>webhook</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.webhooks_dead_count }}</div>
+              <div class="alert-card__label">Webhooks morts · replay massif</div>
+            </button>
+          }
+          @if (ov.alerts.open_circuit_breakers.length > 0) {
+            <div class="alert-card alert-card--orange">
+              <mat-icon>electrical_services</mat-icon>
+              <div class="alert-card__count">{{ ov.alerts.open_circuit_breakers.length }}</div>
+              <div class="alert-card__label">
+                Service{{ ov.alerts.open_circuit_breakers.length > 1 ? 's' : '' }} hors ligne :
+                {{ ov.alerts.open_circuit_breakers[0].service }}
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+
+  <!-- ================================================================ -->
+  <!-- 3. QUEUE MONITOR                                                 -->
+  <!-- ================================================================ -->
+
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>queue</mat-icon>
+      Files d'attente
+    </h2>
+
+    <div class="cadmin__card">
+      <div class="queue-bars">
+        <!-- Pending -->
+        <div class="queue-bar">
+          <div class="queue-bar__label">
+            <span class="queue-bar__dot queue-bar__dot--pending"></span>
+            <span>En attente</span>
+            <strong>{{ queueStatus().pending }}</strong>
+          </div>
+          <mat-progress-bar mode="determinate" [value]="queueBarPercent(queueStatus().pending)"
+                            class="queue-bar__progress queue-bar__progress--pending">
+          </mat-progress-bar>
+        </div>
+
+        <!-- Processing -->
+        <div class="queue-bar">
+          <div class="queue-bar__label">
+            <span class="queue-bar__dot queue-bar__dot--processing"></span>
+            <span>En cours</span>
+            <strong>{{ queueStatus().processing }}</strong>
+          </div>
+          <mat-progress-bar mode="determinate" [value]="queueBarPercent(queueStatus().processing)"
+                            class="queue-bar__progress queue-bar__progress--processing">
+          </mat-progress-bar>
+        </div>
+
+        <!-- Failed -->
+        <div class="queue-bar">
+          <div class="queue-bar__label">
+            <span class="queue-bar__dot queue-bar__dot--failed"></span>
+            <span>Echoues</span>
+            <strong>{{ queueStatus().failed }}</strong>
+          </div>
+          <mat-progress-bar mode="determinate" [value]="queueBarPercent(queueStatus().failed)"
+                            class="queue-bar__progress queue-bar__progress--failed">
+          </mat-progress-bar>
+        </div>
+      </div>
+
+      @if (queueStatus().failed > 0) {
+        <div class="queue-actions">
+          <button mat-flat-button class="queue-actions__retry" (click)="retryAllFailed()">
+            <mat-icon>replay</mat-icon>
+            Relancer tous les echoues
+          </button>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 3. WEBHOOK DELIVERY                                              -->
+  <!-- ================================================================ -->
+
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>webhook</mat-icon>
+      Webhooks
+    </h2>
+
+    <!-- DLQ replay-all card -->
+    <div class="cadmin__dlq-card">
+      <div class="cadmin__dlq-text">
+        <h3 class="cadmin__dlq-title">
+          <mat-icon>replay</mat-icon>
+          File de webhooks morts
+        </h3>
+        <p class="cadmin__dlq-desc">
+          Replay massif après une remontée de tuita.fr.
+        </p>
+      </div>
+      <button mat-flat-button color="warn" class="cadmin__dlq-btn" (click)="replayAllDeadLetters()">
+        <mat-icon>replay</mat-icon>
+        Replay all dead webhooks
+      </button>
+    </div>
+
+    <div class="cadmin__card">
+      <!-- Filter chips -->
+      <div class="webhook-filters">
+        @for (f of ['all', 'sent', 'failed', 'dead', 'retrying']; track f) {
+          <button mat-stroked-button
+                  [class.webhook-filters__chip--active]="webhookFilter() === f"
+                  class="webhook-filters__chip"
+                  (click)="setWebhookFilter($any(f))">
+            {{ f === 'all' ? 'Tous' : webhookStatusLabel(f) }}
+          </button>
+        }
+      </div>
+
+      <!-- Table -->
+      @if (filteredWebhookLogs().length > 0) {
+        <div class="webhook-table-wrap">
+          <table mat-table [dataSource]="filteredWebhookLogs()" matSort
+                 [matSortActive]="webhookSort()" [matSortDirection]="webhookDirection()"
+                 (matSortChange)="onWebhookSortChange($event)" class="webhook-table">
+
+            <ng-container matColumnDef="event_type">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="event_type">Evenement</th>
+              <td mat-cell *matCellDef="let row">{{ row.event_type }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Statut</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="webhook-badge" [style.background]="webhookStatusColor(row.status)">
+                  {{ webhookStatusLabel(row.status) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="attempts">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="attempts">Tentatives</th>
+              <td mat-cell *matCellDef="let row">{{ row.attempts }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="response_status">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="response_status">HTTP</th>
+              <td mat-cell *matCellDef="let row">{{ row.response_status ?? '—' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="created_at">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header="created_at">Date</th>
+              <td mat-cell *matCellDef="let row">{{ row.created_at | date:'short' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                @if (canReplay(row)) {
+                  <button mat-icon-button (click)="replayWebhook(row)" matTooltip="Rejouer">
+                    <mat-icon>replay</mat-icon>
+                  </button>
+                }
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="webhookDisplayedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: webhookDisplayedColumns;"></tr>
+          </table>
+        </div>
+      } @else {
+        <div class="cadmin__empty cadmin__empty--inline">
+          <mat-icon>inbox</mat-icon>
+          <span>Aucun webhook{{ webhookFilter() !== 'all' ? ' avec ce filtre' : '' }}</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 4. INFRASTRUCTURE (repliable) — santé services + circuit breakers -->
+  <!-- ================================================================ -->
+
+  <section class="cadmin__section">
+    <button type="button" class="cadmin__collapse-toggle" (click)="toggleInfra()">
+      <mat-icon>{{ infraCollapsed() ? 'expand_more' : 'expand_less' }}</mat-icon>
+      <mat-icon>dns</mat-icon>
+      <span>Infrastructure &amp; santé services</span>
+      <span class="cadmin__collapse-hint">{{ infraCollapsed() ? 'Afficher' : 'Masquer' }}</span>
+    </button>
+  </section>
+
+  @if (!infraCollapsed()) {
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>monitor_heart</mat-icon>
+      Santé du système
+    </h2>
+
+    <div class="cadmin__health-grid">
+      @for (svc of healthServices(); track trackByName($index, svc)) {
+        <div class="health-card">
+          <div class="health-card__header">
+            <mat-icon class="health-card__icon">{{ serviceIcon(svc.name) }}</mat-icon>
+            <span class="health-card__name">{{ svc.name }}</span>
+          </div>
+          <div class="health-card__body">
+            <mat-icon class="health-card__dot" [style.color]="healthColor(svc.status)">
+              {{ healthIcon(svc.status) }}
+            </mat-icon>
+            <span class="health-card__status" [style.color]="healthColor(svc.status)">
+              {{ svc.status === 'healthy' ? 'OK' : svc.status === 'degraded' ? 'Dégradé' : 'Hors ligne' }}
+            </span>
+          </div>
+          <div class="health-card__latency">
+            {{ svc.latency_ms }}ms
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>electrical_services</mat-icon>
+      Circuit Breakers
+    </h2>
+
+    <div class="cadmin__circuits-grid">
+      @for (cb of circuitBreakers(); track trackByService($index, cb)) {
+        <div class="circuit-card" [class.circuit-card--open]="cb.state === 'open'"
+             [class.circuit-card--half]="cb.state === 'half_open'">
+          <div class="circuit-card__header">
+            <mat-icon>{{ circuitIcon(cb.service) }}</mat-icon>
+            <span class="circuit-card__name">{{ circuitLabel(cb.service) }}</span>
+          </div>
+          <div class="circuit-card__status">
+            <span class="circuit-card__dot" [style.background]="circuitStateColor(cb.state)"></span>
+            <span [style.color]="circuitStateColor(cb.state)" class="circuit-card__state-label">
+              {{ circuitStateLabel(cb.state) }}
+            </span>
+          </div>
+          @if (cb.state === 'open' && cb.opened_at) {
+            <div class="circuit-card__info">
+              Ouvert depuis {{ cb.opened_at | date:'short' }}
+            </div>
+          }
+          @if (cb.failure_count > 0) {
+            <div class="circuit-card__failures">
+              {{ cb.failure_count }} échec{{ cb.failure_count > 1 ? 's' : '' }}
+            </div>
+          }
+          @if (cb.state !== 'closed') {
+            <button mat-stroked-button class="circuit-card__btn" (click)="forceCloseCircuit(cb)">
+              <mat-icon>power</mat-icon>
+              Forcer la fermeture
+            </button>
+          }
+        </div>
+      }
+
+      @if (circuitBreakers().length === 0 && !isLoading()) {
+        <div class="cadmin__empty">
+          <mat-icon>check_circle</mat-icon>
+          <span>Aucun circuit breaker configuré</span>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 5. COMPLIANCE STATS                                              -->
+  <!-- ================================================================ -->
+
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>assessment</mat-icon>
+      Statistiques Compliance
+    </h2>
+
+    @if (complianceStats(); as stats) {
+      <!-- KPI cards -->
+      <div class="cadmin__kpi-grid">
+        <div class="kpi-card">
+          <mat-icon class="kpi-card__icon">groups</mat-icon>
+          <div class="kpi-card__value">{{ stats.total_contractors }}</div>
+          <div class="kpi-card__label">Prestataires</div>
+        </div>
+        <div class="kpi-card kpi-card--green">
+          <mat-icon class="kpi-card__icon">verified</mat-icon>
+          <div class="kpi-card__value">{{ stats.verified_percentage }}%</div>
+          <div class="kpi-card__label">Conformes</div>
+        </div>
+        <div class="kpi-card">
+          <mat-icon class="kpi-card__icon">description</mat-icon>
+          <div class="kpi-card__value">{{ stats.documents_verified }}</div>
+          <div class="kpi-card__label">Docs vérifiés</div>
+        </div>
+        <div class="kpi-card">
+          <mat-icon class="kpi-card__icon">timer</mat-icon>
+          <div class="kpi-card__value">{{ formatDuration(stats.avg_processing_time_seconds) }}</div>
+          <div class="kpi-card__label">Temps moyen</div>
+        </div>
+      </div>
+
+      <!-- Account state breakdown -->
+      <div class="cadmin__card cadmin__card--mt">
+        <h3 class="cadmin__card-title">Répartition par état</h3>
+        <div class="state-bars">
+          @for (entry of accountStateEntries(); track trackByKey($index, entry)) {
+            <div class="state-bar">
+              <div class="state-bar__header">
+                <span class="state-bar__label">{{ accountStateLabel(entry.key) }}</span>
+                <span class="state-bar__value">{{ entry.value }}</span>
+              </div>
+              <div class="state-bar__track">
+                <div class="state-bar__fill"
+                     [style.width.%]="accountStateBarPercent(entry.value)"
+                     [style.background]="accountStateColor(entry.key)">
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    } @else if (!isLoading()) {
+      <div class="cadmin__empty">
+        <mat-icon>bar_chart</mat-icon>
+        <span>Aucune statistique disponible</span>
+      </div>
+    }
+  </section>
+  } <!-- /infraCollapsed -->
+
+  <!-- Loading overlay -->
+  @if (isLoading()) {
+    <div class="cadmin__loading-bar">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </div>
+  }
+
+</div>
+
+}

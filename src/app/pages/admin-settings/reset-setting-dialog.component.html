@@ -1,0 +1,34 @@
+<header class="dialog-header" mat-dialog-title>
+  <div class="dialog-header__main">
+    <mat-icon>undo</mat-icon>
+    <span class="dialog-header__title">Réinitialiser le paramètre</span>
+  </div>
+  <button mat-icon-button (click)="cancel()" aria-label="Fermer" type="button">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<div mat-dialog-content class="reset-dlg">
+  <p>
+    Réinitialiser <code>{{ data.key }}</code> à sa valeur par défaut (.env fallback) ?
+  </p>
+
+  <mat-form-field appearance="outline" class="reset-dlg__field">
+    <mat-label>Raison (audit)</mat-label>
+    <textarea
+      matInput
+      rows="3"
+      [ngModel]="reason()"
+      (ngModelChange)="onReasonChange($event)"
+      placeholder="Pourquoi réinitialisez-vous ? (10 caractères minimum)"
+    ></textarea>
+    <mat-hint>{{ reason().length }}/10 caractères minimum</mat-hint>
+  </mat-form-field>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Annuler</button>
+  <button mat-flat-button color="warn" [disabled]="!canSubmit()" (click)="submit()">
+    Réinitialiser
+  </button>
+</div>

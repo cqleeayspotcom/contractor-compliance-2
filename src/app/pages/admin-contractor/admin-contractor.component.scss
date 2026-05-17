@@ -1,0 +1,698 @@
+:host {
+  display: block;
+}
+
+.admin-contractor-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// ----------------------------------------------------------------------------
+// Header
+// ----------------------------------------------------------------------------
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 12px;
+
+  .page-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: #1a1a1a;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Loading / error / empty states
+// ----------------------------------------------------------------------------
+.state-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 16px;
+  color: #4b5563;
+
+  &--error {
+    color: #b91c1c;
+
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    opacity: 0.5;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Hero card
+// ----------------------------------------------------------------------------
+.hero-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.hero-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #6366f1;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.hero-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.hero-name {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+}
+
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  color: #4b5563;
+  font-size: 0.9rem;
+
+  > div {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #6b7280;
+    }
+  }
+
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Plan + state pills
+// ----------------------------------------------------------------------------
+.plan-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #4b5563;
+
+  &--pro {
+    background: linear-gradient(135deg, #fde68a, #f59e0b);
+    color: #78350f;
+  }
+}
+
+.state-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+
+  &--ok {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// KPI grid
+// ----------------------------------------------------------------------------
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.kpi-tile {
+  padding: 16px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #6b7280;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 6px;
+
+    &--small {
+      font-size: 1.1rem;
+    }
+
+    &--ok {
+      color: #14532d;
+    }
+  }
+
+  &__unit {
+    font-size: 0.85rem;
+    font-weight: 400;
+    color: #6b7280;
+    margin-left: 4px;
+  }
+
+  &__hint {
+    margin: 4px 0 0;
+    font-size: 0.8rem;
+    color: #6b7280;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Tabs
+// ----------------------------------------------------------------------------
+.contractor-tabs {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tab-content {
+  padding: 16px;
+}
+
+// ----------------------------------------------------------------------------
+// Chip row (summary above tables)
+// ----------------------------------------------------------------------------
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.chip {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 0.8rem;
+  font-weight: 500;
+
+  &--ok {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+  &--err {
+    background: #fecaca;
+    color: #7f1d1d;
+  }
+  &--warn {
+    background: #fed7aa;
+    color: #7c2d12;
+  }
+  &--info {
+    background: #bfdbfe;
+    color: #1e3a8a;
+  }
+  &--missing {
+    background: #fef3c7;
+    color: #92400e;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Filter bar (search + status select + reset)
+// ----------------------------------------------------------------------------
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+
+  &__search {
+    flex: 1 1 280px;
+    min-width: 240px;
+  }
+
+  &__select {
+    width: 200px;
+  }
+
+  &__spacer {
+    flex: 1;
+  }
+
+  &__loader {
+    display: inline-flex;
+    align-items: center;
+    color: #6366f1;
+  }
+
+  // Mat form-field gets squashed by default — let it breathe a bit
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+// Sort button inside table header
+.sort-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  color: #374151;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+  }
+
+  &:hover mat-icon {
+    opacity: 1;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Tables (copied from admin-invoices style for consistency)
+// ----------------------------------------------------------------------------
+.table-wrapper {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+
+  tr.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background-color: #f3f4f6;
+    }
+  }
+
+  th {
+    background: #fafafa;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  td {
+    font-size: 0.9rem;
+  }
+
+  .muted {
+    color: #6b7280;
+  }
+  .block {
+    display: block;
+    margin-top: 2px;
+  }
+  .exp-soon {
+    color: #b91c1c;
+    font-weight: 500;
+  }
+  code {
+    background: #f3f4f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #4338ca;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-decoration: underline;
+
+  &:hover {
+    color: #3730a3;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Status pills (mirror admin-invoices.component.scss for visual consistency)
+// ----------------------------------------------------------------------------
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #1a1a1a;
+
+  // Invoice statuses
+  &.status-pending_payment_validation {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  &.status-ready_to_pay {
+    background: #ddd6fe;
+    color: #5b21b6;
+  }
+  &.status-payment_in_progress {
+    background: #bfdbfe;
+    color: #1e3a8a;
+  }
+  &.status-paid {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+  &.status-rejected {
+    background: #fecaca;
+    color: #7f1d1d;
+  }
+  &.status-cancelled {
+    background: #e5e7eb;
+    color: #4b5563;
+  }
+  &.status-validating,
+  &.status-draft {
+    background: #e0e7ff;
+    color: #3730a3;
+  }
+
+  // Document / KYC / purchase shared statuses
+  &.status-verified,
+  &.status-approved,
+  &.status-completed {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+  &.status-pending,
+  &.status-processing {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  &.status-expired {
+    background: #fed7aa;
+    color: #7c2d12;
+  }
+  &.status-failed {
+    background: #fecaca;
+    color: #7f1d1d;
+  }
+  &.status-missing {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// KYC timeline
+// ----------------------------------------------------------------------------
+.kyc-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.kyc-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f3f4f6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+  }
+
+  &--ok &__icon {
+    background: #bbf7d0;
+    color: #14532d;
+  }
+
+  &--err &__icon {
+    background: #fecaca;
+    color: #7f1d1d;
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  &__failure {
+    margin-top: 8px;
+    padding: 8px 10px;
+    background: #fee2e2;
+    border-left: 3px solid #dc2626;
+    border-radius: 4px;
+    color: #7f1d1d;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.6);
+      padding: 1px 6px;
+      border-radius: 3px;
+    }
+  }
+
+  .muted {
+    color: #6b7280;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Responsive
+// ----------------------------------------------------------------------------
+@media (max-width: 768px) {
+  .admin-contractor-page {
+    padding: 12px;
+  }
+
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .hero-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+  }
+
+  .hero-meta {
+    justify-content: center;
+  }
+
+  .hero-name {
+    justify-content: center;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+// ---------------- Missions tab ----------------
+
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+
+  &--on {
+    background: rgba(37, 99, 235, 0.08);
+    border-color: #2563eb;
+    color: #1d4ed8;
+  }
+}
+
+.mission-title {
+  font-weight: 500;
+  color: #1f2937;
+}
+
+.mission-subtitle {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.invoice-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.chip-missing {
+    background: #fef2f2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
+  }
+  &.chip-pending {
+    background: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #fed7aa;
+  }
+  &.chip-ready {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+  }
+  &.chip-paid {
+    background: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+  }
+  &.chip-rejected {
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #d1d5db;
+  }
+}
+
+.invoice-link {
+  margin-left: 6px;
+  width: 28px;
+  height: 28px;
+  line-height: 28px;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}

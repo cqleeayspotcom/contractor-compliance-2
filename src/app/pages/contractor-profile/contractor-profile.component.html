@@ -1,0 +1,107 @@
+<div class="profile-page">
+  <header class="profile-page__header">
+    <button mat-icon-button (click)="goBack()" aria-label="Retour">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <h1>Mon profil</h1>
+  </header>
+
+  @if (loading()) {
+    <div class="profile-page__loading">Chargement...</div>
+  } @else if (profile(); as p) {
+    <div class="profile-card">
+      <div class="profile-card__avatar" [class.profile-card__avatar--initials]="initials(p) !== ''">
+        @if (initials(p) !== '') {
+          <span class="profile-card__avatar-text">{{ initials(p) }}</span>
+        } @else {
+          <mat-icon>person</mat-icon>
+        }
+      </div>
+      <h2 class="profile-card__name">
+        {{ p.identity.first_name }} {{ p.identity.last_name }}
+      </h2>
+
+      <section class="profile-section">
+        <div class="profile-row">
+          <mat-icon class="profile-row__icon">smartphone</mat-icon>
+          <div class="profile-row__body">
+            <span class="profile-row__label">Téléphone</span>
+            <span class="profile-row__value">{{ (p.identity.phone | phoneDisplay) || '-' }}</span>
+          </div>
+        </div>
+        <div class="profile-row">
+          <mat-icon class="profile-row__icon">business</mat-icon>
+          <div class="profile-row__body">
+            <span class="profile-row__label">Entreprise</span>
+            <span class="profile-row__value">{{ p.identity.company_name || '-' }}</span>
+            @if (p.identity.siren) {
+              <span class="profile-row__hint">SIREN {{ p.identity.siren }}</span>
+            }
+          </div>
+        </div>
+      </section>
+
+      <section class="profile-section">
+        <h3 class="profile-section__title">
+          <mat-icon>mail</mat-icon>
+          Notifications par email
+        </h3>
+        <p class="profile-section__hint">
+          Renseignez votre adresse email puis activez les types d'alertes que vous souhaitez recevoir.
+          Sans email renseigné, vous ne recevrez rien - il n'y a pas de cloche dans le portail.
+        </p>
+
+        <mat-form-field appearance="outline" class="profile-section__field">
+          <mat-label>Adresse email</mat-label>
+          <input
+            matInput
+            type="email"
+            [ngModel]="draft()?.email_address"
+            (ngModelChange)="updateDraft('email_address', $event || null)"
+            placeholder="vous@exemple.fr"
+          />
+        </mat-form-field>
+
+        <div class="toggle-row">
+          <mat-icon class="toggle-row__icon">payments</mat-icon>
+          <span class="toggle-row__label">Virements lancés / reçus</span>
+          <mat-slide-toggle
+            [checked]="draft()?.email_invoice_payment"
+            (change)="updateDraft('email_invoice_payment', $event.checked)"
+          ></mat-slide-toggle>
+        </div>
+        <div class="toggle-row">
+          <mat-icon class="toggle-row__icon">schedule</mat-icon>
+          <span class="toggle-row__label">Documents qui expirent</span>
+          <mat-slide-toggle
+            [checked]="draft()?.email_document_expiry"
+            (change)="updateDraft('email_document_expiry', $event.checked)"
+          ></mat-slide-toggle>
+        </div>
+        <div class="toggle-row">
+          <mat-icon class="toggle-row__icon">cancel</mat-icon>
+          <span class="toggle-row__label">Factures rejetées</span>
+          <mat-slide-toggle
+            [checked]="draft()?.email_invoice_rejected"
+            (change)="updateDraft('email_invoice_rejected', $event.checked)"
+          ></mat-slide-toggle>
+        </div>
+        <button
+          type="button"
+          class="save-button"
+          [class.save-button--disabled]="!isDirty() || saving()"
+          [disabled]="!isDirty() || saving()"
+          (click)="save()"
+        >
+          <mat-icon>save</mat-icon>
+          <span>{{ saving() ? 'Enregistrement...' : 'Enregistrer mes préférences' }}</span>
+        </button>
+      </section>
+
+      <button mat-flat-button color="warn" class="logout-button" (click)="logout()">
+        <mat-icon>logout</mat-icon>
+        Se déconnecter
+      </button>
+    </div>
+  }
+</div>

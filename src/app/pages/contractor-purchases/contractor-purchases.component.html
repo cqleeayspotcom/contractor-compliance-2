@@ -1,0 +1,130 @@
+<div class="purchases">
+  <header class="purchases__header">
+    <div class="purchases__title-row">
+      <app-back-button [to]="'/documents'" />
+      <h1>Mes achats officiels</h1>
+    </div>
+    <p class="purchases__subtitle">
+      Retrouvez vos documents achetés. Téléchargez votre PDF ou votre facture à tout moment.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <div class="purchases__loading">
+      <mat-spinner diameter="32"></mat-spinner>
+      <p>Chargement...</p>
+    </div>
+  } @else {
+    <div class="purchases__toolbar">
+      <mat-form-field appearance="outline" class="filter">
+        <mat-label>Période</mat-label>
+        <mat-select [(ngModel)]="rangeFilter" (ngModelChange)="onRangeChange()">
+          <mat-option value="30">30 derniers jours</mat-option>
+          <mat-option value="90">3 derniers mois</mat-option>
+          <mat-option value="365">12 derniers mois</mat-option>
+          <mat-option value="all">Tout l'historique</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <div class="purchases__count">
+        <strong>{{ totals().total }}</strong> achat{{ totals().total > 1 ? 's' : '' }}
+      </div>
+    </div>
+
+    @if (filteredRows().length === 0) {
+      <div class="purchases__empty">
+        <mat-icon>receipt_long</mat-icon>
+        <h2>Aucun achat sur cette période</h2>
+        <p>Récupérez votre extrait d'immatriculation officiel en un clic depuis la page Documents.</p>
+        <a mat-raised-button color="primary" routerLink="/documents">
+          Aller aux documents
+        </a>
+      </div>
+    } @else {
+      <div class="purchases__list">
+        @for (row of filteredRows(); track row.uuid) {
+          <article
+            class="purchase"
+            [class.purchase--ok]="row.status === 'completed'"
+            [class.purchase--pending]="row.status === 'pending'"
+            [class.purchase--fail]="row.status === 'failed'"
+            [class.purchase--refunded]="row.status === 'refunded'">
+
+            <div class="purchase__main">
+              <mat-icon class="purchase__icon">{{ statusIcon(row.status) }}</mat-icon>
+              <div class="purchase__info">
+                <h3 class="purchase__title">{{ row.label }}</h3>
+                <div class="purchase__meta">
+                  <span>SIREN {{ row.siren }}</span>
+                  <span>·</span>
+                  <span>{{ row.created_at | date: 'dd/MM/yyyy' }}</span>
+                  <span>·</span>
+                  <span><strong>{{ row.price_eur | number: '1.2-2' }} €</strong></span>
+                </div>
+                <div class="purchase__status purchase__status--{{ row.status }}">
+                  {{ row.status_label }}
+                </div>
+              </div>
+            </div>
+
+            @if (row.status === 'refunded') {
+              <div class="purchase__refund-banner" role="status">
+                <mat-icon class="purchase__refund-icon">verified</mat-icon>
+                <div class="purchase__refund-text">
+                  <strong>Remboursement effectué automatiquement</strong>
+                  <span>
+                    Nous n'avons pas pu livrer ce document. Vos
+                    <strong>{{ row.price_eur | number: '1.2-2' }}&nbsp;€</strong>
+                    ont été intégralement recrédités sur votre carte
+                    @if (row.refunded_at) {
+                      le {{ row.refunded_at | date: 'dd/MM/yyyy' }}.
+                    } @else {
+                      .
+                    }
+                    Le crédit apparaît sous 5&nbsp;à&nbsp;10 jours ouvrés selon votre banque.
+                    <strong>Aucune action de votre part n'est requise.</strong>
+                  </span>
+                </div>
+              </div>
+            }
+
+            <div class="purchase__actions">
+              @if (row.status === 'completed' && row.document_download_url) {
+                <a mat-raised-button color="primary"
+                   [href]="row.document_download_url"
+                   target="_blank" rel="noopener">
+                  <mat-icon>picture_as_pdf</mat-icon>
+                  Télécharger le document
+                </a>
+              }
+              @if (row.stripe_receipt_url) {
+                <a mat-stroked-button
+                   [href]="row.stripe_receipt_url"
+                   target="_blank" rel="noopener">
+                  <mat-icon>receipt</mat-icon>
+                  @if (row.status === 'refunded') {
+                    Voir la preuve de remboursement
+                  } @else {
+                    Télécharger la facture
+                  }
+                </a>
+              }
+              @if (row.status === 'pending') {
+                <span class="purchase__hint">
+                  <mat-spinner diameter="16"></mat-spinner>
+                  Livraison en cours (généralement &lt; 2 min)
+                </span>
+              }
+              @if (row.status === 'failed') {
+                <span class="purchase__hint">
+                  <mat-icon>info</mat-icon>
+                  Vous serez remboursé automatiquement sous 5 jours ouvrés.
+                </span>
+              }
+            </div>
+          </article>
+        }
+      </div>
+    }
+  }
+</div>

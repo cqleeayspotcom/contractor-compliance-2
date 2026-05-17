@@ -1,0 +1,844 @@
+<div class="admin-invoices-page">
+  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+  <header class="page-header">
+    <div class="page-title">
+      <mat-icon>receipt_long</mat-icon>
+      <h1>Administration factures</h1>
+    </div>
+    <div class="page-actions">
+      @if (adminActorEmail()) {
+        <span class="admin-actor-pill"
+              matTooltip="Identité utilisée pour valider/rejeter (envoyée comme X-Admin-Actor-Email/Name)">
+          <mat-icon>badge</mat-icon>
+          {{ adminActorName() }} ({{ adminActorEmail() }})
+          <button mat-icon-button class="reset-actor-btn"
+                  matTooltip="Changer d'identité admin"
+                  (click)="resetAdminActor()">
+            <mat-icon>logout</mat-icon>
+          </button>
+        </span>
+      }
+      @if (lastSyncedAt()) {
+        <span class="live-pill" matTooltip="Mise à jour automatique toutes les 30s">
+          <span class="live-dot"></span> Live · {{ lastSyncedAt() | date:'HH:mm:ss' }}
+        </span>
+      }
+      <button mat-icon-button matTooltip="Raccourcis (?)" (click)="showShortcuts.set(true)">
+        <mat-icon>keyboard</mat-icon>
+      </button>
+      <button mat-stroked-button color="primary" (click)="refreshCurrent()">
+        <mat-icon>refresh</mat-icon>
+        Actualiser
+      </button>
+    </div>
+  </header>
+
+  <app-keyboard-shortcuts-overlay [visible]="showShortcuts()" (closed)="showShortcuts.set(false)" />
+
+  <mat-tab-group
+    mat-stretch-tabs="false"
+    [selectedIndex]="initialTabIndex()"
+    (selectedIndexChange)="onTabChange($event)"
+    animationDuration="120ms"
+  >
+    <mat-tab label="À valider">
+      <ng-container *ngTemplateOutlet="tableTpl; context: { tabKey: 'pending', mode: 'pending' }"></ng-container>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <span class="flag">🚩</span>&nbsp;Bon pour paiement
+      </ng-template>
+      <ng-container *ngTemplateOutlet="tableTpl; context: { tabKey: 'ready', mode: 'ready' }"></ng-container>
+    </mat-tab>
+
+    <mat-tab label="Virement en cours">
+      <ng-container *ngTemplateOutlet="tableTpl; context: { tabKey: 'inprogress', mode: 'inprogress' }"></ng-container>
+    </mat-tab>
+
+    <mat-tab label="Litiges">
+      <ng-container *ngTemplateOutlet="tableTpl; context: { tabKey: 'disputed', mode: 'disputed' }"></ng-container>
+    </mat-tab>
+
+    <mat-tab label="Tout">
+      <ng-container *ngTemplateOutlet="tableTpl; context: { tabKey: 'all', mode: 'all' }"></ng-container>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<!-- ========================================================================== -->
+<!-- Reusable table template                                                    -->
+<!-- ========================================================================== -->
+
+<ng-template #tableTpl let-tabKey="tabKey" let-mode="mode">
+  <ng-container *ngIf="tabs[tabKey]() as state">
+    <app-admin-invoice-filter-bar [mode]="mode" (filtersChange)="onFiltersChange(tabKey, $event)" />
+
+    <div class="list-only">
+      <div class="list-only__inner">
+        <div class="table-toolbar">
+          <span class="total-label">{{ state.total }} facture(s)</span>
+          <span *ngIf="stuckFilter()" class="stuck-chip">
+            <mat-icon>warning</mat-icon>&nbsp;Filtre « bloquées » actif
+          </span>
+          <mat-progress-spinner
+            *ngIf="state.loading"
+            mode="indeterminate"
+            diameter="22"
+          ></mat-progress-spinner>
+        </div>
+
+        <table mat-table [dataSource]="state.rows" [trackBy]="trackByUuid" matSort
+               [matSortActive]="sortFor(tabKey)"
+               [matSortDirection]="directionFor(tabKey)"
+               (matSortChange)="onSortChange(tabKey, $event)" class="invoices-table">
+        <!-- Numéro -->
+        <ng-container matColumnDef="number">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="number">Numéro</th>
+          <td mat-cell *matCellDef="let inv">
+            <button mat-button class="link-btn" (click)="$event.stopPropagation(); openDetail(inv)">
+              {{ inv.number || (inv.uuid | slice:0:8) }}
+            </button>
+            <ng-container *ngIf="mode === 'pending'">
+              <div class="validators-row">
+                <mat-chip-set>
+                  <mat-chip [class]="approvalProgressClass(inv)">
+                    {{ approvalsLabel(inv) }} validations
+                  </mat-chip>
+                  <mat-chip *ngIf="staleSeverity(inv) === 'warning'" class="chip-warning">
+                    ⚠ {{ ageDays(inv) }}j
+                  </mat-chip>
+                  <mat-chip *ngIf="staleSeverity(inv) === 'critical'" class="chip-rejected">
+                    🔥 {{ ageDays(inv) }}j
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+            </ng-container>
+          </td>
+        </ng-container>
+
+        <!-- Mission -->
+        <ng-container matColumnDef="mission_ref">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="mission_ref">Mission</th>
+          <td mat-cell *matCellDef="let inv">
+            <button
+              *ngIf="inv.mission_ref"
+              mat-button
+              class="mission-link"
+              (click)="$event.stopPropagation(); openMissionDialog(inv.mission_ref)">
+              <code>{{ inv.mission_ref }}</code>
+            </button>
+            <span *ngIf="!inv.mission_ref" class="muted">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Montant -->
+        <ng-container matColumnDef="amount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="amount">Montant TTC</th>
+          <td mat-cell *matCellDef="let inv" class="amount-col">{{ amountLabel(inv) }}</td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Statut</th>
+          <td mat-cell *matCellDef="let inv">
+            <span class="status-pill" [class]="statusClass(inv.status)">
+              {{ statusLabel(inv.status) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Date -->
+        <ng-container matColumnDef="date">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="date">Créée le</th>
+          <td mat-cell *matCellDef="let inv">{{ formatDate(inv.created_at) }}</td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef class="actions-col">Actions</th>
+          <td mat-cell *matCellDef="let inv" class="actions-col" (click)="$event.stopPropagation()">
+            <button mat-icon-button [matMenuTriggerFor]="rowMenu" aria-label="Actions">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #rowMenu="matMenu">
+              <button mat-menu-item (click)="openDetail(inv)">
+                <mat-icon>info</mat-icon>
+                <span>Voir détail</span>
+              </button>
+              <button mat-menu-item (click)="openAuditTrail(inv)">
+                <mat-icon>history</mat-icon>
+                <span>Voir audit trail</span>
+              </button>
+
+              <mat-divider></mat-divider>
+
+              <button
+                *ngIf="mode === 'ready'"
+                mat-menu-item
+                (click)="openMarkPaymentInProgress(inv)"
+              >
+                <mat-icon>send</mat-icon>
+                <span>Marquer virement lancé</span>
+              </button>
+
+              <button
+                *ngIf="mode === 'ready'"
+                mat-menu-item
+                (click)="openMarkPaidFastPath(inv)"
+              >
+                <mat-icon color="warn">flash_on</mat-icon>
+                <span>Marquer payée (fast path)</span>
+              </button>
+
+              <button
+                *ngIf="mode === 'inprogress'"
+                mat-menu-item
+                (click)="openMarkPaid(inv)"
+              >
+                <mat-icon>paid</mat-icon>
+                <span>Marquer payée</span>
+              </button>
+
+              <button
+                *ngIf="mode === 'disputed'"
+                mat-menu-item
+                (click)="openResolveDispute(inv)"
+              >
+                <mat-icon>gavel</mat-icon>
+                <span>Résoudre le litige</span>
+              </button>
+
+              <button *ngIf="isRejected(inv)" mat-menu-item (click)="openReopen(inv)">
+                <mat-icon>restart_alt</mat-icon>
+                <span>Rouvrir</span>
+              </button>
+
+              <mat-divider></mat-divider>
+
+              <button mat-menu-item (click)="openForceResendWebhook(inv)">
+                <mat-icon>cloud_upload</mat-icon>
+                <span>Renvoyer un webhook</span>
+              </button>
+              <button mat-menu-item (click)="openAddNote(inv)">
+                <mat-icon>note_add</mat-icon>
+                <span>Ajouter une note</span>
+              </button>
+            </mat-menu>
+          </td>
+        </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row
+              *matRowDef="let row; columns: displayedColumns;"
+              class="row-clickable"
+              (click)="openDetail(row)"></tr>
+        </table>
+
+        <div *ngIf="!state.loading && state.rows.length === 0" class="empty-state">
+          Aucune facture dans cette catégorie.
+        </div>
+
+        <mat-paginator
+          [length]="state.total"
+          [pageSize]="state.perPage"
+          [pageIndex]="state.page - 1"
+          [pageSizeOptions]="[10, 20, 50]"
+          (page)="onPageChange($event)"
+        ></mat-paginator>
+      </div>
+    </div>
+  </ng-container>
+</ng-template>
+
+<!-- ========================================================================== -->
+<!-- Action confirmation dialog                                                 -->
+<!-- ========================================================================== -->
+
+<ng-template #actionDialogTpl>
+  <h2 mat-dialog-title>{{ dialogCtx.title }}</h2>
+  <mat-dialog-content class="action-dialog-content">
+    @if (dialogCtx.invoice?.contractor_status; as cs) {
+      <app-contractor-status-banner
+        [status]="cs"
+        [phone]="dialogCtx.invoice?.contractor_phone"
+        [contractorName]="dialogCtx.invoice?.contractor_name"
+        [siren]="dialogCtx.invoice?.contractor_siren"
+        (profileClick)="navigateToContractor($event)" />
+    }
+    <p class="action-body" [class.danger]="dialogCtx.danger">{{ dialogCtx.body }}</p>
+
+    <p *ngIf="dialogCtx.invoice as inv" class="invoice-summary">
+      Facture : <strong>{{ inv.number || inv.uuid }}</strong>
+      &middot; Mission : {{ inv.mission_ref || '—' }}
+      &middot; {{ amountLabel(inv) }}
+    </p>
+
+    <form class="dialog-form">
+      <ng-container *ngFor="let f of dialogCtx.fields; trackBy: trackByFieldKey">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>{{ f.label }}</mat-label>
+
+          <input
+            *ngIf="f.type === 'text'"
+            matInput
+            [(ngModel)]="f.value"
+            [name]="f.key"
+            [required]="f.required"
+          />
+
+          <textarea
+            *ngIf="f.type === 'textarea'"
+            matInput
+            rows="3"
+            [(ngModel)]="f.value"
+            [name]="f.key"
+            [required]="f.required"
+          ></textarea>
+
+          <input
+            *ngIf="f.type === 'date'"
+            matInput
+            type="date"
+            [(ngModel)]="f.value"
+            [name]="f.key"
+            [required]="f.required"
+          />
+
+          <mat-select
+            *ngIf="f.type === 'select'"
+            [(ngModel)]="f.value"
+            [name]="f.key"
+            [required]="f.required"
+          >
+            <mat-option *ngFor="let o of f.options" [value]="o.value">{{ o.label }}</mat-option>
+          </mat-select>
+
+          <mat-hint *ngIf="f.hint">{{ f.hint }}</mat-hint>
+        </mat-form-field>
+      </ng-container>
+    </form>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onDialogCancel()">{{ dialogCtx.cancelLabel || 'Annuler' }}</button>
+    <button
+      mat-flat-button
+      [color]="dialogCtx.danger ? 'warn' : 'primary'"
+      [disabled]="!dialogValid()"
+      (click)="onDialogConfirm()"
+    >
+      {{ dialogCtx.confirmLabel }}
+    </button>
+  </mat-dialog-actions>
+</ng-template>
+
+<!-- ========================================================================== -->
+<!-- Detail dialog (full invoice JSON + inline audit trail)                     -->
+<!-- ========================================================================== -->
+
+<ng-template #detailDialogTpl>
+  <div class="invoice-detail">
+    <header class="invoice-detail__head">
+      <div class="invoice-detail__head-main">
+        <h2>{{ detailData()?.invoice?.number || dialogCtx.invoice?.uuid }}</h2>
+        <span class="status-pill" [ngClass]="statusClass(detailData()?.invoice?.status || dialogCtx.invoice?.status || '')">
+          {{ statusLabel(detailData()?.invoice?.status || dialogCtx.invoice?.status || '') }}
+        </span>
+        <span class="invoice-detail__amount">
+          {{ detailData()?.invoice?.amount_ttc != null ? (detailData()!.invoice.amount_ttc | number:'1.2-2') + ' €' : '—' }}
+        </span>
+      </div>
+      <div class="invoice-detail__head-actions">
+        <div class="detail-nav">
+          <button mat-icon-button (click)="detailGoPrev()" [disabled]="detailIndex() <= 0" matTooltip="Précédente (K)">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="detail-nav__pos">{{ detailIndex() + 1 }} / {{ detailTotal() }}</span>
+          <button mat-icon-button (click)="detailGoNext()" [disabled]="detailIndex() >= detailTotal() - 1" matTooltip="Suivante (J)">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+        <ng-container *ngIf="detailHotAction() as hot">
+          <button mat-flat-button [color]="hot.color" type="button" (click)="hot.run()">
+            <mat-icon>{{ hot.icon }}</mat-icon> {{ hot.label }}
+          </button>
+        </ng-container>
+        <button mat-icon-button [matMenuTriggerFor]="detailActionsMenu" aria-label="Plus d'actions" matTooltip="Plus d'actions">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #detailActionsMenu="matMenu">
+          <button
+            *ngIf="(detailData()?.invoice?.status || dialogCtx.invoice?.status) === 'ready_to_pay'"
+            mat-menu-item
+            (click)="dialogCtx.invoice && openMarkPaidFastPath(dialogCtx.invoice)"
+          >
+            <mat-icon color="warn">flash_on</mat-icon>
+            <span>Marquer payée (fast path)</span>
+          </button>
+          <button
+            *ngIf="dialogCtx.invoice && isRejected(dialogCtx.invoice)"
+            mat-menu-item
+            (click)="openReopen(dialogCtx.invoice!)"
+          >
+            <mat-icon>restart_alt</mat-icon>
+            <span>Rouvrir</span>
+          </button>
+          <button
+            *ngIf="dialogCtx.invoice?.paid_disputed_at"
+            mat-menu-item
+            (click)="openResolveDispute(dialogCtx.invoice!)"
+          >
+            <mat-icon>gavel</mat-icon>
+            <span>Résoudre le litige</span>
+          </button>
+          <mat-divider></mat-divider>
+          <button mat-menu-item (click)="dialogCtx.invoice && openForceResendWebhook(dialogCtx.invoice)">
+            <mat-icon>cloud_upload</mat-icon>
+            <span>Renvoyer un webhook</span>
+          </button>
+          <button mat-menu-item (click)="dialogCtx.invoice && openAddNote(dialogCtx.invoice)">
+            <mat-icon>note_add</mat-icon>
+            <span>Ajouter une note</span>
+          </button>
+        </mat-menu>
+        <button mat-stroked-button type="button" [disabled]="!detailPdfBlob()" (click)="downloadDetailPdf()">
+          <mat-icon>download</mat-icon> Télécharger
+        </button>
+        <button mat-stroked-button type="button" [disabled]="!detailPdfUrl()" (click)="openDetailPdfInNewTab()">
+          <mat-icon>open_in_new</mat-icon> Ouvrir
+        </button>
+        <button mat-icon-button type="button" aria-label="Fermer" (click)="closeDetailDialog()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    </header>
+
+    <div *ngIf="detailLoading()" class="invoice-detail__loading">
+      <mat-spinner diameter="32"></mat-spinner><span>Chargement du détail…</span>
+    </div>
+
+    <div *ngIf="!detailLoading() && detailData() as data" class="invoice-detail__body">
+      <div class="invoice-detail__info">
+
+        <!-- Contractor 360° — données métier réunies pour les validateurs -->
+        <section *ngIf="data.contractor_context as ctx" class="info-card info-card--accent">
+          <h3><mat-icon>account_circle</mat-icon> Contractor 360°</h3>
+          <div class="info-grid">
+            <div>
+              <label>Identité</label>
+              <strong>{{ ctx.identity.first_name }} {{ ctx.identity.last_name }}</strong>
+              <span class="muted">{{ ctx.identity.company_name }}</span>
+              <span class="muted" *ngIf="ctx.identity.siren">SIREN {{ ctx.identity.siren }}</span>
+            </div>
+            <div>
+              <label>Téléphone</label>
+              <strong><code>{{ (ctx.identity.phone | phoneDisplay) || '—' }}</code></strong>
+            </div>
+            <div>
+              <label>Plan</label>
+              <span class="plan-pill" [class.plan-pill--pro]="ctx.identity.plan === 'paid' || ctx.identity.plan === 'pro'">
+                {{ ctx.identity.plan === 'paid' || ctx.identity.plan === 'pro' ? '⭐ Pro' : 'Free' }}
+              </span>
+            </div>
+            <div>
+              <label>État compte</label>
+              <strong>{{ ctx.identity.account_state || '—' }}</strong>
+            </div>
+          </div>
+
+          <!-- Score conformité + complétude docs -->
+          <div class="compliance-row">
+            <div class="score-bar">
+              <div class="score-bar__head">
+                <strong>Score conformité</strong>
+                <span class="score-bar__value" [class.score-bar__value--ok]="ctx.compliance.is_compliant">
+                  {{ ctx.compliance.score | number:'1.0-0' }} / 100
+                </span>
+              </div>
+              <div class="score-bar__track">
+                <div class="score-bar__fill"
+                     [style.width.%]="ctx.compliance.score"
+                     [class.score-bar__fill--ok]="ctx.compliance.is_compliant"></div>
+              </div>
+            </div>
+            <ul class="doc-counts">
+              <li class="doc-counts__ok"><strong>{{ ctx.compliance.documents.verified }}</strong><span>vérifiés</span></li>
+              <li *ngIf="ctx.compliance.documents.pending > 0"><strong>{{ ctx.compliance.documents.pending }}</strong><span>en attente</span></li>
+              <li *ngIf="ctx.compliance.documents.rejected > 0" class="doc-counts__err"><strong>{{ ctx.compliance.documents.rejected }}</strong><span>rejetés</span></li>
+              <li *ngIf="ctx.compliance.documents.expired > 0" class="doc-counts__warn"><strong>{{ ctx.compliance.documents.expired }}</strong><span>expirés</span></li>
+            </ul>
+          </div>
+
+          <!-- KYC -->
+          <div class="kyc-row" *ngIf="ctx.kyc as kyc">
+            <mat-icon
+              [class.kyc-row__icon--ok]="kyc.status === 'approved'"
+              [class.kyc-row__icon--err]="kyc.status === 'rejected' || kyc.status === 'expired'">
+              {{ kyc.status === 'approved' ? 'verified_user' : kyc.status === 'rejected' || kyc.status === 'expired' ? 'cancel' : 'help_outline' }}
+            </mat-icon>
+            <div>
+              <strong>KYC : {{ kyc.status }}</strong>
+              <span class="muted" *ngIf="kyc.completed_at"> · {{ formatDate(kyc.completed_at) }}</span>
+              <p class="muted" *ngIf="kyc.failure_reason"><code>{{ kyc.failure_reason }}</code></p>
+            </div>
+          </div>
+          <div class="kyc-row" *ngIf="!ctx.kyc">
+            <mat-icon class="kyc-row__icon--err">help_outline</mat-icon>
+            <div><strong>Aucune session KYC</strong></div>
+          </div>
+
+          <div class="contractor-360-actions" *ngIf="ctx.identity.phone">
+            <button mat-stroked-button (click)="navigateToContractor(ctx.identity.phone!)">
+              Voir le profil complet →
+            </button>
+          </div>
+        </section>
+
+        <!-- Mission — vue dédiée (snapshot tuita.fr = source de vérité du prix) -->
+        <section *ngIf="data.mission_snapshot as mission" class="info-card info-card--accent">
+          <h3><mat-icon>engineering</mat-icon> Mission</h3>
+          <div class="info-grid">
+            <div>
+              <label>Réf mission</label>
+              <strong><code>{{ mission.mission_ref }}</code></strong>
+            </div>
+            <div>
+              <label>Montant convenu (TTC)</label>
+              <strong>{{ mission.expected_amount_ttc | number:'1.2-2' }} €</strong>
+              <span class="muted">source : tuita.fr</span>
+            </div>
+            <div>
+              <label>Terminée le</label>
+              <strong>{{ formatDate(mission.completed_at) }}</strong>
+            </div>
+          </div>
+        </section>
+        <section *ngIf="!data.mission_snapshot" class="info-card info-card--alert">
+          <h3><mat-icon>warning</mat-icon> Mission</h3>
+          <p>
+            <strong>Aucun MissionSnapshot trouvé</strong> pour <code>{{ data.invoice.mission_ref || '—' }}</code>.
+            Cette facture n'est <strong>pas rattachée</strong> à une mission tuita.fr — vérifier en amont avant validation.
+          </p>
+        </section>
+
+        <section class="info-card">
+          <h3><mat-icon>business</mat-icon> Émetteur / Destinataire</h3>
+          <div class="info-grid">
+            <div>
+              <label>Émetteur (contractor)</label>
+              <strong>{{ data.invoice.from_company?.name || '—' }}</strong>
+              <span *ngIf="data.invoice.from_company?.siren" class="muted">SIREN {{ data.invoice.from_company?.siren }}</span>
+            </div>
+            <div>
+              <label>Destinataire</label>
+              <strong>{{ data.invoice.to_company?.name || '—' }}</strong>
+              <span class="muted">
+                <ng-container *ngIf="data.invoice.to_company?.is_tuita_internal">✓ Tuita SAS</ng-container>
+                <ng-container *ngIf="data.invoice.to_company?.siren"> · SIREN {{ data.invoice.to_company?.siren }}</ng-container>
+              </span>
+            </div>
+            <div>
+              <label>Mission</label>
+              <strong><code>{{ data.invoice.mission_ref || '—' }}</code></strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="info-card">
+          <h3><mat-icon>euro</mat-icon> Montants</h3>
+          <div class="info-grid">
+            <div><label>HT</label><strong>{{ (data.invoice.amount_ht || 0) | number:'1.2-2' }} €</strong></div>
+            <div><label>TVA</label><strong>{{ (data.invoice.amount_tva || 0) | number:'1.2-2' }} €</strong></div>
+            <div><label>TTC</label><strong class="amount-ttc">{{ (data.invoice.amount_ttc || 0) | number:'1.2-2' }} €</strong></div>
+            <div *ngIf="data.invoice.currency"><label>Devise</label><strong>{{ data.invoice.currency }}</strong></div>
+            <div *ngIf="data.invoice.payment_ref_masked"><label>Ref virement</label><strong><code>{{ data.invoice.payment_ref_masked }}</code></strong></div>
+          </div>
+          <div *ngIf="amountDeviation() as dev" class="deviation"
+               [class.deviation--ok]="dev.pct >= -5 && dev.pct <= 5"
+               [class.deviation--warn]="(dev.pct < -5 && dev.pct >= -50) || (dev.pct > 5 && dev.pct <= 50)"
+               [class.deviation--alert]="dev.pct < -50 || dev.pct > 50">
+            Écart vs prix convenu mission :
+            <strong>{{ dev.delta | number:'1.2-2' }} €</strong>
+            ({{ dev.pct | number:'1.1-1' }} %)
+            <span class="muted">— attendu {{ data.mission_snapshot?.expected_amount_ttc | number:'1.2-2' }} €</span>
+          </div>
+        </section>
+
+        <section class="info-card">
+          <h3><mat-icon>schedule</mat-icon> Timeline</h3>
+          <ul class="timeline">
+            <li><span class="timeline-label">Créée</span><span>{{ formatDate(data.invoice.created_at) }}</span></li>
+            <li *ngIf="data.invoice.issued_at"><span class="timeline-label">Émise</span><span>{{ formatDate(data.invoice.issued_at) }}</span></li>
+            <li *ngIf="data.invoice.validated_at"><span class="timeline-label">Validée (3/3)</span><span>{{ formatDate(data.invoice.validated_at) }}</span></li>
+            <li *ngIf="data.invoice.payment_launched_at"><span class="timeline-label">Virement lancé</span><span>{{ formatDate(data.invoice.payment_launched_at) }}</span></li>
+            <li *ngIf="data.invoice.paid_at"><span class="timeline-label">Payée</span><span>{{ formatDate(data.invoice.paid_at) }}</span></li>
+          </ul>
+        </section>
+
+        <section class="info-card">
+          <h3>
+            <mat-icon>verified_user</mat-icon>
+            Validations paiement
+            <span class="muted">({{ detailApprovalsCount() }}/{{ detailApprovalsRequired() }})</span>
+          </h3>
+          <div class="validators">
+            <div *ngFor="let v of detailValidators(); trackBy: trackByValidator" class="validator-row"
+                 [class.validator-row--ok]="v.status === 'approved'"
+                 [class.validator-row--rejected]="v.status === 'rejected'">
+              <div class="validator-row__head">
+                <mat-icon>{{ v.status === 'approved' ? 'check_circle' : 'cancel' }}</mat-icon>
+                <strong>{{ v.label }}</strong>
+                <span class="validator-row__status">
+                  {{ v.status === 'approved' ? 'Approuvée' : 'Rejetée' }}
+                </span>
+                <span class="muted">· source : {{ v.source }}</span>
+              </div>
+              <div class="validator-row__meta">
+                <span>{{ v.validator.name || v.validator.email }}</span>
+                <span class="muted">· {{ formatDate(v.validator.at) }}</span>
+              </div>
+              <p *ngIf="v.validator?.comment" class="validator-row__comment">« {{ v.validator?.comment }} »</p>
+            </div>
+            <p *ngIf="detailValidators().length === 0" class="muted">Aucune validation pour l'instant.</p>
+          </div>
+          <div class="actions" *ngIf="detailData()?.invoice?.status === 'pending_payment_validation'">
+            <button mat-flat-button color="primary"
+                    (click)="approveFromBackOffice(detailData()?.invoice!)">
+              <mat-icon>check</mat-icon> Approuver
+            </button>
+            <button mat-stroked-button color="warn"
+                    (click)="rejectFromBackOffice(detailData()?.invoice!)">
+              <mat-icon>close</mat-icon> Rejeter
+            </button>
+          </div>
+        </section>
+
+        <section *ngIf="(data.items || []).length > 0" class="info-card">
+          <h3><mat-icon>list_alt</mat-icon> Lignes ({{ data.items!.length }})</h3>
+          <table class="items-table">
+            <thead><tr><th>Description</th><th class="num">Qté</th><th class="num">PU</th><th class="num">Total HT</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let it of data.items">
+                <td>{{ it.description }}</td>
+                <td class="num">{{ it.quantity | number:'1.0-2' }}</td>
+                <td class="num">{{ it.unit_price | number:'1.2-2' }} €</td>
+                <td class="num">{{ it.total_ht | number:'1.2-2' }} €</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section *ngIf="(data.admin_notes || []).length > 0" class="info-card">
+          <h3><mat-icon>sticky_note_2</mat-icon> Notes admin ({{ data.admin_notes!.length }})</h3>
+          <ul class="note-list">
+            <li *ngFor="let n of data.admin_notes">
+              <header>
+                <strong>{{ n.author_email || '—' }}</strong>
+                <span class="muted">· {{ formatDate(n.created_at) }}</span>
+                <span *ngIf="n.category" class="note-cat">{{ n.category }}</span>
+              </header>
+              <p>{{ n.content }}</p>
+            </li>
+          </ul>
+        </section>
+
+        <section *ngIf="data.reopened_from" class="info-card info-card--warn">
+          <h3><mat-icon>replay</mat-icon> Cette facture est un reopen</h3>
+          <p>Issue de <strong>{{ data.reopened_from.number || data.reopened_from.uuid }}</strong>
+             (rejetée le {{ formatDate(data.reopened_from.rejected_at) }})</p>
+          <p *ngIf="data.reopened_from.rejection_reason" class="muted">
+            Raison du rejet d'origine : {{ data.reopened_from.rejection_reason }}
+          </p>
+        </section>
+
+        <section *ngIf="data.dispute" class="info-card info-card--alert">
+          <h3><mat-icon>warning</mat-icon> Litige post-PAID (D3)</h3>
+          <p><strong>Ouvert le</strong> {{ formatDate(data.dispute.disputed_at) }}</p>
+          <p *ngIf="data.dispute.reason"><strong>Raison :</strong> {{ data.dispute.reason }}</p>
+          <p *ngIf="data.dispute.resolved_at" class="muted">
+            Résolu le {{ formatDate(data.dispute.resolved_at) }} — {{ data.dispute.resolution }}
+          </p>
+        </section>
+
+        <section *ngIf="data.invoice.rejection_reason" class="info-card info-card--alert">
+          <h3><mat-icon>error_outline</mat-icon> Rejet</h3>
+          <p><strong>Code :</strong> <code>{{ data.invoice.rejection_reason }}</code></p>
+          <p *ngIf="data.invoice.rejection_details">{{ data.invoice.rejection_details }}</p>
+          <p class="muted" *ngIf="data.invoice.auto_retry_count">
+            Auto-retry OCR : {{ data.invoice.auto_retry_count }} / 2
+          </p>
+        </section>
+
+        <section *ngIf="detailAudit() as audit" class="info-card">
+          <h3><mat-icon>history</mat-icon> Audit trail</h3>
+
+          <div class="audit-block">
+            <strong>Validations métier ({{ audit.payment_validations.length }}/3)</strong>
+            <ul class="audit-list" *ngIf="audit.payment_validations.length > 0; else noValidations">
+              <li *ngFor="let v of audit.payment_validations; trackBy: trackByValidator">
+                <div class="audit-line">
+                  <span class="audit-transition">
+                    <code>{{ v.source || 'webhook' }}</code> → <code>{{ v.status }}</code>
+                  </span>
+                  <span class="audit-date">{{ formatDate(v.validated_at) }}</span>
+                  <span class="audit-actor" *ngIf="v.validated_by_email || v.validated_by_name">
+                    {{ v.validated_by_name || v.validated_by_email }}
+                  </span>
+                </div>
+                <pre class="audit-meta" *ngIf="v.comment">{{ v.comment }}</pre>
+              </li>
+            </ul>
+            <ng-template #noValidations>
+              <p class="muted">Aucune validation métier reçue.</p>
+            </ng-template>
+          </div>
+
+          <div class="audit-block">
+            <strong>Webhooks sortants</strong>
+            <ul class="audit-list">
+              <li *ngFor="let w of webhookEvents(audit.webhooks_sent)">
+                <div class="audit-line">
+                  <span class="audit-transition"><code>{{ w.event }}</code></span>
+                  <span class="audit-date" *ngIf="w.sent_at">{{ formatDate(w.sent_at) }}</span>
+                  <span class="muted" *ngIf="!w.sent_at">non envoyé</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="audit-block" *ngIf="audit.reopened_from">
+            <strong>Reopen</strong>
+            <p>
+              Cloné depuis facture <code>{{ audit.reopened_from.number || audit.reopened_from.uuid }}</code>
+              <span *ngIf="audit.reopened_from.rejection_reason">
+                (rejet : <code>{{ audit.reopened_from.rejection_reason }}</code>)
+              </span>
+            </p>
+          </div>
+
+          <div class="audit-block" *ngIf="audit.dispute">
+            <strong>Litige</strong>
+            <p class="audit-line">
+              <span class="audit-date">{{ formatDate(audit.dispute.disputed_at) }}</span>
+              <span>{{ audit.dispute.reason }}</span>
+            </p>
+            <p *ngIf="audit.dispute.resolved_at" class="audit-line">
+              Résolu : {{ formatDate(audit.dispute.resolved_at) }} — {{ audit.dispute.resolution }}
+            </p>
+          </div>
+        </section>
+      </div>
+
+      <aside class="invoice-detail__pdf">
+        <div class="invoice-detail__pdf-frame">
+          <div *ngIf="detailPdfLoading()" class="invoice-detail__pdf-state">
+            <mat-spinner diameter="36"></mat-spinner>
+            <span>Chargement du PDF…</span>
+          </div>
+          <div *ngIf="detailPdfError()" class="invoice-detail__pdf-state invoice-detail__pdf-state--error">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ detailPdfError() }}</span>
+          </div>
+          <div *ngIf="detailPdfUrl()" class="invoice-detail__pdf-scroll">
+            <iframe
+              [src]="detailPdfUrl()"
+              title="PDF facture"
+              loading="lazy"
+            ></iframe>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ========================================================================== -->
+<!-- Audit trail (standalone) dialog                                            -->
+<!-- ========================================================================== -->
+
+<ng-template #auditDialogTpl>
+  <h2 mat-dialog-title>{{ dialogCtx.title }}</h2>
+  <mat-dialog-content class="detail-dialog-content">
+    <ng-container *ngIf="auditDialogData() as audit; else noAudit2">
+      <section class="info-card">
+        <h3>Facture</h3>
+        <p><strong>Statut :</strong> <code>{{ audit.invoice.status }}</code></p>
+        <p *ngIf="audit.invoice.mission_ref"><strong>Mission :</strong> <code>{{ audit.invoice.mission_ref }}</code></p>
+        <p *ngIf="audit.invoice.amount_ttc != null">
+          <strong>Montant TTC :</strong> {{ audit.invoice.amount_ttc | number:'1.2-2' }} €
+        </p>
+        <p *ngIf="audit.invoice.from_company">
+          <strong>Émetteur :</strong> {{ audit.invoice.from_company }}
+          → {{ audit.invoice.to_company }}
+        </p>
+        <p *ngIf="audit.invoice.created_at"><strong>Créée :</strong> {{ formatDate(audit.invoice.created_at) }}</p>
+        <p *ngIf="audit.invoice.validated_at"><strong>Validée :</strong> {{ formatDate(audit.invoice.validated_at) }}</p>
+        <p *ngIf="audit.invoice.paid_at">
+          <strong>Payée :</strong> {{ formatDate(audit.invoice.paid_at) }}
+          <ng-container *ngIf="audit.invoice.payment_ref_masked"> · ref {{ audit.invoice.payment_ref_masked }}</ng-container>
+        </p>
+      </section>
+
+      <section class="info-card">
+        <h3>Validations métier ({{ audit.payment_validations.length }}/3)</h3>
+        <ul class="audit-list" *ngIf="audit.payment_validations.length > 0; else noValid3">
+          <li *ngFor="let v of audit.payment_validations; trackBy: trackByValidator">
+            <div class="audit-line">
+              <span class="audit-transition">
+                <code>{{ v.validator_type }}</code> → <code>{{ v.status }}</code>
+              </span>
+              <span class="audit-date">{{ formatDate(v.validated_at) }}</span>
+              <span class="audit-actor" *ngIf="v.validated_by_email || v.validated_by_name">
+                {{ v.validated_by_name || v.validated_by_email }}
+              </span>
+            </div>
+            <pre class="audit-meta" *ngIf="v.comment">{{ v.comment }}</pre>
+          </li>
+        </ul>
+        <ng-template #noValid3>
+          <p class="muted">Aucune validation métier reçue.</p>
+        </ng-template>
+      </section>
+
+      <section class="info-card">
+        <h3>Webhooks sortants</h3>
+        <ul class="audit-list">
+          <li *ngFor="let w of webhookEvents(audit.webhooks_sent)">
+            <div class="audit-line">
+              <span class="audit-transition"><code>{{ w.event }}</code></span>
+              <span class="audit-date" *ngIf="w.sent_at">{{ formatDate(w.sent_at) }}</span>
+              <span class="muted" *ngIf="!w.sent_at">non envoyé</span>
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="info-card" *ngIf="audit.reopened_from">
+        <h3>Reopen</h3>
+        <p>
+          Cloné depuis facture <code>{{ audit.reopened_from.number || audit.reopened_from.uuid }}</code>
+          <span *ngIf="audit.reopened_from.rejection_reason">
+            (rejet : <code>{{ audit.reopened_from.rejection_reason }}</code>)
+          </span>
+        </p>
+        <p *ngIf="audit.reopen_count != null"><strong>Reopens :</strong> {{ audit.reopen_count }} / 2</p>
+      </section>
+
+      <section class="info-card info-card--alert" *ngIf="audit.dispute">
+        <h3>Litige</h3>
+        <p><strong>Ouvert :</strong> {{ formatDate(audit.dispute.disputed_at) }}</p>
+        <p *ngIf="audit.dispute.reason"><strong>Motif :</strong> {{ audit.dispute.reason }}</p>
+        <p *ngIf="audit.dispute.resolved_at">
+          <strong>Résolu :</strong> {{ formatDate(audit.dispute.resolved_at) }}
+          <span *ngIf="audit.dispute.resolution"> — {{ audit.dispute.resolution }}</span>
+        </p>
+      </section>
+    </ng-container>
+    <ng-template #noAudit2>
+      <p class="muted">Chargement en cours…</p>
+    </ng-template>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-flat-button color="primary" (click)="onDialogCancel()">Fermer</button>
+  </mat-dialog-actions>
+</ng-template>

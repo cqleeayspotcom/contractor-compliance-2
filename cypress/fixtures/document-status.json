@@ -1,0 +1,28 @@
+{
+  "data": {
+    "uuid": "doc-kbis-uuid-001",
+    "type": "kbis",
+    "status": "verified",
+    "file_name": "kbis_2026.pdf",
+    "file_size": 245000,
+    "mime_type": "application/pdf",
+    "detected_type": "kbis",
+    "detection_confidence": 0.95,
+    "uploaded_at": "2026-04-10T10:00:00Z",
+    "expires_at": "2027-04-10T10:00:00Z",
+    "failure_reason": null,
+    "failure_detail": null,
+    "verified_at": "2026-04-10T10:30:00Z",
+    "verification_result": {
+      "is_valid": true,
+      "confidence_score": 0.95,
+      "extracted_data": {
+        "company_name": "SIRBU LUCIAN BTP",
+        "siren": "123456789",
+        "siret": "12345678900012",
+        "legal_form": "EURL",
+        "registration_date": "2020-01-15"
+      }
+    }
+  }
+}

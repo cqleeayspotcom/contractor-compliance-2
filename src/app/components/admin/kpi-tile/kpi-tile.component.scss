@@ -1,0 +1,9 @@
+.tile { display: flex; gap: 12px; padding: 12px; border-radius: 8px; background: #f8f9fa; min-width: 180px;
+  &__icon { font-size: 28px; width: 28px; height: 28px; color: #6c757d; }
+  &__label { font-size: 11px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
+  &__value { font-size: 18px; font-weight: 600; color: #212529; }
+  &__sub { font-size: 11px; color: #888; margin-top: 2px; }
+  &--positive { background: #d4edda; }
+  &--warning { background: #fff3cd; }
+  &--critical { background: #f8d7da; }
+}

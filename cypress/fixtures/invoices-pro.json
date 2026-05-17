@@ -1,0 +1,118 @@
+{
+  "success": true,
+  "data": [
+    {
+      "uuid": "inv-auto-001",
+      "invoice_number": "FAC-2026-A001",
+      "status": "paid",
+      "amount_ht": 1041.67,
+      "amount_ttc": 1250.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-042",
+      "issued_at": "2026-03-29T08:00:00Z",
+      "source": "auto_generated",
+      "mission": {
+        "title": "Diagnostic amiante avant travaux",
+        "operation_type": "DAAT",
+        "city": "Paris",
+        "address": "12 rue de la Paix",
+        "visit_date": "2026-03-28T09:00:00Z",
+        "mid": "MIS-2026-042"
+      },
+      "created_at": "2026-03-29T08:00:00Z"
+    },
+    {
+      "uuid": "inv-auto-002",
+      "invoice_number": "FAC-2026-A002",
+      "status": "paid",
+      "amount_ht": 741.67,
+      "amount_ttc": 890.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-043",
+      "issued_at": "2026-04-06T08:00:00Z",
+      "source": "auto_generated",
+      "mission": {
+        "title": "Diagnostic plomb",
+        "operation_type": "DPB",
+        "city": "Lyon",
+        "address": "5 avenue des Champs",
+        "visit_date": "2026-04-05T14:00:00Z",
+        "mid": "MIS-2026-043"
+      },
+      "created_at": "2026-04-06T08:00:00Z"
+    },
+    {
+      "uuid": "inv-auto-003",
+      "invoice_number": "FAC-2026-A003",
+      "status": "sent",
+      "amount_ht": 583.33,
+      "amount_ttc": 700.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-044",
+      "issued_at": "2026-04-12T08:00:00Z",
+      "source": "auto_generated",
+      "mission": {
+        "title": "Diagnostic termites",
+        "operation_type": "DTE",
+        "city": "Marseille",
+        "address": "8 boulevard du Port",
+        "visit_date": "2026-04-11T10:00:00Z",
+        "mid": "MIS-2026-044"
+      },
+      "created_at": "2026-04-12T08:00:00Z"
+    },
+    {
+      "uuid": "inv-auto-004",
+      "invoice_number": "FAC-2026-A004",
+      "status": "validating",
+      "amount_ht": 416.67,
+      "amount_ttc": 500.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-045",
+      "issued_at": "2026-04-15T08:00:00Z",
+      "source": "auto_generated",
+      "mission": {
+        "title": "DPE appartement T3",
+        "operation_type": "DPE",
+        "city": "Toulouse",
+        "address": "15 rue des Carmes",
+        "visit_date": "2026-04-14T14:00:00Z",
+        "mid": "MIS-2026-045"
+      },
+      "created_at": "2026-04-15T08:00:00Z"
+    },
+    {
+      "uuid": "inv-auto-005",
+      "invoice_number": "FAC-2026-A005",
+      "status": "draft",
+      "amount_ht": 333.33,
+      "amount_ttc": 400.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-046",
+      "issued_at": "2026-04-16T08:00:00Z",
+      "source": "auto_generated",
+      "mission": {
+        "title": "Mesurage loi Carrez",
+        "operation_type": "CARREZ",
+        "city": "Bordeaux",
+        "address": "22 cours de l'Intendance",
+        "visit_date": "2026-04-15T16:00:00Z",
+        "mid": "MIS-2026-046"
+      },
+      "created_at": "2026-04-16T08:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 5,
+    "per_page": 15,
+    "last_page": 1,
+    "stats": {
+      "total_invoices": 5,
+      "total_amount_ttc": 3740.00,
+      "paid": 2,
+      "pending": 3,
+      "rejected": 0
+    }
+  }
+}

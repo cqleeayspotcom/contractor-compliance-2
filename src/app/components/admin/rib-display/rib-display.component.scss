@@ -1,0 +1,57 @@
+.rib-display {
+  border-left: 3px solid transparent;
+  padding: 12px 16px;
+  background: rgba(0,0,0,0.02);
+  border-radius: 4px;
+
+  &.rib-fresh   { border-left-color: #2e7d32; }
+  &.rib-stale   { border-left-color: #ed6c02; background: rgba(237,108,2,0.05); }
+  &.rib-missing { border-left-color: #c62828; background: rgba(198,40,40,0.05); }
+}
+
+.rib-grid {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 6px 16px;
+  margin: 0 0 8px;
+
+  dt {
+    color: rgba(0,0,0,0.6);
+    font-size: 0.85rem;
+    align-self: center;
+  }
+  dd {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.95rem;
+      letter-spacing: 0.02em;
+    }
+    button { margin-left: auto; }
+  }
+}
+
+.iban-line code { font-weight: 600; }
+
+.rib-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: 0.85rem;
+  color: rgba(0,0,0,0.7);
+  mat-icon { font-size: 18px; height: 18px; width: 18px; }
+}
+
+.rib-missing-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #c62828;
+  font-weight: 500;
+  margin: 0;
+  mat-icon { font-size: 20px; height: 20px; width: 20px; }
+}

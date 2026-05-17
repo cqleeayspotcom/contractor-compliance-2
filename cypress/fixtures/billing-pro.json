@@ -1,0 +1,21 @@
+{
+  "data": {
+    "current_plan": "paid",
+    "plans": [
+      {
+        "id": "free",
+        "name": "Plan Gratuit",
+        "price_eur_month": 0,
+        "features": ["Gestion de conformite", "Upload de documents", "KYC video"],
+        "limitations": ["Upload de factures manuel", "Pas de generation automatique"]
+      },
+      {
+        "id": "paid",
+        "name": "Plan Professionnel",
+        "price_eur_month": 99.00,
+        "features": ["Tout le plan Gratuit", "Generation auto de factures", "Contrat mandant Tuita", "Rappels automatiques"],
+        "limitations": []
+      }
+    ]
+  }
+}

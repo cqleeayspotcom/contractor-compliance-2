@@ -1,0 +1,669 @@
+/* You can add global styles to this file, and also import other style files */
+
+// Import the Tuita Angular Material theme
+@use './styles/theme';
+
+// ── Guidage visuel global (low-literacy artisans BTP) ──────────────────────
+// Classe utilitaire `.tui-attract` à coller sur n'importe quel CTA principal
+// pour pousser l'œil de l'artisan vers l'action suivante.
+// Grammaire identique sur tout le tunnel : halo vert + scale + flèche qui glisse.
+// Respect strict de `prefers-reduced-motion`.
+// ───────────────────────────────────────────────────────────────────────────
+@keyframes tui-attract-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba(4, 167, 119, 0.35),
+                0 0 0 0 rgba(4, 167, 119, 0.55);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 6px 18px rgba(4, 167, 119, 0.5),
+                0 0 0 10px rgba(4, 167, 119, 0);
+  }
+}
+
+@keyframes tui-attract-arrow {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
+}
+
+@keyframes tui-attract-halo {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(4, 167, 119, 0.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(4, 167, 119, 0); }
+}
+
+// Variante 1 — bouton plein (CTA principal). Pulse + scale + halo + flèche.
+// Le `:not(:disabled)` garantit qu'on n'attire pas l'œil sur un bouton qui
+// ne sert à rien (form incomplet, upload en cours, etc.).
+.tui-attract:not(:disabled):not([disabled]) {
+  animation: tui-attract-pulse 2.4s ease-in-out infinite;
+
+  mat-icon:last-child,
+  .tui-attract__arrow {
+    animation: tui-attract-arrow 1.6s ease-in-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+
+    mat-icon:last-child,
+    .tui-attract__arrow {
+      animation: none;
+    }
+  }
+}
+
+// Variante 2 — zone passive (input, dropzone, slot vide). Halo seul, pas de
+// scale (sinon ça décale le layout du form).
+.tui-attract-halo:not(:disabled):not([disabled]) {
+  animation: tui-attract-halo 2.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+// Additional global styles can be added below
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: 'M PLUS Rounded 1c', sans-serif;
+}
+
+// Smooth scrolling
+html {
+  scroll-behavior: smooth;
+}
+
+// ── Onboarding video dialog ──────────────────────────────────────────────────
+// panelClass: 'onboarding-video-dialog' must be set in MatDialog.open()
+// Mobile/tablette : edge-to-edge plein écran (cas dominant artisan en chantier).
+// Desktop ≥ 900 px : on cap la largeur, sinon la vidéo 16/9 occupe toute la
+// fenêtre et déborde verticalement (footer « J'ai compris » hors viewport).
+.onboarding-video-dialog {
+  max-width: 100vw !important;
+  width: 100vw !important;
+
+  .mat-mdc-dialog-container {
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .mdc-dialog__surface {
+    border-radius: 0;
+    overflow: hidden;
+  }
+
+  @media (min-width: 900px) {
+    max-width: min(880px, 92vw) !important;
+    width: min(880px, 92vw) !important;
+
+    .mat-mdc-dialog-container {
+      border-radius: 16px;
+    }
+
+    .mdc-dialog__surface {
+      border-radius: 16px;
+    }
+  }
+}
+
+// ── Admin document review dialog — full-size panel ────────────────────────────
+// panelClass: 'review-dialog-panel' must be set in MatDialog.open()
+.review-dialog-panel {
+  .mat-mdc-dialog-container {
+    padding: 0;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .mdc-dialog__surface {
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+// ── Push Pro upgrade modal — panel without padding (gradient header flush) ────
+// panelClass: 'push-pro-dialog-panel' must be set in MatDialog.open()
+.push-pro-dialog-panel {
+  max-height: 92vh;
+
+  .mat-mdc-dialog-container {
+    padding: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    max-height: 92vh;
+  }
+
+  .mdc-dialog__surface {
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    // Shadow aux couleurs chart Tuita (prussian-blue + orange)
+    box-shadow: 0 24px 48px rgba(7, 49, 72, 0.28), 0 8px 16px rgba(247, 92, 3, 0.18);
+  }
+}
+
+// ── Help dialogs — body scrolls, outer container doesn't ────────────────────
+// panelClass: 'kyc-help-dialog-panel' OR 'help-dialog-panel' must be set in
+// MatDialog.open(). Sans cette règle, le mdc-dialog-content (wrapper par défaut
+// de mat-dialog) ajoute un 2e scroll autour de notre body déjà scrollable →
+// double scrollbar + scroll horizontal parasite.
+.kyc-help-dialog-panel,
+.help-dialog-panel {
+  .mat-mdc-dialog-container {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .mdc-dialog__surface {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mat-mdc-dialog-content {
+    padding: 0;
+    margin: 0;
+    max-height: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+}
+
+// ── Purchase / Stripe dialogs — fullscreen on mobile ─────────────────────────
+// panelClass: 'stripe-embedded-dialog-panel' OR 'qad-dialog-panel' set in
+// MatDialog.open() — both are part of the Pappers purchase flow.
+@media (max-width: 600px) {
+  .stripe-embedded-dialog-panel,
+  .qad-dialog-panel {
+    max-width: 100vw !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+
+    .mat-mdc-dialog-container {
+      padding: 0;
+      max-height: 100vh;
+      height: 100vh;
+      border-radius: 0;
+    }
+
+    .mdc-dialog__surface {
+      border-radius: 0;
+      height: 100vh;
+      max-height: 100vh;
+    }
+
+    .mat-mdc-dialog-content,
+    .mat-mdc-dialog-surface {
+      max-height: 100vh;
+    }
+  }
+}
+
+// Mobile : on maximise la zone utile tout en laissant le header/footer stickés
+@media (max-width: 600px) {
+  .push-pro-dialog-panel {
+    max-height: 95vh;
+
+    .mat-mdc-dialog-container {
+      max-height: 95vh;
+      border-radius: 14px;
+    }
+
+    .mdc-dialog__surface {
+      border-radius: 14px;
+    }
+  }
+}
+
+// ── Outline form-field — Tuita defaults (padding interne + fonte rounded) ──
+// Angular Material 21 utilise des CSS variables (--mat-form-field-outlined-*).
+// On override directement la variable + la classe MDC concrète .mdc-text-field--outlined
+// pour s'assurer que le texte de l'input ne touche pas la bordure gauche.
+.mat-mdc-form-field.mat-mdc-form-field-appearance-outline {
+  // Override de la CSS variable Material → garantit ≥ 16px de padding horizontal
+  --mat-form-field-outlined-container-shape: 16px;
+}
+
+.mat-mdc-form-field.mat-mdc-form-field-appearance-outline,
+.mdc-text-field--outlined {
+  .mat-mdc-text-field-wrapper,
+  &.mat-mdc-text-field-wrapper {
+    background: #fff !important;
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .mat-mdc-form-field-infix {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+    min-height: unset !important;
+  }
+
+  input.mat-mdc-input-element,
+  textarea.mat-mdc-input-element,
+  .mdc-text-field__input,
+  .mat-mdc-select-value-text {
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    color: #0f172a;
+    letter-spacing: 0.1px;
+  }
+
+  .mat-mdc-form-field-flex {
+    align-items: center;
+  }
+}
+
+// Focus styles for accessibility
+*:focus-visible {
+  outline: 2px solid #073148;
+  outline-offset: 2px;
+}
+
+// Remove default button styles
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+// Selection color
+::selection {
+  background-color: rgba(7, 49, 72, 0.2);
+  color: #073148;
+}
+
+::-moz-selection {
+  background-color: rgba(7, 49, 72, 0.2);
+  color: #073148;
+}
+
+// CDK Overlay (mat-select panel, mat-autocomplete, etc.)
+.cdk-overlay-container {
+  z-index: 9999;
+}
+
+// ── Side panel slide-in droit (invoice preview, etc.) ───────────────────────
+// MatDialog config recommandée pour un panel latéral droit :
+//   width: '480px', height: '100vh', position: { right: '0', top: '0' },
+//   panelClass: 'invoice-side-panel'
+.invoice-side-panel.mat-mdc-dialog-panel {
+  border-radius: 0 !important;
+
+  .mat-mdc-dialog-surface {
+    border-radius: 0 !important;
+    box-shadow: -8px 0 24px rgba(7, 49, 72, 0.14) !important;
+    overflow: hidden;
+  }
+
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+  }
+
+  // Animation slide-in droite (enter)
+  animation: invoiceSidePanelSlideIn 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes invoiceSidePanelSlideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+// ── Material form-field hints — taille de police globale ────────────────────
+// Par défaut, Angular Material 19 (M3) rend les `<mat-hint>` à 16px — soit
+// PLUS gros que les inputs (15px) ce qui inverse la hiérarchie visuelle. Les
+// hints sont une aide secondaire à l'input ; ils doivent être visiblement
+// plus petits que l'input et plus discrets (couleur atténuée).
+//
+// Convention industrielle : hints à 11-13px, opacité 0.6-0.7.
+// Tuita : 12px / opacité ~0.64 pour rester lisible sur petits écrans tout
+// en respectant la hiérarchie label > input > hint.
+//
+// Override appliqué globalement (pas seulement section IBAN — le bug est sur
+// TOUS les hints de l'app : phone, SIREN, IBAN, BIC, etc.).
+.mat-mdc-form-field-hint,
+mat-hint {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  color: rgba(7, 49, 72, 0.64) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.01em;
+
+  // FIX-052 — Alignement texte gauche + display block pour qu'une hint
+  // qui wrappe sur 2 lignes garde toutes ses lignes alignées au bord
+  // gauche de l'input (sans indentation de la 2e ligne). Material
+  // applique parfois un padding/text-indent qui décale visuellement
+  // la suite de la phrase.
+  display: block !important;
+  text-align: left !important;
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+  white-space: normal !important;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+// Compacte un peu le wrapper sous l'input pour rester aéré sans gaspiller
+// l'espace vertical (utile sur mobile, et sur le stepper où les inputs
+// s'empilent). FIX-052 — On neutralise aussi le padding-inline du wrapper
+// Material qui était la vraie cause de la 2e ligne décalée.
+.mat-mdc-form-field-subscript-wrapper {
+  margin-top: 2px;
+
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-form-field-error-wrapper {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+// FIX-053 — Mobile (≤ 600 px) : hints encore un cran plus discrets pour
+// laisser l'input dominer visuellement + line-height plus serré pour
+// que 2 lignes max ne mangent pas trop d'espace vertical.
+@media (max-width: 600px) {
+  .mat-mdc-form-field-hint,
+  mat-hint {
+    font-size: 11.5px !important;
+    line-height: 1.35 !important;
+  }
+}
+
+// ── Snackbar (tuita-snackbar) ────────────────────────────────────────────────
+// Position : flotte sous le header sticky (≈ 80 px de marge top).
+// Style : carte prussian-blue → orange (gradient subtil sur la bordure
+// gauche), ombre douce aux couleurs Tuita, typo M PLUS Rounded.
+//
+// IMPORTANT — Angular Material 19+ applique `panelClass` au wrapper
+// `.cdk-overlay-pane`, PAS à `.mat-mdc-snack-bar-container` (qui est un
+// enfant). Le sélecteur historique `.mat-mdc-snack-bar-container.tuita-snackbar`
+// ne matchait donc plus → snackbar collé top: 0 sous le header. Fix :
+// double sélecteur (parent .cdk-overlay-pane + enfant .container) +
+// padding-top sur le wrapper de positionnement vertical (handset / global)
+// pour les cas où le wrapper est positionné via flex sans margin propagé.
+.cdk-overlay-pane.tuita-snackbar,
+.mat-mdc-snack-bar-container.tuita-snackbar {
+  // Position top — flotte sous le header (~80 px) pour ne JAMAIS chevaucher
+  // les sticky footers d'action (Enregistrer / Continuer), critiques sur
+  // mobile où les prestataires opèrent.
+  margin: 80px auto 0 !important;
+
+  // Animation soft slide-down + fade-in (depuis le header)
+  animation: tuita-snackbar-in 260ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  .mdc-snackbar__surface {
+    background-color: #ffffff !important;
+    border-left: 4px solid #F75C03 !important;
+    box-shadow:
+      0 16px 40px rgba(7, 49, 72, 0.18),
+      0 4px 12px rgba(247, 92, 3, 0.10) !important;
+    border-radius: 14px !important;
+    min-width: 340px;
+    max-width: 560px;
+    padding: 16px 20px !important;
+  }
+
+  .mat-mdc-snack-bar-label,
+  .mdc-snackbar__label {
+    color: #073148 !important;
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    line-height: 1.45 !important;
+    padding: 0 16px 0 4px !important;
+    letter-spacing: -0.005em;
+  }
+
+  .mat-mdc-snack-bar-action {
+    margin-left: auto !important;
+
+    .mdc-button {
+      min-width: 0 !important;
+      padding: 6px 14px !important;
+      border-radius: 8px !important;
+      transition: background-color 0.15s ease;
+
+      &:hover {
+        background-color: rgba(4, 167, 119, 0.08) !important;
+      }
+    }
+
+    .mdc-button__label {
+      color: #04A777 !important;
+      font-family: 'M PLUS Rounded 1c', sans-serif !important;
+      font-weight: 800 !important;
+      font-size: 0.8125rem !important;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+  }
+}
+
+@keyframes tuita-snackbar-in {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// Mobile : on étire la carte + on se cale sous le header sticky (~70 px sur
+// mobile) pour rester loin du sticky footer en bas.
+@media (max-width: 600px) {
+  .cdk-overlay-pane.tuita-snackbar,
+  .mat-mdc-snack-bar-container.tuita-snackbar {
+    margin: 70px 12px 0 !important;
+
+    .mdc-snackbar__surface {
+      min-width: 0;
+      max-width: 100%;
+    }
+  }
+}
+
+// ── Fallback ultime : wrapper sticky top positionning (Angular Material 19) ──
+// Material met le snackbar dans un wrapper sticky `.cdk-global-overlay-wrapper`
+// avec `justify-content: flex-start` quand verticalPosition='top'. Le margin
+// peut alors être absorbé. On force un padding-top sur le wrapper pour décoller
+// du header sticky de manière garantie, peu importe la structure interne.
+.cdk-global-overlay-wrapper:has(.tuita-snackbar) {
+  padding-top: 80px !important;
+
+  @media (max-width: 600px) {
+    padding-top: 70px !important;
+  }
+}
+
+// Scrollbar styling
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F8FC;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #699CBE;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #346F96;
+}
+
+
+// ── Modal Détail facture admin (panel pleine surface, pas de padding par défaut) ──
+.admin-invoice-detail-panel {
+  .mat-mdc-dialog-surface,
+  .mdc-dialog__surface {
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+  .mat-mdc-dialog-container {
+    padding: 0 !important;
+    --mdc-dialog-container-shape: 12px;
+  }
+  .mat-mdc-dialog-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-height: none !important;
+  }
+}
+
+// ── Bannière flottante "action en cours" — pattern global ─────────────────
+// Position fixed top-center, z-index élevé : reste visible quel que soit le
+// scroll de la page. Utilisée pendant les actions async qui prennent 500 ms+
+// et où l'user pourrait penser « ça bug » (purchase Stripe, polling plan
+// after subscribe, livraison Pappers, etc.).
+//
+// Markup attendu :
+//   <div class="floating-progress" role="status" aria-live="polite">
+//     <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+//     <span class="floating-progress__text">Action en cours…</span>
+//   </div>
+.floating-progress {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px 10px 14px;
+  border-radius: 999px;
+  background: #073148;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow:
+    0 6px 16px rgba(7, 49, 72, 0.28),
+    0 1px 2px rgba(0, 0, 0, 0.08);
+  pointer-events: none;
+  animation: floating-progress-in 200ms ease-out;
+
+  .mat-mdc-progress-spinner circle {
+    stroke: #ffffff;
+  }
+}
+
+.floating-progress__text {
+  white-space: nowrap;
+
+  @media (max-width: 540px) {
+    white-space: normal;
+    max-width: 220px;
+    font-size: 0.8125rem;
+  }
+}
+
+@keyframes floating-progress-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+// ── Snack-bar success / error : couleurs nettes pour les actions critiques ──
+// (achat 9,99 €, upload doc, KYC). panelClass à passer dans snack.open() :
+//   { panelClass: ['snack-success'] } → vert tuita
+//   { panelClass: ['snack-error'] }   → rouge / orange
+// Sans ça, MatSnackBar reste sur fond noir-gris générique → un user qui paie
+// 9,99 € mérite un signal de succès visuel marqué, pas une notif anodine.
+.mat-mdc-snack-bar-container.snack-success {
+  --mdc-snackbar-container-color: transparent;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #ffffff;
+  margin: 0 auto 28px !important;
+
+  .mdc-snackbar__surface {
+    background: linear-gradient(135deg, #04A777 0%, #038A62 100%) !important;
+    background-color: #04A777 !important;
+    border-left: none !important;
+    box-shadow:
+      0 12px 32px rgba(4, 167, 119, 0.32),
+      0 4px 12px rgba(7, 49, 72, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    border-radius: 14px !important;
+    min-width: 340px;
+    max-width: 560px;
+    padding: 14px 22px !important;
+  }
+
+  .mdc-snackbar__label,
+  .mat-mdc-snack-bar-label {
+    color: #ffffff !important;
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: -0.005em;
+    line-height: 1.45 !important;
+    padding: 0 8px !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .mat-mdc-button.mat-mdc-snack-bar-action {
+    color: #ffffff !important;
+    font-weight: 700;
+    --mat-mdc-button-persistent-ripple-color: #ffffff;
+    --mat-mdc-button-ripple-color: rgba(255, 255, 255, 0.16);
+  }
+}
+
+.mat-mdc-snack-bar-container.snack-error {
+  --mdc-snackbar-container-color: transparent;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #ffffff;
+  margin: 0 auto 28px !important;
+
+  .mdc-snackbar__surface {
+    background: linear-gradient(135deg, #F75C03 0%, #D94D02 100%) !important;
+    background-color: #F75C03 !important;
+    border-left: none !important;
+    box-shadow:
+      0 12px 32px rgba(247, 92, 3, 0.32),
+      0 4px 12px rgba(7, 49, 72, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    border-radius: 14px !important;
+    min-width: 340px;
+    max-width: 560px;
+    padding: 14px 22px !important;
+  }
+
+  .mdc-snackbar__label,
+  .mat-mdc-snack-bar-label {
+    color: #ffffff !important;
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: -0.005em;
+    line-height: 1.45 !important;
+    padding: 0 8px !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+
+  .mat-mdc-button.mat-mdc-snack-bar-action,
+  .mat-mdc-snack-bar-action .mdc-button__label {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+  }
+
+  .mat-mdc-snack-bar-action .mdc-button:hover {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+  }
+}

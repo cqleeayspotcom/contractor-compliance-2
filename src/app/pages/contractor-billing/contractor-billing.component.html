@@ -1,0 +1,355 @@
+@if (isLoading()) {
+  <div class="page-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+} @else {
+  <!-- Bannière flottante post-Stripe Checkout : visible le temps que le
+       webhook backend bascule le plan à "paid" (typiquement 1-3 s, jusqu'à
+       21 s). Pattern global défini dans src/styles.scss. -->
+  @if (isPollingPlan()) {
+    <div class="floating-progress" role="status" aria-live="polite">
+      <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+      <span class="floating-progress__text">
+        Activation de votre abonnement Pro - ne fermez pas la page
+      </span>
+    </div>
+  }
+
+  <div class="page">
+
+    <div class="page__header">
+      <h1>{{ currentPlan() === 'paid' ? 'Mon abonnement' : 'Facturation' }}</h1>
+      <p>
+        {{ currentPlan() === 'paid'
+            ? 'Gérez votre abonnement Tuita Pro et vos factures.'
+            : '' }}
+      </p>
+    </div>
+
+    <!-- Error -->
+    @if (errorMessage()) {
+      <div class="error-msg">
+        <mat-icon>error_outline</mat-icon>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <!-- Bandeau "Vous etes sur le Pro" - uniquement quand deja abonne -->
+    @if (currentPlan() === 'paid') {
+      <section class="pro-status">
+        <div class="pro-status__badge">
+          <mat-icon>workspace_premium</mat-icon>
+        </div>
+        <div class="pro-status__content">
+          <div class="pro-status__title-row">
+            <h2 class="pro-status__title">Plan Professionnel</h2>
+            <span class="pro-status__price">{{ paidPlanPriceLabel() }}&nbsp;&#8364;<span class="pro-status__price-period">/mois</span></span>
+            <button type="button"
+                    class="pro-status__manage"
+                    (click)="promptCancel()"
+                    matTooltip="Gérer ou résilier mon abonnement">
+              Gérer
+            </button>
+          </div>
+          <p class="pro-status__desc">
+            Factures auto-générées après chaque mission, rappels de documents expirants,
+            contrat mandant Tuita et support prioritaire.
+          </p>
+        </div>
+      </section>
+
+      <!-- Dialog de resiliation — s'ouvre juste sous le bandeau quand on clique "Gerer" -->
+      @if (showCancelConfirm() && !cancelMessage()) {
+        <div class="cancel-section">
+          <div class="cancel-confirm">
+            <p class="cancel-confirm__title">Résilier votre abonnement Pro ?</p>
+            <p class="cancel-confirm__text">
+              Vos factures ne seront plus générées automatiquement.
+              Vous devrez uploader chaque facture manuellement.
+              Vos documents et votre KYC restent valides.
+            </p>
+            <div class="cancel-confirm__actions">
+              <button mat-stroked-button
+                      class="cancel-confirm__keep"
+                      (click)="dismissCancel()"
+                      [disabled]="isCancelling()">
+                Garder mon Pro
+              </button>
+              <button mat-button
+                      class="cancel-confirm__confirm"
+                      (click)="confirmCancel()"
+                      [disabled]="isCancelling()">
+                @if (isCancelling()) {
+                  <mat-spinner diameter="16"></mat-spinner>
+                } @else {
+                  Confirmer la résiliation
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Message de succes apres resiliation -->
+      @if (cancelMessage()) {
+        <div class="cancel-success-msg">
+          <mat-icon>info_outline</mat-icon>
+          {{ cancelMessage() }}
+        </div>
+      }
+    }
+
+    <!-- Carte unique « Passer en Pro » — visible uniquement si user gratuit.
+         Remplace l'ancienne grille comparative à 2 cartes ✓/✗ : règle UX
+         low-literacy → une seule décision, 3 bénéfices iconifiés, pas de
+         comparaison à 2 colonnes à lire en parallèle. -->
+    @if (currentPlan() !== 'paid') {
+    <article class="pro-card">
+      <header class="pro-card__head">
+        <span class="pro-card__badge">
+          <mat-icon>workspace_premium</mat-icon>
+          Tuita Pro
+        </span>
+        <h2 class="pro-card__title">Passer en Pro</h2>
+        <p class="pro-card__price">
+          <strong>{{ paidPlanPriceLabel() }} €</strong>
+          <span>/mois - sans engagement</span>
+        </p>
+      </header>
+
+      <ul class="pro-card__benefits">
+        <li>
+          <mat-icon class="pro-card__benefit-icon">auto_awesome</mat-icon>
+          <div>
+            <strong>Factures générées pour toi</strong>
+            <span>Tu ne fais plus aucune facture - Tuita la prépare à chaque chantier terminé.</span>
+          </div>
+        </li>
+        <li>
+          <mat-icon class="pro-card__benefit-icon">verified</mat-icon>
+          <div>
+            <strong>Badge « Pro » sur ton profil</strong>
+            <span>Les donneurs d'ordre te voient en priorité.</span>
+          </div>
+        </li>
+        <li>
+          <mat-icon class="pro-card__benefit-icon">support_agent</mat-icon>
+          <div>
+            <strong>Support prioritaire</strong>
+            <span>Une question, un blocage ? Réponse rapide par notre équipe.</span>
+          </div>
+        </li>
+      </ul>
+
+      <button mat-raised-button
+              color="primary"
+              class="pro-card__cta"
+              [disabled]="isSubscribing()"
+              (click)="subscribe('paid')">
+        @if (isSubscribing()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          <mat-icon>arrow_forward</mat-icon>
+          Passer en Pro - {{ paidPlanPriceLabel() }} €/mois
+        }
+      </button>
+
+      <p class="pro-card__reassure">
+        Tu peux résilier à tout moment en 1 clic.
+      </p>
+    </article>
+    }
+
+    <!-- ===========================================================
+         Factures d'ABONNEMENT Tuita Pro (prelevements Stripe mensuels)
+         Distinct des factures de mission (uploadees / generees apres
+         chaque chantier) : cette section ne concerne QUE la souscription.
+         =========================================================== -->
+    @if (subscriptionInvoices().length > 0) {
+      <section class="subscription-invoices" >
+        <div class="subscription-invoices__header">
+          <div class="subscription-invoices__title-block">
+            <h2 class="subscription-invoices__title">
+              <mat-icon>receipt_long</mat-icon>
+              Factures de mon abonnement Tuita Pro
+            </h2>
+            <p class="subscription-invoices__subtitle">
+              Vos factures mensuelles - {{ paidPlanPriceLabel() }}&nbsp;&#8364;/mois.
+              <br>
+              <span class="subscription-invoices__retention">
+                <mat-icon inline>lock</mat-icon>
+                Vos factures restent accessibles ici même après résiliation.
+              </span>
+            </p>
+          </div>
+
+          <!--
+          @if (billingSummary() && billingSummary()!.subscriptions_eur > 0) {
+            <div class="subscription-invoices__total">
+              <span class="subscription-invoices__total-label">Total abonnement</span>
+              <span class="subscription-invoices__total-amount">
+                {{ formatInvoiceAmount(billingSummary()!.subscriptions_eur) }}
+              </span>
+            </div>
+          }
+          -->
+        </div>
+
+        <!-- Disclaimer : ne pas confondre avec les factures de mission -->
+        <div class="subscription-invoices__disclaimer">
+          <mat-icon>info_outline</mat-icon>
+          <span>
+            Ces factures concernent <strong>uniquement</strong> votre abonnement Tuita Pro.
+            Les factures de vos missions (chantiers realises) se trouvent dans
+            <a class="subscription-invoices__disclaimer-link" (click)="goToInvoices()">Mes missions &amp; factures</a>.
+          </span>
+        </div>
+
+        @if (isLoadingInvoices()) {
+          <div class="subscription-invoices__loading">
+            <mat-spinner diameter="28"></mat-spinner>
+            <span>Chargement de vos factures...</span>
+          </div>
+        } @else if (subscriptionInvoices().length === 0) {
+          <div class="subscription-invoices__empty">
+            <mat-icon>inbox</mat-icon>
+            @if (currentPlan() === 'paid') {
+              <p>
+                Aucune facture pour l'instant. Votre prochaine facture Stripe sera
+                disponible ici après le premier prélèvement mensuel.
+              </p>
+            } @else {
+              <p>
+                Vous n'avez pas encore d'abonnement Tuita Pro.<br>
+                Souscrivez ci-dessus pour bénéficier de la facturation automatique
+                et des rappels de renouvellement.
+              </p>
+            }
+          </div>
+        } @else {
+          <!-- Barre de controle : deplier / replier toutes les annees -->
+          @if (invoicesByYear().length > 1) {
+            <div class="subscription-invoices__controls">
+              <span class="subscription-invoices__controls-hint">
+                {{ invoicesByYear().length }} années d'historique
+              </span>
+              @if (allYearsExpanded()) {
+                <button type="button"
+                        class="subscription-invoices__toggle-all"
+                        (click)="collapseAllYears()">
+                  <mat-icon>unfold_less</mat-icon>
+                  Tout replier
+                </button>
+              } @else {
+                <button type="button"
+                        class="subscription-invoices__toggle-all"
+                        (click)="expandAllYears()">
+                  <mat-icon>unfold_more</mat-icon>
+                  Tout déplier
+                </button>
+              }
+            </div>
+          }
+
+          <!-- Groupes par annee fiscale, annee en cours depliee par defaut -->
+          <div class="year-groups">
+            @for (group of invoicesByYear(); track group.year) {
+              <div class="year-group"
+                  [class.year-group--expanded]="isYearExpanded(group.year)"
+                  [class.year-group--current]="group.year === (subscriptionInvoices().length > 0 ? invoicesByYear()[0].year : 0)">
+
+                <button type="button"
+                        class="year-group__header"
+                        (click)="toggleYear(group.year)"
+                        [attr.aria-expanded]="isYearExpanded(group.year)"
+                        [attr.aria-controls]="'year-panel-' + group.year">
+                  <div class="year-group__title">
+                    <mat-icon class="year-group__chevron">
+                      {{ isYearExpanded(group.year) ? 'expand_more' : 'chevron_right' }}
+                    </mat-icon>
+                    <span class="year-group__year">{{ group.year }}</span>
+                  </div>
+                  <div class="year-group__meta">
+                    <span class="year-group__count">
+                      {{ invoiceCountLabel(group.invoices.length) }}
+                    </span>
+                    <!--
+                    @if (group.totalPaid > 0) {
+                      <span class="year-group__total">
+                        {{ formatInvoiceAmount(group.totalPaid) }}
+                      </span>
+                    }
+                    -->
+
+                  </div>
+                </button>
+
+                @if (isYearExpanded(group.year)) {
+                  <ul class="year-group__list"
+                      [attr.id]="'year-panel-' + group.year"
+                      role="region">
+                    @for (invoice of group.invoices; track invoice.id) {
+                      <li class="invoice-row">
+                        <div class="invoice-row__main">
+                          <div class="invoice-row__date">
+                            <mat-icon>event</mat-icon>
+                            {{ formatInvoiceDate(invoice.date) }}
+                          </div>
+                          <div class="invoice-row__desc">{{ invoice.description }}</div>
+                        </div>
+
+                        <div class="invoice-row__meta">
+                          <span class="invoice-row__amount">
+                            {{ formatInvoiceAmount(invoice.amount_eur) }}
+                          </span>
+                          <span class="invoice-row__status" [class]="invoiceStatusClass(invoice.status)">
+                            {{ invoiceStatusLabel(invoice.status) }}
+                          </span>
+                        </div>
+
+                        <div class="invoice-row__actions">
+                          @if (invoice.invoice_pdf) {
+                            <button mat-stroked-button
+                                    class="invoice-row__btn invoice-row__btn--download"
+                                    (click)="downloadInvoicePdf(invoice)"
+                                    matTooltip="Télécharger le PDF officiel Stripe (facture légale)">
+                              <mat-icon>download</mat-icon>
+                              PDF
+                            </button>
+                          }
+                          @if (invoice.invoice_url) {
+                            <button mat-stroked-button
+                                    class="invoice-row__btn invoice-row__btn--view"
+                                    (click)="viewInvoiceOnline(invoice)"
+                                    matTooltip="Voir la facture en ligne sur Stripe">
+                              <mat-icon>open_in_new</mat-icon>
+                              Voir
+                            </button>
+                          }
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Astuce compta pour secretaires/artisans -->
+          @if (subscriptionInvoices().length >= 3) {
+            <div class="subscription-invoices__tip">
+              <mat-icon>tips_and_updates</mat-icon>
+              <span>
+                <strong>Astuce compta :</strong> pour transmettre toutes vos factures
+                à votre comptable, dépliez l'année souhaitée et téléchargez chaque PDF.
+                Ils sont numérotés et datés par Stripe (facture légale FR).
+              </span>
+            </div>
+          }
+        }
+      </section>
+    }
+
+  </div>
+}

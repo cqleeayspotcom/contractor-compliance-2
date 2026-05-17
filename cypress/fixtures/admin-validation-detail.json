@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "data": {
+    "uuid": "verif-uuid-001",
+    "document": {
+      "uuid": "doc-urssaf-uuid-001",
+      "type": "urssaf",
+      "file_name": "attestation_urssaf.pdf",
+      "file_url": "/storage/documents/123/attestation_urssaf.pdf",
+      "file_size": 180000,
+      "mime_type": "application/pdf",
+      "uploaded_at": "2026-07-15T10:00:00Z"
+    },
+    "company": {
+      "uuid": "company-uuid-001",
+      "name": "SIRBU LUCIAN BTP",
+      "siret": "12345678900012",
+      "siren": "123456789"
+    },
+    "contractor": {
+      "name": "LUCIAN SIRBU",
+      "phone": "P33756874218"
+    },
+    "method": "ocr",
+    "status": "pending_manual_review",
+    "score": 0.58,
+    "result_json": {
+      "provider": "mistral-pipeline",
+      "extracted_data": {
+        "document_type": "attestation_urssaf",
+        "company_name": "SIRBU LUCIAN BTP",
+        "siret": "12345678900012",
+        "period": "T1 2026",
+        "status": "a jour",
+        "issue_date": "2026-04-01",
+        "expiry_date": "2026-07-01"
+      },
+      "confidence": 0.58,
+      "ocr_markdown": "# ATTESTATION DE VIGILANCE\n\nURSSAF Ile-de-France\n\nEntreprise: SIRBU LUCIAN BTP\nSIRET: 12345678900012\nPeriode: T1 2026\nSituation: A JOUR\n\nDate de delivrance: 01/04/2026\nDate de validite: 01/07/2026"
+    },
+    "flags_json": ["low_confidence", "possible_expired_date"],
+    "review": null,
+    "created_at": "2026-07-15T10:00:00Z"
+  }
+}

@@ -1,0 +1,85 @@
+:host {
+  display: block;
+  max-width: 520px;
+}
+
+.redo-dialog__title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.redo-dialog__icon {
+  color: #e08600;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.redo-dialog__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 8px !important;
+}
+
+.redo-dialog__lead {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #333;
+}
+
+.redo-dialog__warning {
+  display: flex;
+  gap: 10px;
+  padding: 12px 14px;
+  background: rgba(224, 134, 0, 0.08);
+  border-left: 3px solid #e08600;
+  border-radius: 4px;
+
+  mat-icon {
+    color: #e08600;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: #000;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.55;
+    color: #333;
+  }
+
+  li + li {
+    margin-top: 2px;
+  }
+}
+
+.redo-dialog__hint {
+  margin: 0;
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.redo-dialog__actions {
+  gap: 8px;
+  padding: 8px 0 0 0;
+}

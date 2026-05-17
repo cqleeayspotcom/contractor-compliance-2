@@ -1,0 +1,22 @@
+<header class="dialog-header" mat-dialog-title>
+  <span class="dialog-header__title">Relancer l'achat</span>
+  <button mat-icon-button mat-dialog-close aria-label="Fermer" type="button">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+<mat-dialog-content>
+  <p>Le job de traitement va etre redispatche. Merci de documenter la raison.</p>
+  <mat-form-field appearance="outline" style="width: 100%;">
+    <mat-label>Raison (audit log)</mat-label>
+    <textarea matInput rows="3" [(ngModel)]="reason"
+              placeholder="Ex: Pappers avait un incident au moment du 1er essai, confirme par leur status page"></textarea>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Annuler</button>
+  <button mat-raised-button color="warn"
+          [disabled]="!reason.trim() || reason.trim().length < 5"
+          (click)="confirm()">
+    Confirmer la relance
+  </button>
+</mat-dialog-actions>

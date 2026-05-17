@@ -1,0 +1,27 @@
+@if (isVisible) {
+  <div [ngClass]="alertClasses" role="alert" aria-live="polite">
+    <div class="error-alert-content">
+      <div class="error-alert-icon">
+        <tuita-icon [icon]="iconName" size="md" [color]="type"></tuita-icon>
+      </div>
+
+      <div class="error-alert-text">
+        @if (title) {
+          <h4 class="error-alert-title">{{ title }}</h4>
+        }
+        <p class="error-alert-message" [innerHTML]="message"></p>
+      </div>
+
+      @if (dismissible) {
+        <button
+          type="button"
+          class="error-alert-close"
+          (click)="dismiss()"
+          aria-label="Close alert"
+        >
+          <tuita-icon icon="close" size="sm"></tuita-icon>
+        </button>
+      }
+    </div>
+  </div>
+}

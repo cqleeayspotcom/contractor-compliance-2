@@ -1,0 +1,171 @@
+.page-wrapper {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.empty {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  mat-icon {
+    font-size: 2rem;
+    width: 2rem;
+    height: 2rem;
+    color: #ccc;
+  }
+}
+
+.t {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+
+  th,
+  td {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: left;
+    font-size: 0.875rem;
+    vertical-align: middle;
+  }
+
+  th {
+    background: #f9fafb;
+    font-weight: 500;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  tr.clickable {
+    cursor: pointer;
+
+    &:hover td {
+      background: #f9fafb;
+    }
+  }
+
+  .amount {
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .actions-cell {
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+.contractor-name {
+  display: block;
+  font-weight: 500;
+}
+
+.contractor-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+
+  &.status-pending_admin_approval {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.status-authorized {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.status-expired {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  &.status-consumed {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.status-cancelled {
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+}
+
+.invoice-chip {
+  display: inline-block;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+
+  &.invoice-none {
+    background: transparent;
+    color: #9ca3af;
+    font-style: italic;
+  }
+
+  &.invoice-pending {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.invoice-ok {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.invoice-ko {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}

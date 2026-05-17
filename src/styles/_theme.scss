@@ -1,0 +1,1049 @@
+@use '@angular/material' as mat;
+@use './variables' as tuita;
+
+// Custom Angular Material theme for Tuita
+// This theme integrates Tuita's design system with Angular Material
+
+// ============================================================================
+// COLOR PALETTES - Mapping Tuita colors to Angular Material format
+// ============================================================================
+
+// Primary palette - Based on Tuita's blue (Prussian Blue)
+$tuita-primary: (
+  50: tuita.$primary-50,
+  100: tuita.$primary-100,
+  200: tuita.$primary-200,
+  300: tuita.$primary-300,
+  400: tuita.$primary-400,
+  500: tuita.$primary-500,
+  600: tuita.$primary-600,
+  700: tuita.$primary-700,
+  800: tuita.$primary-800,
+  900: tuita.$primary-900,
+  A100: tuita.$primary-100,
+  A200: tuita.$primary-300,
+  A400: tuita.$primary-500,
+  A700: tuita.$primary-700,
+  contrast: (
+    50: tuita.$t-text-black,
+    100: tuita.$t-text-black,
+    200: tuita.$t-text-black,
+    300: tuita.$t-text-black,
+    400: tuita.$t-text-black,
+    500: tuita.$t-text-black,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: tuita.$t-text-black,
+    A200: tuita.$t-text-black,
+    A400: #ffffff,
+    A700: #ffffff,
+  )
+);
+
+// Secondary palette - Based on Tuita's green
+$tuita-secondary: (
+  50: tuita.$base-green-50,
+  100: tuita.$base-green-100,
+  200: tuita.$base-green-200,
+  300: tuita.$base-green-300,
+  400: tuita.$base-green-400,
+  500: tuita.$base-green-500,
+  600: tuita.$base-green-600,
+  700: tuita.$base-green-700,
+  800: tuita.$base-green-800,
+  900: tuita.$base-green-900,
+  A100: tuita.$base-green-100,
+  A200: tuita.$base-green-300,
+  A400: tuita.$base-green-500,
+  A700: tuita.$base-green-700,
+  contrast: (
+    50: tuita.$t-text-black,
+    100: tuita.$t-text-black,
+    200: tuita.$t-text-black,
+    300: tuita.$t-text-black,
+    400: tuita.$t-text-black,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: tuita.$t-text-black,
+    A200: tuita.$t-text-black,
+    A400: #ffffff,
+    A700: #ffffff,
+  )
+);
+
+// Error palette - Based on Tuita's orange
+$tuita-error: (
+  50: tuita.$base-orange-50,
+  100: tuita.$base-orange-100,
+  200: tuita.$base-orange-200,
+  300: tuita.$base-orange-300,
+  400: tuita.$base-orange-400,
+  500: tuita.$base-orange-500,
+  600: tuita.$base-orange-600,
+  700: tuita.$base-orange-700,
+  800: tuita.$base-orange-800,
+  900: tuita.$base-orange-900,
+  A100: tuita.$base-orange-100,
+  A200: tuita.$base-orange-300,
+  A400: tuita.$base-orange-500,
+  A700: tuita.$base-orange-700,
+  contrast: (
+    50: tuita.$t-text-black,
+    100: tuita.$t-text-black,
+    200: tuita.$t-text-black,
+    300: tuita.$t-text-black,
+    400: tuita.$t-text-black,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: tuita.$t-text-black,
+    A200: tuita.$t-text-black,
+    A400: #ffffff,
+    A700: #ffffff,
+  )
+);
+
+// Warn palette - Based on Tuita's warn color
+$tuita-warn: (
+  50: tuita.$base-warn-50,
+  100: tuita.$base-warn-100,
+  200: tuita.$base-warn-200,
+  300: tuita.$base-warn-300,
+  400: tuita.$base-warn-400,
+  500: tuita.$base-warn-500,
+  600: tuita.$base-warn-600,
+  700: tuita.$base-warn-700,
+  800: tuita.$base-warn-800,
+  900: tuita.$base-warn-900,
+  A100: tuita.$base-warn-100,
+  A200: tuita.$base-warn-300,
+  A400: tuita.$base-warn-500,
+  A700: tuita.$base-warn-700,
+  contrast: (
+    50: tuita.$t-text-black,
+    100: tuita.$t-text-black,
+    200: tuita.$t-text-black,
+    300: tuita.$t-text-black,
+    400: tuita.$t-text-black,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+    A100: tuita.$t-text-black,
+    A200: tuita.$t-text-black,
+    A400: #ffffff,
+    A700: #ffffff,
+  )
+);
+
+// Success palette (custom) - Based on Tuita's green
+$tuita-success: (
+  50: tuita.$base-green-50,
+  100: tuita.$base-green-100,
+  200: tuita.$base-green-200,
+  300: tuita.$base-green-300,
+  400: tuita.$base-green-400,
+  500: tuita.$base-green-500,
+  600: tuita.$base-green-600,
+  700: tuita.$base-green-700,
+  800: tuita.$base-green-800,
+  900: tuita.$base-green-900,
+  contrast: (
+    50: tuita.$t-text-black,
+    100: tuita.$t-text-black,
+    200: tuita.$t-text-black,
+    300: tuita.$t-text-black,
+    400: tuita.$t-text-black,
+    500: #ffffff,
+    600: #ffffff,
+    700: #ffffff,
+    800: #ffffff,
+    900: #ffffff,
+  )
+);
+
+// ============================================================================
+// TYPOGRAPHY - Tuita's font system
+// ============================================================================
+
+$tuita-typography: mat.m2-define-typography-config(
+  $font-family: tuita.$t-default-font,
+  $headline-1: mat.m2-define-typography-level(
+    tuita.$t-headline-1,
+    tuita.$t-line-height,
+    300,
+    tuita.$t-letter-spacing
+  ),
+  $headline-2: mat.m2-define-typography-level(
+    tuita.$t-headline-2,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $headline-3: mat.m2-define-typography-level(
+    tuita.$t-headline-3,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $headline-4: mat.m2-define-typography-level(
+    tuita.$t-headline-4,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $headline-5: mat.m2-define-typography-level(
+    tuita.$t-headline-5,
+    tuita.$t-line-height,
+    500,
+    tuita.$t-letter-spacing
+  ),
+  $headline-6: mat.m2-define-typography-level(
+    tuita.$t-headline-6,
+    tuita.$t-line-height,
+    500,
+    tuita.$t-letter-spacing
+  ),
+  $subtitle-1: mat.m2-define-typography-level(
+    tuita.$t-subtitle-1,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $subtitle-2: mat.m2-define-typography-level(
+    tuita.$t-subtitle-2,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $body-1: mat.m2-define-typography-level(
+    tuita.$t-body-1,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $body-2: mat.m2-define-typography-level(
+    tuita.$t-body-2,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $caption: mat.m2-define-typography-level(
+    tuita.$t-caption,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+  $button: mat.m2-define-typography-level(
+    tuita.$t-button,
+    tuita.$t-line-height,
+    500,
+    tuita.$t-letter-spacing
+  ),
+  $overline: mat.m2-define-typography-level(
+    tuita.$t-overline,
+    tuita.$t-line-height,
+    400,
+    tuita.$t-letter-spacing
+  ),
+);
+
+// ============================================================================
+// DENSITY - Tuita's spacing system
+// ============================================================================
+
+$tuita-density: (
+  scale: 0,
+);
+
+// ============================================================================
+// THEME DEFINITION
+// ============================================================================
+
+$tuita-theme: mat.m2-define-light-theme((
+  color: (
+    primary: mat.m2-define-palette($tuita-primary, 800),
+    accent: mat.m2-define-palette($tuita-secondary, 600),
+    warn: mat.m2-define-palette($tuita-warn, 700),
+    error: mat.m2-define-palette($tuita-error, 700),
+  ),
+  typography: $tuita-typography,
+  density: $tuita-density,
+));
+
+// ============================================================================
+// THEME MIXINS
+// ============================================================================
+
+// Apply the core theme styles (required for all themes)
+.mat-app-background {
+  background-color: tuita.$t-back-grey-light;
+  color: tuita.$t-color;
+}
+
+// Include all Angular Material theme mixins
+// TODO: Fix theme compilation for Angular Material 21
+// @include mat.core-theme($tuita-theme);
+// @include mat.all-component-themes($tuita-theme);
+
+// ============================================================================
+// CUSTOM COMPONENT STYLES - Tuita-specific overrides
+// ============================================================================
+
+// Buttons
+.mat-button,
+.mat-stroked-button,
+.mat-flat-button {
+  border-radius: tuita.$t-border-radius;
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.5px;
+}
+
+.mat-flat-button {
+  border-radius: tuita.$t-border-radius * 2;
+  padding: 0 tuita.$t-gap-16;
+}
+
+.mat-raised-button {
+  border-radius: tuita.$t-border-radius * 2;
+  padding: 0 tuita.$t-gap-16;
+}
+
+.mat-stroked-button {
+  border-width: 1px;
+  border-color: tuita.$t-outline-color;
+}
+
+.mat-icon-button {
+  border-radius: 50%;
+}
+
+// Cards
+.mat-card {
+  border-radius: tuita.$t-card-border-radius;
+  box-shadow: 0 2px 8px rgba(tuita.$t-text-black, 0.08);
+  background-color: #ffffff;
+  padding: tuita.$t-gap-24;
+
+  .mat-card-title {
+    font-size: tuita.$t-headline-5;
+    font-weight: 500;
+    color: tuita.$t-text-black;
+  }
+
+  .mat-card-subtitle {
+    font-size: tuita.$t-subtitle-1;
+    color: tuita.$t-color-light;
+  }
+
+  .mat-card-content {
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+  }
+}
+
+// Form Fields
+.mat-form-field {
+  font-family: tuita.$t-default-font;
+  width: 100%;
+
+  .mat-form-field-label {
+    font-size: tuita.$t-input-label-text;
+    color: tuita.$t-color-light;
+  }
+
+  .mat-form-field-underline {
+    background-color: tuita.$t-outline-color;
+  }
+
+  .mat-form-field-ripple {
+    background-color: tuita.$primary-600;
+  }
+
+  &.mat-focused {
+    .mat-form-field-label {
+      color: tuita.$primary-600;
+    }
+  }
+
+  &.mat-form-field-invalid {
+    .mat-form-field-label {
+      color: tuita.$t-error-color;
+    }
+
+    .mat-form-field-ripple {
+      background-color: tuita.$t-error-color;
+    }
+  }
+}
+
+// Inputs
+.mat-input-element {
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-1;
+  color: tuita.$t-color;
+}
+
+.mat-input-element::placeholder {
+  color: tuita.$t-color-extra-light;
+}
+
+// Select (legacy + MDC)
+.mat-select,
+.mat-mdc-select {
+  font-family: tuita.$t-default-font;
+
+  .mat-select-value,
+  .mat-mdc-select-value {
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+  }
+
+  .mat-select-arrow,
+  .mat-mdc-select-arrow {
+    color: tuita.$t-color-light;
+  }
+}
+
+.mat-select-panel,
+.mat-mdc-select-panel {
+  background-color: #ffffff !important;
+  border-radius: tuita.$t-border-radius !important;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15) !important;
+
+  .mat-option,
+  .mat-mdc-option {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    background-color: #ffffff;
+
+    &.mat-selected,
+    &.mdc-list-item--selected,
+    &.mat-mdc-option-active {
+      background-color: tuita.$primary-50;
+      color: tuita.$primary-800;
+    }
+
+    &:hover:not(.mat-selected):not(.mdc-list-item--selected) {
+      background-color: tuita.$t-back-grey-medium;
+    }
+  }
+}
+
+// MDC overlay panels (autocomplete, select, menu)
+.cdk-overlay-pane {
+  .mat-mdc-select-panel,
+  .mat-mdc-autocomplete-panel {
+    background-color: #ffffff !important;
+  }
+}
+
+// Checkbox
+.mat-checkbox {
+  .mat-checkbox-frame {
+    border-color: tuita.$t-color-medium-emphasis;
+    border-radius: tuita.$t-border-radius;
+  }
+
+  .mat-checkbox-checkmark {
+    background-color: transparent;
+  }
+
+  .mat-checkbox-checkmark-path {
+    stroke: #ffffff;
+  }
+
+  &.mat-checkbox-checked {
+    .mat-checkbox-background {
+      background-color: tuita.$primary-600;
+    }
+  }
+
+  &.mat-checkbox-indeterminate {
+    .mat-checkbox-background {
+      background-color: tuita.$primary-600;
+    }
+  }
+
+  &.mat-form-field-invalid {
+    .mat-checkbox-background {
+      background-color: tuita.$t-error-color;
+    }
+  }
+}
+
+// Radio
+.mat-radio-button {
+  .mat-radio-outer-circle {
+    border-color: tuita.$t-color-medium-emphasis;
+  }
+
+  &.mat-radio-checked {
+    .mat-radio-inner-circle {
+      background-color: tuita.$primary-600;
+    }
+
+    .mat-radio-outer-circle {
+      border-color: tuita.$primary-600;
+    }
+  }
+}
+
+.mat-radio-label {
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-1;
+  color: tuita.$t-color;
+}
+
+// Dialog
+.mat-dialog-container {
+  border-radius: tuita.$t-card-border-radius;
+  padding: tuita.$t-gap-24;
+  box-shadow: 0 8px 24px rgba(tuita.$t-text-black, 0.15);
+}
+
+.mat-dialog-title {
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-headline-5;
+  font-weight: 500;
+  color: tuita.$t-text-black;
+  margin-bottom: tuita.$t-gap-16;
+}
+
+.mat-dialog-content {
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-1;
+  color: tuita.$t-color;
+  max-height: 60vh;
+}
+
+.mat-dialog-actions {
+  padding: tuita.$t-gap-16 tuita.$t-gap-24;
+  border-top: 1px solid tuita.$t-outline-color;
+}
+
+// Snackbar
+.mat-snack-bar-container {
+  border-radius: tuita.$t-border-radius;
+  padding: tuita.$t-gap-14 tuita.$t-gap-16;
+
+  &.mat-snack-bar-center {
+    margin-top: tuita.$top-sticky-bar-height;
+  }
+
+  .mat-simple-snackbar {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-2;
+  }
+}
+
+.mat-snack-bar-handset {
+  .mat-snack-bar-container {
+    border-radius: 0;
+  }
+}
+
+// Progress Bar
+.mat-progress-bar {
+  height: 4px;
+  border-radius: 2px;
+
+  .mat-progress-bar-buffer {
+    background-color: tuita.$primary-100;
+  }
+
+  .mat-progress-bar-fill {
+    background-color: tuita.$primary-600;
+  }
+}
+
+.mat-progress-spinner {
+  circle {
+    stroke: tuita.$primary-600;
+  }
+}
+
+// Tabs
+.mat-tab-group {
+  font-family: tuita.$t-default-font;
+
+  .mat-tab-header {
+    border-bottom: 1px solid tuita.$t-outline-color;
+  }
+
+  .mat-tab-label {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    font-weight: 500;
+    color: tuita.$t-color-light;
+    min-width: 90px;
+    padding: 0 tuita.$t-gap-16;
+
+    &.mat-active {
+      color: tuita.$primary-600;
+    }
+  }
+
+  .mat-tab-label-active {
+    opacity: 1;
+  }
+
+  .mat-ink-bar {
+    background-color: tuita.$primary-600;
+    height: 3px;
+  }
+
+  .mat-tab-body-content {
+    padding: tuita.$t-gap-24 0;
+  }
+}
+
+// Table
+.mat-table {
+  font-family: tuita.$t-default-font;
+  background-color: #ffffff;
+  border-radius: tuita.$t-card-border-radius;
+  overflow: hidden;
+
+  .mat-header-cell {
+    font-size: tuita.$t-body-2;
+    font-weight: 500;
+    color: tuita.$t-color-light;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid tuita.$t-outline-color;
+  }
+
+  .mat-cell {
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+    border-bottom: 1px solid tuita.$t-outline-color;
+  }
+
+  .mat-row {
+    &:hover {
+      background-color: tuita.$t-back-grey-medium;
+    }
+
+    &.mat-selected {
+      background-color: tuita.$primary-50;
+    }
+  }
+}
+
+.mat-paginator {
+  font-family: tuita.$t-default-font;
+  background-color: #ffffff;
+  border-top: 1px solid tuita.$t-outline-color;
+
+  .mat-paginator-range-label {
+    font-size: tuita.$t-body-2;
+    color: tuita.$t-color-light;
+  }
+
+  .mat-paginator-page-size {
+    font-size: tuita.$t-body-2;
+    color: tuita.$t-color-light;
+  }
+}
+
+// Tooltip
+.mat-tooltip {
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-3;
+  background-color: tuita.$t-text-black;
+  color: #ffffff;
+  border-radius: tuita.$t-border-radius;
+  padding: tuita.$t-gap-8 tuita.$t-gap-12;
+  max-width: 250px;
+}
+
+// Chip
+.mat-chip {
+  border-radius: tuita.$t-border-radius * 3;
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-2;
+  padding: 0 tuita.$t-gap-12;
+  height: 28px;
+
+  &.mat-primary-chip {
+    background-color: tuita.$primary-100;
+    color: tuita.$primary-800;
+  }
+
+  &.mat-accent-chip {
+    background-color: tuita.$base-green-100;
+    color: tuita.$base-green-900;
+  }
+
+  &.mat-warn-chip {
+    background-color: tuita.$base-orange-100;
+    color: tuita.$base-orange-900;
+  }
+}
+
+// Slider
+.mat-slider {
+  .mat-slider-track-background {
+    background-color: tuita.$primary-200;
+  }
+
+  .mat-slider-track-fill {
+    background-color: tuita.$primary-600;
+  }
+
+  .mat-slider-thumb {
+    background-color: tuita.$primary-600;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(tuita.$t-text-black, 0.2);
+  }
+
+  &.mat-slider-min-value:not(.mat-slider-thumb-label-showing) {
+    .mat-slider-thumb {
+      background-color: #ffffff;
+      border: 2px solid tuita.$t-color-medium-emphasis;
+    }
+  }
+}
+
+// Menu (legacy + MDC)
+.mat-menu-panel,
+.mat-mdc-menu-panel {
+  background-color: #ffffff !important;
+  border-radius: tuita.$t-border-radius;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15);
+  padding: tuita.$t-gap-8 0;
+
+  .mat-menu-item {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+    padding: tuita.$menu-action-vpadding tuita.$t-gap-16;
+
+    &:hover:not([disabled]) {
+      background-color: tuita.$t-back-grey-medium;
+    }
+
+    &.mat-menu-item-highlighted {
+      background-color: tuita.$primary-50;
+      color: tuita.$primary-800;
+    }
+
+    &[disabled] {
+      color: tuita.$t-color-extra-light;
+    }
+  }
+}
+
+.mat-divider {
+  border-top-color: tuita.$t-outline-color;
+}
+
+// SideNav
+.mat-drawer {
+  background-color: #ffffff;
+  border-right: 1px solid tuita.$t-outline-color;
+
+  .mat-nav-list {
+    padding-top: tuita.$t-gap-8;
+  }
+
+  .mat-list-item {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+
+    &:hover {
+      background-color: tuita.$t-back-grey-medium;
+    }
+
+    &.mat-list-item-active {
+      background-color: tuita.$primary-50;
+      color: tuita.$primary-800;
+      font-weight: 500;
+    }
+  }
+}
+
+// Expansion Panel
+.mat-expansion-panel {
+  border-radius: tuita.$t-card-border-radius;
+  box-shadow: 0 2px 8px rgba(tuita.$t-text-black, 0.08);
+
+  .mat-expansion-panel-header {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    font-weight: 500;
+    color: tuita.$t-text-black;
+    padding: tuita.$t-gap-16 tuita.$t-gap-24;
+
+    &:hover {
+      background-color: tuita.$t-back-grey-medium;
+    }
+
+    &.mat-expanded {
+      height: 56px;
+    }
+  }
+
+  .mat-expansion-panel-content {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+  }
+}
+
+// Datepicker
+.mat-calendar {
+  font-family: tuita.$t-default-font;
+
+  .mat-calendar-header {
+    padding: tuita.$t-gap-16 tuita.$t-gap-24;
+  }
+
+  .mat-calendar-body-cell-content {
+    border-radius: 50%;
+    font-size: tuita.$t-body-2;
+
+    &.mat-calendar-body-selected {
+      background-color: tuita.$primary-600;
+      color: #ffffff;
+    }
+
+    &.mat-calendar-body-today {
+      border: 1px solid tuita.$primary-600;
+    }
+  }
+
+  .mat-calendar-body-label {
+    font-size: tuita.$t-body-3;
+    color: tuita.$t-color-light;
+  }
+
+  .mat-calendar-table-header {
+    font-size: tuita.$t-body-3;
+    color: tuita.$t-color-light;
+    text-transform: uppercase;
+  }
+}
+
+// Badge
+.mat-badge {
+  .mat-badge-content {
+    font-family: tuita.$t-default-font;
+    font-size: tuita.$t-body-4;
+    font-weight: 500;
+    background-color: tuita.$t-error-color;
+    color: #ffffff;
+    border-radius: 10px;
+    height: 18px;
+    min-width: 18px;
+    padding: 0 4px;
+  }
+}
+
+// Progress Spinner
+.mat-progress-spinner {
+  circle {
+    stroke: tuita.$primary-600;
+  }
+
+  &.mat-accent {
+    circle {
+      stroke: tuita.$base-green-600;
+    }
+  }
+
+  &.mat-warn {
+    circle {
+      stroke: tuita.$t-error-color;
+    }
+  }
+}
+
+// List
+.mat-list {
+  font-family: tuita.$t-default-font;
+
+  .mat-list-item {
+    font-size: tuita.$t-body-1;
+    color: tuita.$t-color;
+
+    &.mat-list-item-active {
+      background-color: tuita.$primary-50;
+      color: tuita.$primary-800;
+    }
+  }
+
+  .mat-list-item-title {
+    font-size: tuita.$t-body-1;
+    font-weight: 500;
+    color: tuita.$t-text-black;
+  }
+
+  .mat-list-item-subtitle {
+    font-size: tuita.$t-body-2;
+    color: tuita.$t-color-light;
+  }
+
+  .mat-list-item-text {
+    padding: 0;
+  }
+}
+
+.mat-list-base {
+  padding: 0;
+}
+
+// Divider
+.mat-divider {
+  border-top-color: tuita.$t-outline-color;
+  border-top-style: solid;
+  border-top-width: 1px;
+}
+
+// Icon
+.mat-icon {
+  color: tuita.$t-color-light;
+
+  &.mat-primary {
+    color: tuita.$primary-600;
+  }
+
+  &.mat-accent {
+    color: tuita.$base-green-600;
+  }
+
+  &.mat-warn {
+    color: tuita.$t-error-color;
+  }
+}
+
+// Sidenav
+.mat-drawer-container {
+  background-color: tuita.$t-back-grey-light;
+  color: tuita.$t-color;
+}
+
+.mat-drawer {
+  background-color: #ffffff;
+}
+
+.mat-drawer-backdrop {
+  background-color: rgba(tuita.$t-text-black, 0.32);
+}
+
+// Toolbar
+.mat-toolbar {
+  font-family: tuita.$t-default-font;
+  background-color: #ffffff;
+  color: tuita.$t-text-black;
+
+  &.mat-primary {
+    background-color: tuita.$primary-800;
+    color: #ffffff;
+  }
+
+  .mat-toolbar-row {
+    height: tuita.$top-sticky-bar-height;
+  }
+}
+
+// ============================================================================
+// UTILITY CLASSES
+// ============================================================================
+
+.tuita-gradient {
+  background: tuita.$t-multi-color-gradient;
+}
+
+.tuita-gradient-simple {
+  background: tuita.$t-simple-multi-color-gradient-normal;
+}
+
+.tuita-gradient-emergency {
+  background: tuita.$t-simple-multi-color-gradient-emergency;
+}
+
+.tuita-text-primary {
+  color: tuita.$primary-800;
+}
+
+.tuita-text-accent {
+  color: tuita.$base-green-600;
+}
+
+.tuita-text-error {
+  color: tuita.$t-error-color;
+}
+
+.tuita-bg-grey-high {
+  background-color: tuita.$t-back-grey-high;
+}
+
+.tuita-bg-grey-medium {
+  background-color: tuita.$t-back-grey-medium;
+}
+
+.tuita-bg-grey-light {
+  background-color: tuita.$t-back-grey-light;
+}
+
+// ============================================================================
+// GLOBAL OVERRIDES
+// ============================================================================
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: tuita.$t-default-font;
+  font-size: tuita.$t-body-1;
+  color: tuita.$t-color;
+  background-color: tuita.$t-back-grey-light;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  color: tuita.$t-text-black;
+  margin: 0 0 tuita.$t-gap-16 0;
+}
+
+h1 { font-size: tuita.$t-headline-1; }
+h2 { font-size: tuita.$t-headline-2; }
+h3 { font-size: tuita.$t-headline-3; }
+h4 { font-size: tuita.$t-headline-4; }
+h5 { font-size: tuita.$t-headline-5; }
+h6 { font-size: tuita.$t-headline-6; }
+
+p {
+  font-size: tuita.$t-body-1;
+  line-height: 1.5;
+  color: tuita.$t-color;
+  margin: 0 0 tuita.$t-gap-16 0;
+}
+
+a {
+  color: tuita.$primary-600;
+  text-decoration: none;
+
+  &:hover {
+    color: tuita.$primary-800;
+    text-decoration: underline;
+  }
+}

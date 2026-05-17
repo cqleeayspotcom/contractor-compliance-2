@@ -1,0 +1,130 @@
+<div class="detail-dialog">
+  <header class="detail-dialog__header">
+    @if (detail(); as d) {
+      <div class="detail-dialog__title">
+        <span class="detail-dialog__code">{{ d.code }}</span>
+        <span class="detail-dialog__owner">Généré par {{ generatedByLabel(d) }}</span>
+      </div>
+      <button mat-icon-button type="button" (click)="close()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </header>
+
+  @if (isLoading() && !detail()) {
+    <div class="detail-dialog__loader">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (detail(); as d) {
+    <mat-tab-group dynamicHeight>
+
+      <!-- ── Onglet 1 : Vue d'ensemble ──────────────────────────────────── -->
+      <mat-tab label="Vue d'ensemble">
+        <div class="tab-pane">
+          <dl class="meta-grid">
+            <div>
+              <dt>Statut</dt>
+              <dd>
+                @if (d.revoked_at) {
+                  <span class="badge badge--bad">Révoqué le {{ d.revoked_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                } @else if (!d.is_consumable) {
+                  <span class="badge badge--warn">Inutilisable (expiré ou épuisé)</span>
+                } @else {
+                  <span class="badge badge--ok">Actif</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Expire le</dt>
+              <dd>{{ d.expires_at | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </div>
+            <div>
+              <dt>Consommations</dt>
+              <dd>
+                <strong>{{ d.uses_count }}</strong>
+                @if (d.max_uses != null) {
+                  / {{ d.max_uses }} max
+                } @else {
+                  / illimité
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>Généré par</dt>
+              <dd>{{ generatedByLabel(d) }}</dd>
+            </div>
+          </dl>
+
+          <section class="note-editor">
+            <label for="note-input">Note libre <small>(éditable, audit visible)</small></label>
+            <textarea id="note-input"
+                      rows="4"
+                      maxlength="2000"
+                      [ngModel]="noteDraft()"
+                      (ngModelChange)="noteDraft.set($event)"
+                      placeholder="ex. « Pierre Dupont — équipe Carrefour Lyon »"></textarea>
+            <button mat-flat-button color="primary" type="button"
+                    [disabled]="isSavingNote() || noteDraft() === (d.note ?? '')"
+                    (click)="saveNote()">
+              @if (isSavingNote()) {
+                <mat-spinner diameter="16"></mat-spinner>
+              } @else {
+                <mat-icon>save</mat-icon>
+                Enregistrer la note
+              }
+            </button>
+          </section>
+
+          @if (!d.revoked_at) {
+            <section class="danger-zone">
+              <button mat-stroked-button color="warn" type="button" (click)="revoke()">
+                <mat-icon>block</mat-icon>
+                Révoquer ce code
+              </button>
+              <p class="danger-zone__hint">
+                Les contractors déjà inscrits via ce code restent actifs.
+                Seul le code lui-même devient inutilisable.
+              </p>
+            </section>
+          }
+        </div>
+      </mat-tab>
+
+      <!-- ── Onglet 2 : Consommations ───────────────────────────────────── -->
+      <mat-tab [label]="'Consommations (' + d.uses.length + ')'">
+        <div class="tab-pane">
+          @if (d.uses.length === 0) {
+            <p class="empty-mini">Aucune consommation pour l'instant.</p>
+          } @else {
+            <ul class="uses-list">
+              @for (u of d.uses; track u.uuid) {
+                <li>
+                  <div class="uses-list__head">
+                    <strong>{{ u.first_name }} {{ u.last_name }}</strong>
+                    <span class="uses-list__phone">{{ u.phone | phoneDisplay }}</span>
+                  </div>
+                  <div class="uses-list__meta">
+                    @if (u.company_name) {
+                      <span><mat-icon>business</mat-icon> {{ u.company_name }}</span>
+                    }
+                    @if (u.siren) {
+                      <span><mat-icon>verified</mat-icon> SIREN {{ u.siren }}</span>
+                    }
+                    @if (u.consumed_ip) {
+                      <span><mat-icon>language</mat-icon> {{ u.consumed_ip }}</span>
+                    }
+                    <span><mat-icon>schedule</mat-icon> {{ u.created_at | date:'dd/MM/yyyy HH:mm' }}</span>
+                  </div>
+                  @if (u.note) {
+                    <p class="uses-list__note">{{ u.note }}</p>
+                  }
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </mat-tab>
+
+    </mat-tab-group>
+  }
+</div>

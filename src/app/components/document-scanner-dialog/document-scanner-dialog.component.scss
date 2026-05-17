@@ -1,0 +1,238 @@
+:host {
+  display: block;
+  // Le dialog ouvert via MatDialog reçoit ses dimensions du panelClass passé
+  // par le caller (cf. wires CNI / free-invoice). Pas de width hardcodée ici.
+}
+
+.scanner-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 4px 0;
+  overflow-x: hidden;
+  min-width: 0;
+
+  &__header {
+    margin: 0;
+
+    h2 {
+      margin: 0 0 4px 0;
+      font-size: 1.15rem;
+      font-weight: 600;
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.65);
+    font-size: 0.875rem;
+    line-height: 1.4;
+
+    &.hidden {
+      display: none;
+    }
+  }
+
+  &__loading,
+  &__error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 32px 16px;
+    text-align: center;
+
+    p {
+      margin: 0;
+      color: rgba(0, 0, 0, 0.7);
+    }
+  }
+
+  &__loading-detail,
+  &__error-detail {
+    font-size: 0.85rem;
+    color: rgba(0, 0, 0, 0.55);
+  }
+
+  &__error {
+    mat-icon {
+      color: #c0392b;
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  &__preview {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #1a1a1a;
+    border-radius: 8px;
+    overflow: hidden;
+    // Mobile-first : remplit la largeur du dialog, hauteur souple
+    width: 100%;
+    max-height: 65vh;
+    // Sur écrans étroits, on doit pouvoir scroller si le canvas dépasse
+    user-select: none;
+    touch-action: none; // évite que le pinch-zoom interfère avec les drags
+  }
+
+  &__canvas {
+    display: block;
+    max-width: 100%;
+    max-height: 65vh;
+    width: auto;
+    height: auto;
+    // Le contenu réel est à la taille naturelle de l'image ; le CSS scale down.
+  }
+
+  &__handle {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    margin-left: -18px;
+    margin-top: -18px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: rgba(255, 92, 0, 0.98);
+    // Double ombre : portée pour lisibilité sur fond clair, et halo orange
+    // pour signaler que c'est un point actif à glisser, même au repos.
+    box-shadow:
+      0 2px 10px rgba(0, 0, 0, 0.5),
+      0 0 0 6px rgba(255, 92, 0, 0.22);
+    cursor: grab;
+    padding: 0;
+    z-index: 2;
+    transition: transform 0.08s ease-out;
+
+    &:active {
+      cursor: grabbing;
+      transform: scale(1.2);
+      box-shadow:
+        0 4px 14px rgba(0, 0, 0, 0.55),
+        0 0 0 10px rgba(255, 92, 0, 0.32);
+    }
+
+    // Cible tactile élargie à 56 px — bien au-delà du minimum 44 px HIG, car
+    // les artisans utilisent souvent les pouces sur petit écran. Le visuel
+    // reste à 36 px (cercle), la hit-zone est étendue via un pseudo invisible.
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -10px;
+    }
+  }
+
+  &__spinner {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 4px solid rgba(0, 0, 0, 0.12);
+    border-top-color: #1976d2;
+    animation: scanner-dialog-spin 0.9s linear infinite;
+  }
+
+  &__overlay-spinner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 3;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 0 4px 8px;
+    overflow-x: hidden;
+    min-width: 0;
+    box-sizing: border-box;
+    max-width: 100%;
+
+    button {
+      max-width: 100%;
+      box-sizing: border-box;
+
+      mat-icon {
+        margin-right: 4px;
+      }
+    }
+  }
+
+  &__cta {
+    background-color: #1976d2 !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    min-height: 44px;
+    padding: 0 24px !important;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.35);
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+
+    &:hover:not([disabled]) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(25, 118, 210, 0.45);
+    }
+
+    &[disabled] {
+      background-color: rgba(0, 0, 0, 0.12) !important;
+      color: rgba(0, 0, 0, 0.38) !important;
+      box-shadow: none;
+    }
+
+    mat-icon {
+      font-weight: bold;
+    }
+  }
+}
+
+@keyframes scanner-dialog-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 640px) {
+  .scanner-dialog {
+    &__actions {
+      // Sur mobile, on empile les boutons (sinon ils débordent à 3+).
+      // L'ordre devient : CTA primaire ("Valider" / "Aperçu") tout en haut,
+      // action secondaire au milieu, "Reprendre la photo" tout en bas —
+      // c'est l'ordre de prise de décision naturel ("ça me va → je valide"
+      // puis "je veux ajuster" puis "je recommence").
+      flex-direction: column-reverse;
+      align-items: stretch;
+      gap: 10px;
+
+      button {
+        width: 100%;
+        // Boutons épais pour pouce — pas de mat-mini, du vrai gros tap target.
+        min-height: 48px;
+        font-size: 1rem;
+      }
+    }
+
+    // Hint un peu plus gros au mobile : c'est l'instruction d'action, elle
+    // doit être lue, pas survolée.
+    &__hint {
+      font-size: 0.95rem;
+      line-height: 1.45;
+    }
+
+    // Poignées de drag encore plus généreuses sur mobile (doigt > souris).
+    &__handle {
+      width: 40px;
+      height: 40px;
+      margin-left: -20px;
+      margin-top: -20px;
+
+      &::after {
+        inset: -12px;
+      }
+    }
+  }
+}

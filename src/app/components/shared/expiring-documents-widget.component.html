@@ -1,0 +1,89 @@
+<div [class]="widgetClasses">
+  <!-- Widget Header -->
+  <div class="widget-header">
+    <div class="header-content">
+      <tuita-icon icon="schedule" size="md" class="header-icon"></tuita-icon>
+      <div class="header-text">
+        <h3 class="header-title">Expiring Documents</h3>
+        <span class="header-count">{{ documents.length }} document{{ documents.length !== 1 ? 's' : '' }}</span>
+      </div>
+    </div>
+
+    <button
+      (click)="onToggleClick()"
+      class="toggle-button"
+      type="button"
+      [attr.aria-label]="expanded ? 'Collapse' : 'Expand'"
+      matTooltip="{{ expanded ? 'Collapse' : 'Expand' }}"
+    >
+      <tuita-icon [icon]="expanded ? 'expand-less' : 'expand-more'" size="md"></tuita-icon>
+    </button>
+  </div>
+
+  <!-- Widget Content -->
+  <div *ngIf="expanded" class="widget-content">
+    <!-- Empty State -->
+    <div *ngIf="!hasExpiringDocuments" class="widget-empty">
+      <tuita-icon icon="check-circle" size="xl" class="empty-icon"></tuita-icon>
+      <h4 class="empty-title">{{ emptyMessage }}</h4>
+      <p class="empty-subtitle">{{ emptySubMessage }}</p>
+    </div>
+
+    <!-- Document Items -->
+    <div *ngIf="hasExpiringDocuments" class="document-items">
+      <div
+        *ngFor="let document of displayDocuments"
+        [ngClass]="getDocumentSeverityClass(document)"
+        class="document-item"
+      >
+        <!-- Document Info -->
+        <div class="document-info">
+          <div class="document-header">
+            <div class="document-type">{{ document.type }}</div>
+            <div class="document-days">
+              <tuita-icon icon="schedule" size="sm"></tuita-icon>
+              <span>{{ document.daysRemaining === 0 ? 'Expires today' : document.daysRemaining === 1 ? '1 day' : document.daysRemaining + ' days' }}</span>
+            </div>
+          </div>
+
+          <h5 class="document-name">{{ document.name }}</h5>
+
+          <!-- Progress Bar -->
+          <div class="document-progress">
+            <div
+              class="progress-bar"
+              [ngClass]="getProgressColorClass(document)"
+              [style.width.%]="calculateProgress(document)"
+            ></div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div *ngIf="actions.length > 0" class="document-actions">
+            <button
+              *ngFor="let action of actions"
+              (click)="onActionClick(document, action)"
+              class="action-button"
+              type="button"
+              matTooltip="{{ action.label }}"
+            >
+              <tuita-icon [icon]="action.icon" size="sm"></tuita-icon>
+              <span>{{ action.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Show More Indicator -->
+    <div *ngIf="!expanded && hiddenDocumentsCount > 0" class="show-more-indicator">
+      <button
+        (click)="onToggleClick()"
+        class="show-more-button"
+        type="button"
+      >
+        <span>View {{ hiddenDocumentsCount }} more</span>
+        <tuita-icon icon="expand-more" size="sm"></tuita-icon>
+      </button>
+    </div>
+  </div>
+</div>

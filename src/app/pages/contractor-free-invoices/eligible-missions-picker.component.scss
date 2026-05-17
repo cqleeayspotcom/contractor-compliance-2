@@ -1,0 +1,78 @@
+:host { display: block; }
+
+.picker {
+  margin: 16px 0;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  .hint {
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+    margin: 0 0 12px;
+  }
+
+  .loading {
+    display: flex;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  .counter {
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+    margin: 4px 0 8px;
+  }
+
+  .empty-warning {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: #e7f0ff;
+    border-left: 4px solid #2563eb;
+    padding: 12px 16px;
+    border-radius: 6px;
+
+    mat-icon {
+      color: #2563eb;
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
+
+  .missions-list {
+    border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+    border-radius: 8px;
+    padding: 0;
+  }
+
+  .mission-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+
+    .ref {
+      font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .title {
+      font-weight: 500;
+    }
+
+    .meta {
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+    }
+  }
+}

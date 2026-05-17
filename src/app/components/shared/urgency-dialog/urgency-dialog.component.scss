@@ -1,0 +1,80 @@
+@use '../../../../styles/variables' as *;
+
+@keyframes urgency-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.urgency-dialog {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px 4px;
+
+  &__icon-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba($t-base-orange, 0.18) 0%, rgba($t-base-orange, 0.08) 100%);
+    color: $t-base-orange;
+    margin-bottom: 16px;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      z-index: 1;
+    }
+  }
+
+  &__pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba($t-base-orange, 0.4);
+    animation: urgency-pulse 2s ease-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+      opacity: 0;
+    }
+  }
+
+  &__title {
+    margin: 0 0 8px !important;
+    font-size: 1.25rem !important;
+    font-weight: 700;
+    color: $t-logo-blue;
+    line-height: 1.3;
+  }
+
+  &__body {
+    padding: 0 !important;
+    max-width: 420px;
+    color: rgba(0, 0, 0, 0.72);
+
+    p {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+  }
+
+  &__actions {
+    width: 100%;
+    margin-top: 16px;
+    padding: 0 !important;
+    gap: 8px;
+  }
+}

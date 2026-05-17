@@ -1,0 +1,256 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: block;
+  font-family: $t-default-font;
+  color: $t-color;
+}
+
+.dialog-title {
+  font-family: $t-default-font;
+  font-size: $t-headline-6;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 0 0 $t-gap-8;
+  color: $t-color;
+}
+
+.dialog-content {
+  font-family: $t-default-font;
+  padding-top: $t-gap-4;
+}
+
+.free-invoice-form {
+  font-family: $t-default-font;
+
+  ::ng-deep {
+    .mat-mdc-form-field,
+    .mat-mdc-text-field-wrapper,
+    .mdc-text-field,
+    input.mat-mdc-input-element,
+    textarea.mat-mdc-input-element,
+    .mat-mdc-form-field-hint,
+    .mat-mdc-form-field-error,
+    .mdc-floating-label {
+      font-family: $t-default-font !important;
+    }
+
+    .mat-mdc-form-field-hint {
+      font-size: $t-body-3;
+      color: $t-color-light;
+      letter-spacing: 0;
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      padding-top: $t-gap-4;
+    }
+
+    textarea.mat-mdc-input-element::placeholder {
+      color: $t-color-extra-light;
+      font-family: $t-default-font;
+    }
+  }
+}
+
+mat-form-field {
+  width: 100%;
+  margin-bottom: $t-gap-16;
+}
+
+.justification-field {
+  textarea {
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 112px;
+    padding-top: $t-gap-4;
+  }
+
+  &--short {
+    .mat-mdc-form-field-hint-wrapper .counter--short {
+      color: $t-base-orange;
+      font-weight: 500;
+    }
+  }
+
+  &--ok {
+    .mat-mdc-form-field-hint-wrapper .counter--ok {
+      color: $t-base-green;
+      font-weight: 500;
+    }
+  }
+
+  .counter {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+
+    &__icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      line-height: 16px;
+    }
+  }
+}
+
+.files {
+  margin-top: $t-gap-20;
+
+  &__title {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-2;
+    margin: 0 0 $t-gap-12;
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-color;
+  }
+
+  &__hint {
+    font-size: $t-body-3;
+    font-weight: 400;
+    color: $t-color-light;
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin: $t-gap-12 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-8;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+    padding: $t-gap-10 $t-gap-12;
+    border: 1px solid rgba($t-text-black, 0.1);
+    border-radius: $t-card-border-radius;
+    background: $t-back-grey-light;
+    transition: border-color 120ms ease, background-color 120ms ease;
+
+    &:hover {
+      border-color: rgba($t-text-black, 0.18);
+      background: $t-back-grey-medium;
+    }
+  }
+
+  &__item-icon {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    font-size: 32px;
+    line-height: 32px;
+
+    &[data-kind='pdf'] {
+      color: #d93025;
+    }
+
+    &[data-kind='image'] {
+      color: $t-base-green;
+    }
+
+    &[data-kind='other'] {
+      color: $t-color-light;
+    }
+  }
+
+  &__item-info {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__item-name {
+    font-size: $t-body-2;
+    font-weight: 500;
+    color: $t-color;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__item-size {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  &__item-remove {
+    flex: 0 0 auto;
+    color: $t-color-light;
+
+    &:hover {
+      color: $t-error-color;
+    }
+  }
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-4;
+  padding: $t-gap-24 $t-gap-16;
+  border: 2px dashed rgba($t-text-black, 0.2);
+  border-radius: $t-card-border-radius;
+  background: $t-back-grey-light;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 150ms ease;
+
+  &:hover {
+    border-color: $t-logo-blue;
+    background: $t-back-grey-medium;
+  }
+
+  &:focus-within {
+    outline: 2px solid rgba($t-logo-blue, 0.4);
+    outline-offset: 2px;
+  }
+
+  &--dragging {
+    border-color: $t-logo-blue;
+    background: rgba($t-logo-blue, 0.06);
+    transform: scale(1.01);
+  }
+
+  &--filled {
+    padding: $t-gap-16 $t-gap-12;
+
+    .dropzone__icon {
+      width: 28px;
+      height: 28px;
+      font-size: 28px;
+      line-height: 28px;
+    }
+
+    .dropzone__title {
+      font-size: $t-body-2;
+    }
+  }
+
+  &__icon {
+    width: 40px;
+    height: 40px;
+    font-size: 40px;
+    line-height: 40px;
+    color: $t-logo-blue;
+    transition: width 150ms ease, height 150ms ease, font-size 150ms ease;
+  }
+
+  &__title {
+    font-size: $t-body-1;
+    font-weight: 500;
+    color: $t-color;
+  }
+
+  &__cta {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+}

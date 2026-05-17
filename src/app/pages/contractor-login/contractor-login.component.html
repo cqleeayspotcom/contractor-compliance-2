@@ -1,0 +1,84 @@
+<div class="login-shell">
+  <div class="login-card">
+    <img src="/assets/logos/logo-tuita-icon.svg" alt="Tuita" class="login-card__logo" />
+
+    <h1>Espace Intervenant</h1>
+
+    @if (step() === 'phone') {
+      <p class="hint">Entrez votre numéro de mobile pour recevoir un code de connexion.</p>
+
+      <mat-form-field appearance="outline" class="login-field">
+        <mat-label>Numéro de mobile</mat-label>
+        <input
+          matInput
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          placeholder="06 12 34 56 78"
+          [ngModel]="phoneRaw()"
+          (ngModelChange)="phoneRaw.set($event)"
+          [disabled]="loading()"
+          autofocus
+          required />
+        <mat-icon matSuffix>smartphone</mat-icon>
+        <mat-hint>Ex. 06 12 34 56 78.</mat-hint>
+      </mat-form-field>
+
+      <button
+        mat-flat-button
+        class="login-cta tui-attract"
+        type="button"
+        (click)="submitPhone()"
+        [disabled]="loading() || !isPhoneValid()">
+        @if (loading()) {
+          <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
+          <span>Envoi...</span>
+        } @else {
+          <span>Recevoir le code</span>
+        }
+      </button>
+    } @else {
+      <p class="hint">
+        Code envoyé au <strong>{{ (normalizedPhone() | phoneDisplay) || phoneRaw() }}</strong> (en test&nbsp;: <strong>0000</strong>)
+      </p>
+
+      <mat-form-field appearance="outline" class="login-field">
+        <mat-label>Code de connexion</mat-label>
+        <input
+          matInput
+          type="text"
+          inputmode="numeric"
+          placeholder="0000"
+          maxlength="6"
+          [ngModel]="code()"
+          (ngModelChange)="code.set($event)"
+          [disabled]="loading()"
+          autofocus
+          required />
+        <mat-icon matSuffix>lock</mat-icon>
+      </mat-form-field>
+
+      <button
+        mat-flat-button
+        class="login-cta tui-attract"
+        type="button"
+        (click)="submitCode()"
+        [disabled]="loading() || !code()">
+        @if (loading()) {
+          <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
+          <span>Connexion...</span>
+        } @else {
+          <span>Se connecter</span>
+        }
+      </button>
+
+      <button type="button" class="link-btn" (click)="step.set('phone')">
+        Changer de numéro
+      </button>
+    }
+
+    <a routerLink="/signup" class="signup-link">
+      Pas de compte ? Inscrivez-vous
+    </a>
+  </div>
+</div>

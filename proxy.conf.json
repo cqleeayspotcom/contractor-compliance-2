@@ -1,0 +1,9 @@
+{
+  "/contractor-compliance/**": {
+    "target": "http://localhost:8060",
+    "secure": false,
+    "changeOrigin": true,
+    "cookieDomainRewrite": "localhost",
+    "logLevel": "debug"
+  }
+}

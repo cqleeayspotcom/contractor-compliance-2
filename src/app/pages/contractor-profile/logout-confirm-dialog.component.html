@@ -1,0 +1,17 @@
+<h2 mat-dialog-title>
+  <mat-icon class="logout-confirm__icon" aria-hidden="true">logout</mat-icon>
+  Se déconnecter ?
+</h2>
+<mat-dialog-content>
+  <p>
+    Vous serez redirigé vers tuita.fr. Vous pourrez vous reconnecter à tout moment
+    avec votre numéro de téléphone.
+  </p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-stroked-button cdkFocusInitial (click)="cancel()">Annuler</button>
+  <button mat-flat-button color="warn" (click)="confirm()">
+    <mat-icon aria-hidden="true">logout</mat-icon>
+    Se déconnecter
+  </button>
+</mat-dialog-actions>

@@ -1,0 +1,148 @@
+<section class="invitation-page">
+  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+  <header class="invitation-page__header">
+    <div>
+      <h1>Codes d'invitation contractor</h1>
+      <p>Génère un code d'inscription et suis qui s'est inscrit avec.</p>
+    </div>
+    <button mat-flat-button color="primary" type="button" (click)="openGenerate()">
+      <mat-icon>add_circle</mat-icon>
+      Générer un code
+    </button>
+  </header>
+
+  <div class="invitation-page__filters">
+    <button type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="statusFilter() === 'active'"
+            (click)="setStatus('active')">Actifs</button>
+    <button type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="statusFilter() === 'expired'"
+            (click)="setStatus('expired')">Expirés</button>
+    <button type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="statusFilter() === 'revoked'"
+            (click)="setStatus('revoked')">Révoqués</button>
+    <button type="button"
+            class="filter-chip"
+            [class.filter-chip--active]="statusFilter() === 'all'"
+            (click)="setStatus('all')">Tous</button>
+
+    <span class="invitation-page__filter-spacer"></span>
+
+    <button mat-icon-button type="button" (click)="refresh()" [disabled]="isLoading()" matTooltip="Actualiser">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="invitation-page__loader">
+      <mat-spinner diameter="36"></mat-spinner>
+    </div>
+  } @else if (rows().length === 0) {
+    <div class="empty-state">
+      <mat-icon>vpn_key</mat-icon>
+      <p>{{ emptyHint() }}</p>
+    </div>
+  } @else {
+    <div class="invitation-page__table-wrap">
+      <table mat-table [dataSource]="rows()" [trackBy]="trackByUuid" matSort
+             [matSortActive]="sort() === 'usage_count' ? 'usage' : (sort() === 'expires_at' ? 'expires' : sort())"
+             [matSortDirection]="direction()"
+             (matSortChange)="onSortChange($event)" class="invitation-table">
+
+        <ng-container matColumnDef="code">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="code">Code</th>
+          <td mat-cell *matCellDef="let row">
+            <button type="button" class="code-cell" (click)="copyCode(row.code, $event)" matTooltip="Copier">
+              <span class="code-cell__value">{{ row.code }}</span>
+              <mat-icon aria-hidden="true">content_copy</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="origin">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="origin">Généré par</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="origin-pill">
+              <mat-icon aria-hidden="true">verified_user</mat-icon>
+              {{ ownerLabel(row) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="usage">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="usage">Usages</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="usage-cell">
+              <strong>{{ row.uses_count }}</strong>
+              <span>/ {{ row.max_uses ?? '∞' }}</span>
+            </span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="expires">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="expires">Expire</th>
+          <td mat-cell *matCellDef="let row">{{ row.expires_at | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Statut</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="badge" [class]="statusLabel(row).cls">{{ statusLabel(row).text }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="note">
+          <th mat-header-cell *matHeaderCellDef>Note (à qui)</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="note-cell" [matTooltip]="row.note ?? ''">{{ row.note || '—' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="first_use">
+          <th mat-header-cell *matHeaderCellDef>1er inscrit</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.first_use) {
+              <span class="first-use-cell" [matTooltip]="firstUseTooltip(row)">
+                <strong>{{ firstUseLabel(row) }}</strong>
+                @if (row.note_matches_first_use === true) {
+                  <mat-icon class="first-use-cell__match" aria-hidden="true">check_circle</mat-icon>
+                } @else if (row.note_matches_first_use === false) {
+                  <mat-icon class="first-use-cell__mismatch" aria-hidden="true">warning</mat-icon>
+                }
+              </span>
+            } @else {
+              <span class="first-use-cell first-use-cell--empty">—</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            <button mat-icon-button type="button"
+                    matTooltip="Détail + édition note"
+                    (click)="openDetail(row)">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            @if (!row.revoked_at) {
+              <button mat-icon-button type="button"
+                      matTooltip="Révoquer ce code"
+                      (click)="revoke(row, $event)">
+                <mat-icon>block</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="columns"></tr>
+        <tr mat-row
+            *matRowDef="let row; columns: columns;"
+            class="invitation-table__row"
+            (click)="openDetail(row)"></tr>
+      </table>
+    </div>
+  }
+</section>

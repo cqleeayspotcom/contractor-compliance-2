@@ -1,0 +1,126 @@
+@use '../../../../styles/variables' as *;
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.kyc-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 12px;
+  background: rgba($t-logo-blue, 0.04);
+  border-radius: 14px;
+
+  &__phases {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
+    gap: 0;
+  }
+
+  &__phase {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    text-align: center;
+  }
+
+  // Connecteur entre phases (ligne horizontale grise → verte si passée).
+  // Positionné depuis le dot vers la droite, jusqu'à atteindre le dot suivant.
+  &__connector {
+    position: absolute;
+    top: 22px; // centre vertical du dot (height 44 / 2)
+    left: calc(50% + 22px);
+    right: calc(-50% + 22px);
+    height: 3px;
+    background: rgba($t-logo-blue, 0.12);
+    border-radius: 999px;
+    z-index: 0;
+  }
+
+  &__dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba($t-logo-blue, 0.08);
+    color: rgba($t-logo-blue, 0.55);
+    border: 2px solid rgba($t-logo-blue, 0.12);
+    transition: transform 180ms ease, background 180ms ease, color 180ms ease;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  &__label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba($t-logo-blue, 0.6);
+    line-height: 1.2;
+
+    @media (min-width: 480px) {
+      font-size: 0.875rem;
+    }
+  }
+
+  // ── Phase passée : ✓ vert ──────────────────────────────────────────────
+  &__phase--past {
+    .kyc-progress__dot {
+      background: rgba($t-base-green, 0.18);
+      border-color: rgba($t-base-green, 0.55);
+      color: darken($t-base-green, 6%);
+    }
+    .kyc-progress__label {
+      color: rgba($t-logo-blue, 0.75);
+    }
+    .kyc-progress__connector {
+      background: rgba($t-base-green, 0.55);
+    }
+  }
+
+  // ── Phase active : bleu plein, légèrement zoomée ──────────────────────
+  &__phase--active {
+    .kyc-progress__dot {
+      background: $t-logo-blue;
+      border-color: $t-logo-blue;
+      color: #ffffff;
+      transform: scale(1.08);
+      box-shadow: 0 4px 14px rgba($t-logo-blue, 0.32);
+    }
+    .kyc-progress__label {
+      color: $t-logo-blue;
+      font-weight: 700;
+    }
+  }
+
+  // ── Phase future : grise, en attente ──────────────────────────────────
+  &__phase--future {
+    .kyc-progress__dot {
+      // déjà l'état par défaut
+    }
+  }
+
+  &__subtext {
+    margin: 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba($t-logo-blue, 0.7);
+    line-height: 1.4;
+  }
+}

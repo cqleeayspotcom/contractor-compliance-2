@@ -1,0 +1,251 @@
+<div class="admin-purchases">
+  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+  <!-- ============================================================== -->
+  <!-- AUTH GATE                                                       -->
+  <!-- ============================================================== -->
+  @if (!isAuthenticated()) {
+    <mat-card class="auth-card">
+      <mat-card-header>
+        <mat-card-title>Supervision achats — authentification</mat-card-title>
+        <mat-card-subtitle>Clé admin (X-Tuita-Admin-Key) requise</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <mat-form-field appearance="outline" style="width:100%;">
+          <mat-label>Clé API admin</mat-label>
+          <input matInput type="password" [(ngModel)]="apiKeyInput" (keyup.enter)="submitApiKey()" />
+        </mat-form-field>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-raised-button color="primary" (click)="submitApiKey()">Entrer</button>
+      </mat-card-actions>
+    </mat-card>
+  } @else {
+    <!-- ============================================================ -->
+    <!-- HEADER + KPIs                                                 -->
+    <!-- ============================================================ -->
+    <header class="page-header">
+      <div>
+        <h1>Supervision des achats de documents</h1>
+        <p class="subtitle">
+          Suivi des achats Pappers ({{ extraitInpiPriceLabel() }} / unite) : KBIS, Avis SIRENE, Extrait INPI, Statuts.
+        </p>
+      </div>
+      <div class="page-header__actions">
+        <button mat-stroked-button routerLink="/admin">
+          <mat-icon>arrow_back</mat-icon> Supervision
+        </button>
+        <button mat-stroked-button (click)="refreshAll()">
+          <mat-icon>refresh</mat-icon> Rafraichir
+        </button>
+        <button mat-raised-button color="primary"
+                (click)="exportCsv()"
+                matTooltip="Export CSV pour la compta (respecte les filtres ci-dessous)">
+          <mat-icon>download</mat-icon> Exporter CSV
+        </button>
+      </div>
+    </header>
+
+    @if (stuckOnly()) {
+      <div class="stuck-banner">
+        <mat-icon>warning_amber</mat-icon>
+        <span>Vue filtrée : achats payés non livrés depuis &gt; 10 minutes uniquement.</span>
+        <button mat-stroked-button (click)="resetFilters()">
+          <mat-icon>close</mat-icon> Voir tous les achats
+        </button>
+      </div>
+    }
+
+    @if (stats(); as s) {
+      <section class="kpi-grid">
+        <mat-card class="kpi">
+          <span class="kpi-label">Achats (30j)</span>
+          <span class="kpi-value">{{ s.total }}</span>
+          <span class="kpi-footer">
+            <span class="pill ok">{{ s.by_status.completed }} livres</span>
+            <span class="pill warn">{{ s.by_status.pending + s.by_status.processing }} en cours</span>
+            <span class="pill ko">{{ s.by_status.failed }} echecs</span>
+          </span>
+        </mat-card>
+
+        <mat-card class="kpi">
+          <span class="kpi-label">Revenu (30j)</span>
+          <span class="kpi-value">{{ s.revenue_eur | number: '1.2-2' }} €</span>
+          <span class="kpi-footer">Volume Pappers facture aux artisans</span>
+        </mat-card>
+
+        <mat-card class="kpi">
+          <span class="kpi-label">Taux de succes</span>
+          <span class="kpi-value">{{ s.success_rate_pct }} %</span>
+          <span class="kpi-footer">
+            Delai moyen livraison : {{ formatDuration(s.avg_fulfillment_seconds) }}
+          </span>
+        </mat-card>
+
+        <mat-card class="kpi" [class.alert]="s.stuck_count > 0">
+          <span class="kpi-label">Bloqués (> 10 min)</span>
+          <span class="kpi-value">{{ s.stuck_count }}</span>
+          <span class="kpi-footer">
+            @if (s.stuck_count > 0) {
+              <strong>Le contractor a payé mais n'a rien reçu — intervention requise</strong>
+            } @else {
+              Aucun achat bloqué
+            }
+          </span>
+        </mat-card>
+      </section>
+
+      @if (s.top_errors.length > 0) {
+        <mat-card class="errors-card">
+          <h3>Top erreurs Pappers (30j)</h3>
+          <ul>
+            @for (e of s.top_errors; track e.error_message) {
+              <li>
+                <strong>{{ e.count }}×</strong>
+                <code>{{ e.error_message }}</code>
+              </li>
+            }
+          </ul>
+        </mat-card>
+      }
+    }
+
+    <!-- ============================================================ -->
+    <!-- FILTRES                                                       -->
+    <!-- ============================================================ -->
+    <mat-card class="filters-card">
+      <div class="filters">
+        <mat-form-field appearance="outline">
+          <mat-label>Statut</mat-label>
+          <mat-select [(ngModel)]="statusFilter" (selectionChange)="applyFilters()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="pending">En attente</mat-option>
+            <mat-option value="processing">Traitement</mat-option>
+            <mat-option value="completed">Livre</mat-option>
+            <mat-option value="failed">Echoue</mat-option>
+            <mat-option value="refunded">Rembourse</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type</mat-label>
+          <mat-select [(ngModel)]="typeFilter" (selectionChange)="applyFilters()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="extrait_inpi">Extrait INPI</mat-option>
+            <mat-option value="avis_sirene">Avis SIRENE</mat-option>
+            <mat-option value="statuts">Statuts</mat-option>
+            <mat-option value="kbis">KBIS</mat-option>
+            <mat-option value="cni">CNI</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Depuis</mat-label>
+          <input matInput type="date" [(ngModel)]="sinceInput" (change)="applyFilters()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Jusqu'au</mat-label>
+          <input matInput type="date" [(ngModel)]="untilInput" (change)="applyFilters()" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>SIREN, telephone, email</mat-label>
+          <input matInput [(ngModel)]="searchInput" (keyup.enter)="applyFilters()" />
+          <button matSuffix mat-icon-button (click)="applyFilters()">
+            <mat-icon>search</mat-icon>
+          </button>
+        </mat-form-field>
+
+        <button mat-stroked-button (click)="resetFilters()">
+          <mat-icon>clear</mat-icon> Reset
+        </button>
+      </div>
+    </mat-card>
+
+    <!-- ============================================================ -->
+    <!-- TABLE                                                         -->
+    <!-- ============================================================ -->
+    <mat-card class="table-card">
+      @if (isLoading()) {
+        <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+      }
+
+      <table mat-table [dataSource]="purchases()" [trackBy]="trackByUuid" matSort
+             [matSortActive]="sort()" [matSortDirection]="direction()"
+             (matSortChange)="onSortChange($event)" class="purchases-table">
+        <ng-container matColumnDef="created_at">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="created_at">Date</th>
+          <td mat-cell *matCellDef="let row">{{ row.created_at | date: 'dd/MM/yy HH:mm' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="document_type">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="document_type">Type</th>
+          <td mat-cell *matCellDef="let row">{{ typeLabel(row.document_type) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="siren">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="siren">SIREN</th>
+          <td mat-cell *matCellDef="let row">
+            <code>{{ row.siren || '—' }}</code>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="contractor">
+          <th mat-header-cell *matHeaderCellDef>Contractor</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.user) {
+              <div>{{ row.user.phone | phoneDisplay }}</div>
+              <small *ngIf="row.user.email">{{ row.user.email }}</small>
+            } @else {
+              <span>—</span>
+            }
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Statut</th>
+          <td mat-cell *matCellDef="let row">
+            <mat-chip [style.background-color]="statusColor(row.status)" style="color:#fff;">
+              {{ statusLabel(row.status) }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="price">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="price">Prix</th>
+          <td mat-cell *matCellDef="let row">{{ row.price_eur | number: '1.2-2' }} €</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let row">
+            <button mat-icon-button (click)="openDetail(row)" matTooltip="Detail">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button color="warn"
+                    *ngIf="canRetry(row.status)"
+                    (click)="openRetry(row)"
+                    matTooltip="Relancer">
+              <mat-icon>refresh</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      @if (!isLoading() && purchases().length === 0) {
+        <div class="empty">Aucun achat ne correspond aux filtres.</div>
+      }
+
+      <mat-paginator
+        [length]="total()"
+        [pageSize]="pageSize()"
+        [pageIndex]="pageIndex()"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        (page)="onPage($event)">
+      </mat-paginator>
+    </mat-card>
+  }
+</div>

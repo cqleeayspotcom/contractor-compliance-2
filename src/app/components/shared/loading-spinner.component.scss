@@ -1,0 +1,129 @@
+/* Tuita Loading Spinner Component */
+
+:host {
+  display: block;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+
+  &-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.9);
+    z-index: 9999;
+    margin: 0;
+    padding: 2rem;
+  }
+
+  &-sm {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  &-md {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  &-lg {
+    gap: 1.5rem;
+    padding: 2rem;
+  }
+
+  &-has-message {
+    min-width: 200px;
+  }
+
+  &-svg {
+    display: block;
+    animation: rotate 2s linear infinite;
+  }
+
+  &-circle {
+    stroke: #073148; /* Tuita blue */
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: 0;
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+  }
+
+  &-message {
+    &-text {
+      margin: 0;
+      color: #073148; /* Tuita blue */
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    &-sm &-text {
+      font-size: 0.75rem; /* 12px */
+    }
+
+    &-md &-text {
+      font-size: 0.875rem; /* 14px */
+    }
+
+    &-lg &-text {
+      font-size: 1rem; /* 16px */
+    }
+  }
+}
+
+@keyframes rotate {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .loading-spinner {
+    &-lg {
+      padding: 1.5rem;
+    }
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .loading-spinner-overlay {
+    background-color: rgba(7, 49, 72, 0.95);
+  }
+
+  .loading-spinner {
+    &-circle {
+      stroke: #04A777; /* Tuita green in dark mode */
+    }
+
+    &-message {
+      &-text {
+        color: #ffffff;
+      }
+    }
+  }
+}

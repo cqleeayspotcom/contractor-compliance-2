@@ -1,0 +1,117 @@
+<div class="filter-bar">
+  <!-- Ligne 1 : recherche, dates, montants, tri -->
+  <div class="filter-row">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-label>Rechercher (n° facture, mission, contractor, SIREN, phone)</mat-label>
+      <input matInput [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Tape / pour focus" />
+      @if (q()) {
+        <button matSuffix mat-icon-button (click)="q.set('')" aria-label="Vider"><mat-icon>close</mat-icon></button>
+      }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="date-field">
+      <mat-label>De</mat-label>
+      <input matInput [matDatepicker]="dpFrom" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+      <mat-datepicker-toggle matSuffix [for]="dpFrom"></mat-datepicker-toggle>
+      <mat-datepicker #dpFrom></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="date-field">
+      <mat-label>À</mat-label>
+      <input matInput [matDatepicker]="dpTo" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+      <mat-datepicker-toggle matSuffix [for]="dpTo"></mat-datepicker-toggle>
+      <mat-datepicker #dpTo></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="amount-field">
+      <mat-label>Min €</mat-label>
+      <input matInput type="number" [ngModel]="amountMin()" (ngModelChange)="amountMin.set($event === '' ? null : +$event)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="amount-field">
+      <mat-label>Max €</mat-label>
+      <input matInput type="number" [ngModel]="amountMax()" (ngModelChange)="amountMax.set($event === '' ? null : +$event)" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="sort-field">
+      <mat-label>Tri</mat-label>
+      <mat-select [ngModel]="sort()" (ngModelChange)="sort.set($event)">
+        <mat-option value="newest">Récentes</mat-option>
+        <mat-option value="oldest">Anciennes</mat-option>
+        <mat-option value="amount_desc">Montant ↓</mat-option>
+        <mat-option value="amount_asc">Montant ↑</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    @if (activeFiltersCount() > 0) {
+      <button mat-stroked-button color="warn" (click)="reset()">
+        <mat-icon>filter_alt_off</mat-icon> Reset ({{ activeFiltersCount() }})
+      </button>
+    }
+  </div>
+
+  <!-- Ligne 2 : chips conditionnels selon mode -->
+  <div class="filter-row chips-row">
+    @if (mode() === 'all') {
+      <span class="row-label">Statut :</span>
+      <mat-chip-listbox multiple>
+        @for (s of statusOptions; track s.value) {
+          <mat-chip-option [selected]="isStatusActive(s.value)" (click)="toggleStatus(s.value)">
+            {{ s.label }}
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+    }
+
+    @if (mode() === 'pending') {
+      <span class="row-label">Approbations manquantes :</span>
+      <mat-chip-listbox>
+        <mat-chip-option [selected]="missingValidations() === 3"
+                         (click)="missingValidations.set(missingValidations() === 3 ? null : 3)">
+          0/3 (aucune)
+        </mat-chip-option>
+        <mat-chip-option [selected]="missingValidations() === 2"
+                         (click)="missingValidations.set(missingValidations() === 2 ? null : 2)">
+          1/3
+        </mat-chip-option>
+        <mat-chip-option [selected]="missingValidations() === 1"
+                         (click)="missingValidations.set(missingValidations() === 1 ? null : 1)">
+          2/3
+        </mat-chip-option>
+      </mat-chip-listbox>
+
+      <span class="row-label">En attente depuis :</span>
+      <mat-chip-listbox>
+        <mat-chip-option [selected]="staleDays() === 3"
+                         (click)="staleDays.set(staleDays() === 3 ? null : 3)">
+          ≥ 3j
+        </mat-chip-option>
+        <mat-chip-option [selected]="staleDays() === 7"
+                         (click)="staleDays.set(staleDays() === 7 ? null : 7)">
+          ⚠ ≥ 7j
+        </mat-chip-option>
+        <mat-chip-option [selected]="staleDays() === 14"
+                         (click)="staleDays.set(staleDays() === 14 ? null : 14)">
+          🔥 ≥ 14j
+        </mat-chip-option>
+      </mat-chip-listbox>
+    }
+
+    @if (mode() === 'all') {
+      <span class="row-label">Plan :</span>
+      <mat-chip-listbox>
+        <mat-chip-option [selected]="plan() === 'free'" (click)="plan.set(plan() === 'free' ? null : 'free')">Free</mat-chip-option>
+        <mat-chip-option [selected]="plan() === 'pro'" (click)="plan.set(plan() === 'pro' ? null : 'pro')">Pro</mat-chip-option>
+      </mat-chip-listbox>
+    }
+
+    @if (mode() === 'pending' || mode() === 'ready' || mode() === 'inprogress' || mode() === 'all') {
+      <mat-checkbox [ngModel]="stuck()" (ngModelChange)="stuck.set($event)">Bloquées</mat-checkbox>
+    }
+
+    @if (mode() === 'disputed' || mode() === 'all') {
+      <mat-checkbox [ngModel]="paidDisputed()" (ngModelChange)="paidDisputed.set($event)">Litige</mat-checkbox>
+    }
+  </div>
+</div>

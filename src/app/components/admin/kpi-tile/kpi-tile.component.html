@@ -1,0 +1,8 @@
+<div class="tile" [class]="'tile tile--' + tone">
+  <mat-icon class="tile__icon">{{ icon }}</mat-icon>
+  <div class="tile__body">
+    <div class="tile__label">{{ label }}</div>
+    <div class="tile__value">{{ value }}</div>
+    @if (sub) { <div class="tile__sub">{{ sub }}</div> }
+  </div>
+</div>

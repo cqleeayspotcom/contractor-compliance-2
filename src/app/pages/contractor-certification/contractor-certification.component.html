@@ -1,0 +1,208 @@
+<div class="certification-page">
+  <!-- Progress bar -->
+  <div class="progress-section">
+    <p class="step-label">{{ stepLabel() }}</p>
+    <mat-progress-bar mode="determinate" [value]="progressPercent()"></mat-progress-bar>
+  </div>
+
+  <!-- ========== STEP 1: Formation video ========== -->
+  @if (currentStep() === 'video') {
+    <div class="step-content">
+      <mat-card class="content-card">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="header-icon">play_circle</mat-icon>
+          <mat-card-title>Formation TUITA</mat-card-title>
+          <mat-card-subtitle>Regardez cette video avant de passer le questionnaire de certification</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="video-wrapper">
+            <video #formationVideo class="video-player" controls playsinline
+                   (ended)="onVideoEnded()"
+                   (play)="onVideoPlay()"
+                   (timeupdate)="onVideoTimeUpdate()"
+                   src="/assets/videos/qcm-formation-tuita.mp4">
+            </video>
+          </div>
+
+          <div class="chapters">
+            <p class="chapters-title">Chapitres - clique pour aller à la section</p>
+            <div class="chapters-list">
+              @for (ch of chapters; track ch.start; let i = $index) {
+                <button type="button" class="chapter-chip"
+                        [class.chapter-chip--active]="currentChapterIndex() === i"
+                        (click)="jumpToChapter(i)">
+                  <mat-icon>{{ ch.icon }}</mat-icon>
+                  <span class="chapter-num">{{ i + 1 }}.</span>
+                  <span class="chapter-title">{{ ch.title }}</span>
+                  <span class="chapter-time">{{ formatTime(ch.start) }}</span>
+                </button>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions align="end">
+          <button mat-flat-button class="btn-next tui-attract"
+                  [disabled]="!videoWatched()" (click)="goToQuiz()">
+            Passer au questionnaire
+            <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+  }
+
+  <!-- ========== STEP 3: Quiz ========== -->
+  @if (currentStep() === 'quiz') {
+    <div class="step-content">
+      <div class="quiz-header">
+        <h2 class="quiz-title">
+          @if (attempt() > 1) {
+            Nouvelle tentative
+          } @else {
+            Questionnaire de Certification
+          }
+        </h2>
+        <p class="quiz-subtitle">
+          @if (attempt() > 1) {
+            Repondez a nouveau aux {{ totalQuestions }} questions. {{ totalQuestions }}/{{ totalQuestions }} requis pour valider votre certification.
+          } @else {
+            Repondez correctement aux {{ totalQuestions }} questions pour obtenir votre certification TUITA
+          }
+        </p>
+      </div>
+
+      @for (q of allQuestions; track q.id) {
+        <mat-card class="question-card"
+                  [id]="'question-' + q.id"
+                  [class.question-card--unanswered]="isUnanswered(q.id)">
+          <mat-card-content>
+            <p class="question-number">
+              Question {{ q.id }}/{{ totalQuestions }}
+              @if (isUnanswered(q.id)) {
+                <span class="unanswered-tag">Réponse requise</span>
+              }
+            </p>
+            <p class="question-text">{{ q.question }}</p>
+
+            <mat-radio-group class="options-group"
+              [value]="answers()[q.id] || ''"
+              (change)="selectAnswer(q.id, $event.value)">
+              @for (opt of q.options; track opt.key) {
+                <mat-radio-button class="option-button" [value]="opt.key"
+                  [class.selected]="answers()[q.id] === opt.key">
+                  <span class="option-key">{{ opt.key }}</span>
+                  {{ opt.label }}
+                </mat-radio-button>
+              }
+            </mat-radio-group>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <!-- Unanswered warning -->
+      @if (showUnanswered() && unansweredCount > 0) {
+        <div class="unanswered-warning">
+          <mat-icon>warning</mat-icon>
+          <span>{{ unansweredCount }} question{{ unansweredCount > 1 ? 's' : '' }} sans réponse</span>
+        </div>
+      }
+
+      <div class="submit-section">
+        <button mat-flat-button class="btn-submit tui-attract"
+                id="quiz-submit-button"
+                [disabled]="submitting()"
+                (click)="submitQuiz()">
+          @if (submitting()) {
+            Envoi en cours...
+          } @else if (attempt() > 1) {
+            Vérifier mes corrections
+          } @else {
+            Valider mes réponses
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ========== REVIEW: Show wrong answers + explanations ========== -->
+  @if (currentStep() === 'review') {
+    <div class="step-content">
+      <mat-card class="result-card review-summary-card">
+        <mat-card-content class="result-content">
+          <mat-icon class="result-icon review-icon">school</mat-icon>
+          <h2 class="result-title">Presque !</h2>
+          <p class="result-score">{{ quizScore() }}/{{ totalQuestions }} bonnes réponses</p>
+          <p class="result-message">
+            Lisez les explications ci-dessous, puis vous recommencerez le questionnaire complet
+            ({{ totalQuestions }} questions) pour ancrer les bonnes réponses.
+          </p>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Each wrong question with explanation -->
+      @for (q of wrongQuestions(); track q.id) {
+        <mat-card class="question-card review-card">
+          <mat-card-content>
+            <p class="question-number">Question {{ q.id }}</p>
+            <p class="question-text">{{ q.question }}</p>
+
+            <div class="review-answers">
+              <div class="review-wrong">
+                <mat-icon>close</mat-icon>
+                <span>Votre reponse : <strong>{{ answers()[q.id] }}</strong></span>
+              </div>
+              <div class="review-correct">
+                <mat-icon>check_circle</mat-icon>
+                <span>Bonne reponse : <strong>{{ getCorrectAnswer(q.id) }}</strong></span>
+              </div>
+            </div>
+
+            <div class="review-explanation">
+              <mat-icon>lightbulb</mat-icon>
+              <p>{{ q.explanation }}</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+
+      <div class="submit-section">
+        <button mat-flat-button class="btn-retry tui-attract" (click)="retryAll()">
+          <mat-icon>refresh</mat-icon>
+          Recommencer le questionnaire ({{ totalQuestions }} questions)
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- ========== RESULT: Certification obtained ========== -->
+  @if (currentStep() === 'result') {
+    <div class="step-content">
+      <mat-card class="result-card success-card">
+        <div class="confetti-container">
+          @for (i of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]; track i) {
+            <div class="confetti" [style.--confetti-index]="i"></div>
+          }
+        </div>
+        <mat-card-content class="result-content">
+          <mat-icon class="result-icon success-icon">workspace_premium</mat-icon>
+          <h2 class="result-title">Félicitations !</h2>
+          <p class="result-subtitle">Certification TUITA obtenue !</p>
+          <p class="result-score">Score : {{ totalQuestions }}/{{ totalQuestions }}</p>
+          <p class="result-message">
+            Vous êtes désormais certifié TUITA. Vous pouvez intervenir sur les missions.
+          </p>
+          @if (nextAction() && nextAction() !== 'none') {
+            <app-onboarding-next-step-cta [nextAction]="nextAction()" class="cert-next-step"/>
+            <button mat-button class="cert-secondary-link" (click)="goToDashboard()">
+              Retour au tableau de bord
+            </button>
+          } @else {
+            <button mat-flat-button color="primary" class="btn-dashboard" (click)="goToDashboard()">
+              Retour au tableau de bord
+            </button>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>

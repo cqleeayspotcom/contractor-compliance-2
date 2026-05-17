@@ -1,0 +1,15 @@
+.cmc { padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px; background: white;
+  &__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  &__plan { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #e9ecef; color: #6c757d;
+    &--pro { background: #ffd700; color: #5a4400; font-weight: 600; }
+  }
+  &__row { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #495057; margin-top: 4px;
+    mat-icon { font-size: 16px; width: 16px; height: 16px; color: #adb5bd; }
+  }
+  &__badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+  &__cta { margin-top: 10px; }
+  .badge { padding: 2px 8px; border-radius: 10px; font-size: 11px; background: #e9ecef; color: #495057;
+    &--ok { background: #d4edda; color: #155724; }
+    &--ko { background: #f8d7da; color: #721c24; }
+  }
+}

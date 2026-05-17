@@ -1,0 +1,238 @@
+<div class="page">
+  <header class="page-header">
+    <div class="header-left">
+      <a mat-icon-button routerLink="/admin" matTooltip="Retour au dashboard admin">
+        <mat-icon>arrow_back</mat-icon>
+      </a>
+      <h1>Prestataires</h1>
+      <span class="counter" *ngIf="!loading()">{{ total() }} résultat{{ total() > 1 ? 's' : '' }}</span>
+    </div>
+  </header>
+
+  <!-- ===== Filters ===== -->
+  <mat-card class="filters">
+    <mat-card-content>
+      <!-- Row 1 : search -->
+      <div class="row search-row">
+        <mat-form-field appearance="outline" class="grow">
+          <mat-label>Recherche (téléphone, nom, email, société, SIREN)</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input
+            matInput
+            type="search"
+            [ngModel]="q()"
+            (ngModelChange)="onSearchInput($event)"
+            placeholder="Tapez pour rechercher…"
+          />
+        </mat-form-field>
+        <button
+          mat-stroked-button
+          (click)="resetFilters()"
+          [disabled]="!hasFilters()"
+          matTooltip="Réinitialiser tous les filtres"
+        >
+          <mat-icon>clear_all</mat-icon>
+          Réinitialiser
+        </button>
+      </div>
+
+      <!-- Row 2 : enum filters with facet counts -->
+      <div class="row chips-row" *ngIf="facets() as f">
+        <mat-form-field appearance="outline">
+          <mat-label>État du compte</mat-label>
+          <mat-select [value]="accountState()" (selectionChange)="accountState.set($event.value); onFilterChange()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="fully_verified">Complet ({{ f.by_account_state['fully_verified'] || 0 }})</mat-option>
+            <mat-option value="verification_pending">En vérification ({{ f.by_account_state['verification_pending'] || 0 }})</mat-option>
+            <mat-option value="documents_incomplete">Docs incomplets ({{ f.by_account_state['documents_incomplete'] || 0 }})</mat-option>
+            <mat-option value="kyc_pending">KYC en attente ({{ f.by_account_state['kyc_pending'] || 0 }})</mat-option>
+            <mat-option value="kyc_rejected">KYC rejeté ({{ f.by_account_state['kyc_rejected'] || 0 }})</mat-option>
+            <mat-option value="certification_pending">QCM en attente ({{ f.by_account_state['certification_pending'] || 0 }})</mat-option>
+            <mat-option value="new">Nouveau ({{ f.by_account_state['new'] || 0 }})</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Plan</mat-label>
+          <mat-select [value]="plan()" (selectionChange)="plan.set($event.value); onFilterChange()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="free">Free ({{ f.by_plan['free'] || 0 }})</mat-option>
+            <mat-option value="paid">Pro ({{ f.by_plan['paid'] || 0 }})</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>KYC</mat-label>
+          <mat-select [value]="kycStatus()" (selectionChange)="kycStatus.set($event.value); onFilterChange()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option value="approved">Validé ({{ f.by_kyc['approved'] || 0 }})</mat-option>
+            <mat-option value="pending">En cours ({{ f.by_kyc['pending'] || 0 }})</mat-option>
+            <mat-option value="rejected">Rejeté ({{ f.by_kyc['rejected'] || 0 }})</mat-option>
+            <mat-option value="none">Jamais fait ({{ f.by_kyc['none'] || 0 }})</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Conformité</mat-label>
+          <mat-select [value]="compliance()" (selectionChange)="compliance.set($event.value); onFilterChange()">
+            <mat-option value="">Toutes</mat-option>
+            <mat-option value="compliant">100% ({{ f.by_compliance['compliant'] || 0 }})</mat-option>
+            <mat-option value="partial">Partielle ({{ f.by_compliance['partial'] || 0 }})</mat-option>
+            <mat-option value="blocked">Bloquée ({{ f.by_compliance['blocked'] || 0 }})</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Row 3 : location + invoice toggles -->
+      <div class="row chips-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Ville</mat-label>
+          <input matInput [ngModel]="city()" (ngModelChange)="city.set($event)" (change)="onFilterChange()" placeholder="Paris…" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Département</mat-label>
+          <mat-select [value]="department()" (selectionChange)="department.set($event.value); onFilterChange()">
+            <mat-option value="">Tous</mat-option>
+            <mat-option *ngFor="let d of departments" [value]="d">{{ d }}</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-slide-toggle
+          [checked]="hasActiveInvoice()"
+          (change)="hasActiveInvoice.set($event.checked); onFilterChange()"
+          color="primary"
+        >
+          A des factures actives
+        </mat-slide-toggle>
+
+        <mat-slide-toggle
+          [checked]="hasStuckInvoice()"
+          (change)="hasStuckInvoice.set($event.checked); onFilterChange()"
+          color="warn"
+        >
+          Factures bloquées
+        </mat-slide-toggle>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- ===== Table ===== -->
+  <mat-card class="table-card">
+    <mat-card-content>
+      <div *ngIf="loading()" class="loading">
+        <mat-spinner diameter="48"></mat-spinner>
+      </div>
+
+      <div *ngIf="!loading() && rows().length === 0" class="empty-state">
+        <mat-icon>search_off</mat-icon>
+        <p>Aucun prestataire ne correspond à vos filtres.</p>
+        <button mat-stroked-button (click)="resetFilters()" *ngIf="hasFilters()">
+          Réinitialiser les filtres
+        </button>
+      </div>
+
+      <table
+        mat-table
+        [dataSource]="rows()"
+        matSort
+        (matSortChange)="onSortChange($event)"
+        [matSortActive]="sort()"
+        [matSortDirection]="direction()"
+        *ngIf="!loading() && rows().length > 0"
+        class="contractors-table"
+      >
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef>Téléphone</th>
+          <td mat-cell *matCellDef="let r">{{ r.phone | phoneDisplay }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="name">Nom</th>
+          <td mat-cell *matCellDef="let r">
+            <strong>{{ r.first_name }} {{ r.last_name }}</strong>
+            <div class="muted small" *ngIf="r.email">{{ r.email }}</div>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="company">
+          <th mat-header-cell *matHeaderCellDef>Société</th>
+          <td mat-cell *matCellDef="let r">{{ r.company_name || '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="siren">
+          <th mat-header-cell *matHeaderCellDef>SIREN</th>
+          <td mat-cell *matCellDef="let r" class="mono">{{ r.siren || '—' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="city">
+          <th mat-header-cell *matHeaderCellDef>Ville</th>
+          <td mat-cell *matCellDef="let r">
+            {{ r.city || '—' }}
+            <span *ngIf="r.department" class="dept-chip">{{ r.department }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="plan">
+          <th mat-header-cell *matHeaderCellDef>Plan</th>
+          <td mat-cell *matCellDef="let r">
+            <mat-chip [highlighted]="r.plan === 'paid'" [color]="r.plan === 'paid' ? 'primary' : undefined">
+              {{ r.plan === 'paid' ? '⭐ Pro' : 'Free' }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="state">
+          <th mat-header-cell *matHeaderCellDef>État</th>
+          <td mat-cell *matCellDef="let r">{{ stateLabel(r.account_state) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="kyc">
+          <th mat-header-cell *matHeaderCellDef>KYC</th>
+          <td mat-cell *matCellDef="let r">
+            <mat-chip [color]="kycColor(r.kyc_status)" [highlighted]="r.kyc_status === 'approved' || r.kyc_status === 'rejected'">
+              {{ kycLabel(r.kyc_status) }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="score">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="compliance_score">Score</th>
+          <td mat-cell *matCellDef="let r">
+            <span class="score-pill" [style.background]="scoreColor(r.compliance_score)">{{ r.compliance_score | number:'1.0-0' }}%</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="invoices">
+          <th mat-header-cell *matHeaderCellDef>Factures</th>
+          <td mat-cell *matCellDef="let r">
+            <span [matTooltip]="r.active_invoices_count + ' actives'">{{ r.active_invoices_count }}</span>
+            <mat-icon *ngIf="r.stuck_invoices_count > 0" class="stuck" matTooltip="{{ r.stuck_invoices_count }} bloquée(s)">warning</mat-icon>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="created">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="created_at">Créé le</th>
+          <td mat-cell *matCellDef="let r">{{ r.created_at | date:'dd/MM/yyyy' }}</td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+        <tr
+          mat-row
+          *matRowDef="let row; columns: displayedColumns"
+          (click)="openContractor(row)"
+          class="clickable"
+        ></tr>
+      </table>
+
+      <mat-paginator
+        *ngIf="!loading() && total() > 0"
+        [length]="total()"
+        [pageSize]="pageSize()"
+        [pageIndex]="page()"
+        [pageSizeOptions]="[25, 50, 100]"
+        (page)="onPageChange($event)"
+      ></mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

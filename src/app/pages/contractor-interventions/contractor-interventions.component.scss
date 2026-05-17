@@ -1,0 +1,434 @@
+@use '../../../styles/variables' as *;
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-20;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    h1 {
+      font-size: $t-headline-5;
+      font-weight: 700;
+      color: $t-text-black;
+      margin: 0;
+    }
+  }
+
+  &__title-row {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+    flex-wrap: wrap;
+  }
+
+  &__subtitle {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: $t-gap-4 0 0;
+  }
+
+  &__loading {
+    display: flex;
+    justify-content: center;
+    padding: $t-gap-48;
+  }
+
+  &__toolbar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: $t-gap-16;
+    flex-wrap: wrap;
+  }
+}
+
+// Search pill — compact, sans le bagage Material outline
+.search-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 340px;
+  padding: 0 12px;
+  height: 40px;
+  background: #f3f4f6;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  cursor: text;
+
+  &:hover {
+    background: #eceef2;
+  }
+
+  &:focus-within {
+    background: #ffffff;
+    border-color: rgba($primary-700, 0.4);
+    box-shadow: 0 0 0 3px rgba($primary-700, 0.12);
+  }
+
+  &--filled {
+    background: #ffffff;
+    border-color: rgba($t-text-black, 0.1);
+  }
+
+  &__icon {
+    color: $t-color-light;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: $t-body-2;
+    color: $t-text-black;
+    min-width: 0;
+    padding: 0;
+    height: 100%;
+
+    &::placeholder {
+      color: $t-color-light;
+    }
+
+    // Cache la croix native du <input type="search">, on gere la notre.
+    &::-webkit-search-cancel-button {
+      appearance: none;
+    }
+  }
+
+  &__clear {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: $t-color-light;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.15s, color 0.15s;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &:hover {
+      background: rgba($t-text-black, 0.08);
+      color: $t-text-black;
+    }
+  }
+}
+
+// Filter chips — pill compact + compteur
+.filter-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip {
+  appearance: none;
+  border: 1px solid rgba($t-text-black, 0.12);
+  background: #ffffff;
+  color: $t-color;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 999px;
+  font-size: $t-body-3;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  line-height: 1;
+
+  &__label {
+    white-space: nowrap;
+  }
+
+  &__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba($t-text-black, 0.08);
+    color: $t-color;
+  }
+
+  &:hover:not(.filter-chip--active):not(:disabled) {
+    background: rgba($primary-700, 0.06);
+    border-color: rgba($primary-700, 0.3);
+  }
+
+  &--active {
+    background: $primary-700;
+    color: #ffffff;
+    border-color: $primary-700;
+
+    .filter-chip__count {
+      background: rgba(#ffffff, 0.25);
+      color: #ffffff;
+    }
+  }
+
+  &--empty:not(.filter-chip--active) {
+    opacity: 0.55;
+  }
+}
+
+// Responsive : sur mobile, search pleine largeur + chips en dessous, scrollables
+@media (max-width: 720px) {
+  .page__toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: $t-gap-10;
+  }
+
+  .search-pill {
+    max-width: none;
+  }
+
+  .filter-chips {
+    flex-wrap: wrap;
+  }
+}
+
+// Pagination
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-16;
+  margin-top: $t-gap-8;
+  flex-wrap: wrap;
+
+  &__info {
+    font-size: $t-body-2;
+    color: $t-color;
+  }
+
+  &__total {
+    color: $t-color-light;
+    margin-left: $t-gap-8;
+  }
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $t-gap-48;
+  color: $t-color-extra-light;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: $t-gap-12;
+  }
+
+  p {
+    margin: 0;
+    font-size: $t-body-1;
+  }
+
+  &__hint {
+    margin-top: $t-gap-8;
+    font-size: $t-body-3;
+    color: $t-color-extra-light;
+    text-align: center;
+    max-width: 360px;
+  }
+}
+
+// Invoice status badge
+.invoice-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: $t-body-4;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &--todo {
+    background: #fff4e5;
+    color: #b35900;
+  }
+  &--progress {
+    background: #e3f0ff;
+    color: #0a4a8a;
+  }
+  &--success {
+    background: #e6f7ee;
+    color: #07703a;
+  }
+  &--danger {
+    background: #fde7e7;
+    color: #a8201a;
+  }
+  &--neutral {
+    background: #f0f1f3;
+    color: $t-color-light;
+  }
+}
+
+// Mission cards
+.missions-list {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+}
+
+.mission-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: $t-gap-20;
+  box-shadow: 0 1px 3px rgba($t-text-black, 0.06);
+  transition: box-shadow 0.2s;
+
+  &--clickable {
+    cursor: pointer;
+  }
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba($t-text-black, 0.08);
+  }
+
+  // Header
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+    margin-bottom: $t-gap-14;
+  }
+
+  &__type-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: $primary-700;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  &__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  &__type-label {
+    font-size: $t-body-4;
+    font-weight: 700;
+    color: $primary-700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__title {
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__ref {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-family: monospace;
+  }
+
+  // Details
+  &__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $t-gap-12 $t-gap-24;
+    margin-bottom: $t-gap-14;
+  }
+
+  &__detail {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-3;
+    color: $t-color-light;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &--price {
+      font-weight: 700;
+      color: $t-text-black;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: $t-gap-8;
+    border-top: 1px solid rgba($t-text-black, 0.06);
+
+    button mat-icon {
+      margin-right: 6px;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .mission-card__header {
+    flex-wrap: wrap;
+  }
+  .invoice-badge {
+    order: 3;
+    margin-top: $t-gap-8;
+  }
+  .mission-card__actions button {
+    width: 100%;
+  }
+}
+
+// Responsive
+@media (max-width: 600px) {
+  .mission-card__details {
+    flex-direction: column;
+    gap: $t-gap-8;
+  }
+}

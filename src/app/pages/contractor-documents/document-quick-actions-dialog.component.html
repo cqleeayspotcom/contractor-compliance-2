@@ -1,0 +1,94 @@
+<div class="qad">
+  <div class="qad__head">
+    <div class="qad__head-icon" aria-hidden="true">
+      <mat-icon>receipt_long</mat-icon>
+    </div>
+    <div class="qad__head-text">
+      <h2>Mon justificatif d'immatriculation</h2>
+      <p>Valable pour votre société (SARL, SAS, EURL...) comme pour votre micro-entreprise.</p>
+    </div>
+    <button mat-icon-button type="button" class="qad__close"
+            aria-label="Fermer" (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="qad__body">
+    <!-- Section 1 : Achat officiel (un seul produit — justificatif
+         d'immatriculation unifié, valable société ET auto-entrepreneur) -->
+    <section class="qad__section qad__section--highlight">
+      <div class="qad__section-head">
+        <span class="qad__num">1</span>
+        <div>
+          <h3>Récupérer mon justificatif officiel - {{ extraitInpiPriceLabel() }}</h3>
+          <p>Un seul document officiel, valable pour <strong>société</strong> comme pour <strong>auto-entrepreneur</strong>. Arrive déjà <strong>validé</strong>, pas de vérification à repasser.</p>
+        </div>
+      </div>
+      @if (needsSirenInput()) {
+        <div class="qad__siren-field">
+          <p class="qad__siren-intro">
+            Pour récupérer votre justificatif, indiquez votre <strong>SIREN</strong> - c'est les <strong>9 premiers chiffres</strong> de votre SIRET.
+          </p>
+          <mat-form-field appearance="outline" class="qad__siren-input">
+            <mat-label>SIREN (9 chiffres)</mat-label>
+            <input matInput
+                   inputmode="numeric"
+                   autocomplete="off"
+                   maxlength="9"
+                   placeholder="123 456 789"
+                   [value]="sirenInput()"
+                   (input)="onSirenChange($any($event.target).value)" />
+            <mat-hint>9 chiffres (pas 14 comme le SIRET). Visible sur votre Kbis ou votre avis INSEE.</mat-hint>
+          </mat-form-field>
+        </div>
+      }
+
+      <p class="qad__safety">
+        <mat-icon aria-hidden="true">verified_user</mat-icon>
+        <span>
+          Vous verrez le <strong>nom officiel de votre entreprise</strong> sur la page de paiement,
+          juste avant de saisir votre carte. <strong>Aucun débit</strong> tant que vous n'avez pas confirmé.
+        </span>
+      </p>
+
+      <div class="qad__buy">
+        <button mat-raised-button color="primary" type="button"
+                class="qad__buy-btn"
+                [disabled]="!hasValidSiren()"
+                (click)="purchase('extrait_inpi')">
+          <mat-icon>shopping_cart</mat-icon>
+          <div class="qad__buy-text">
+            <strong>Récupérer mon justificatif d'immatriculation officiel</strong>
+            <span>Livré en 30 secondes, déjà validé</span>
+          </div>
+          <span class="qad__buy-price">{{ extraitInpiPriceLabel() }}</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Section 2 : Télécharger l'existant (si déjà acheté) -->
+    @if (data.existingDoc) {
+      <section class="qad__section">
+        <div class="qad__section-head">
+          <span class="qad__num">2</span>
+          <div>
+            <h3>Télécharger mon {{ data.existingDoc.label }} actuel</h3>
+            <p>{{ data.existingDoc.fileName }}</p>
+          </div>
+        </div>
+        <button mat-stroked-button type="button"
+                class="qad__download-btn"
+                (click)="download()">
+          <mat-icon>download</mat-icon>
+          Télécharger le PDF
+        </button>
+      </section>
+    }
+  </div>
+
+  <div class="qad__footer">
+    <button mat-stroked-button type="button" (click)="close()">
+      Annuler
+    </button>
+  </div>
+</div>

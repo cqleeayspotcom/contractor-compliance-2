@@ -1,0 +1,195 @@
+.stripe-dialog {
+  padding: 8px 4px;
+  display: flex;
+  flex-direction: column;
+  // Cap modal à la hauteur viewport — l'iframe Stripe embedded peut
+  // facilement dépasser 800px (email + carte + pays + save card…),
+  // sans cap la page ne scroll plus et le bouton Annuler/croix sortent
+  // de l'écran. 85vh laisse respirer le fond.
+  max-height: 85vh;
+  overflow: hidden; // scroll délégué au body ci-dessous
+}
+
+.stripe-dialog__header {
+  padding: 0 8px 16px;
+  border-bottom: 1px solid rgba(7, 49, 72, 0.08);
+  margin-bottom: 16px;
+  flex-shrink: 0; // header reste fixé en haut pendant le scroll
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stripe-dialog__close {
+  flex-shrink: 0;
+  margin: -4px -4px 0 0;
+  color: rgba(7, 49, 72, 0.6);
+}
+
+.stripe-dialog__title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    margin: 0 0 2px;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #073148;
+    line-height: 1.3;
+  }
+}
+
+.stripe-dialog__lock {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  color: #0a7d5a;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.stripe-dialog__subtitle {
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: rgba(7, 49, 72, 0.82);
+}
+
+.stripe-dialog__microcopy {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(7, 49, 72, 0.55);
+  line-height: 1.4;
+}
+
+.stripe-dialog__body {
+  flex: 1 1 auto;
+  min-height: 0; // autorise le shrink si le viewport est petit
+  overflow-y: auto; // scroll interne si l'iframe Stripe dépasse
+  overflow-x: hidden;
+  position: relative;
+  padding: 0 4px 4px;
+}
+
+.stripe-dialog__loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(7, 49, 72, 0.65);
+  }
+}
+
+.stripe-dialog__error {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(220, 53, 69, 0.08);
+  border: 1px solid rgba(220, 53, 69, 0.25);
+  color: #8f2a33;
+
+  mat-icon {
+    flex-shrink: 0;
+    color: #c73645;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+    color: #73212a;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.825rem;
+    line-height: 1.45;
+  }
+}
+
+.stripe-dialog__mount {
+  min-height: 480px;
+  // L'iframe Stripe se redimensionne automatiquement selon son contenu.
+  // Pas de max-height ici : on laisse le body scroll prendre le relais.
+}
+
+.stripe-dialog__mount--hidden {
+  visibility: hidden;
+  height: 0;
+  min-height: 0;
+}
+
+.stripe-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(7, 49, 72, 0.08);
+  flex-shrink: 0; // actions restent visibles en bas pendant le scroll
+
+  button {
+    border-radius: 8px;
+    font-weight: 600;
+  }
+}
+
+// ── Mobile : dialog en plein écran, header compact, body utilise tout l'espace
+@media (max-width: 600px) {
+  .stripe-dialog {
+    max-height: 100vh;
+    height: 100vh;
+    padding: 12px 8px 8px;
+  }
+
+  .stripe-dialog__header {
+    padding: 0 4px 10px;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .stripe-dialog__title-wrap {
+    gap: 10px;
+
+    h2 {
+      font-size: 1rem;
+      line-height: 1.25;
+    }
+  }
+
+  .stripe-dialog__lock {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .stripe-dialog__subtitle {
+    font-size: 0.82rem;
+  }
+
+  .stripe-dialog__microcopy {
+    font-size: 0.7rem;
+  }
+
+  .stripe-dialog__mount {
+    min-height: 360px;
+  }
+
+  .stripe-dialog__actions {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+}

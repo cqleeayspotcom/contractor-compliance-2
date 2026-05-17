@@ -1,0 +1,65 @@
+<div class="terms-dialog">
+  <div class="terms-dialog__header">
+    <mat-icon class="terms-dialog__icon">gavel</mat-icon>
+    <h2>Conditions de vérification d'identité</h2>
+  </div>
+
+  <div class="terms-dialog__body">
+    <section>
+      <h3>1. Objet de la vérification</h3>
+      <p>
+        La vérification d'identité (KYC) permet de confirmer que vous êtes bien la personne
+        indiquée sur vos documents d'identité. Cette étape est obligatoire pour intervenir
+        sur les missions TUITA.
+      </p>
+    </section>
+
+    <section>
+      <h3>2. Données collectées</h3>
+      <p>
+        Lors de la vérification, une courte vidéo de votre visage est enregistrée.
+        Cette vidéo est comparée à la photo de votre pièce d'identité par notre système
+        d'intelligence artificielle.
+      </p>
+      <ul>
+        <li>Vidéo selfie (10 secondes maximum)</li>
+        <li>Mouvements de tête (détection de vivacité)</li>
+        <li>Comparaison biométrique avec votre pièce d'identité</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3>3. Conservation des données</h3>
+      <p>
+        Votre vidéo est conservée pour des raisons de conformité comptable et légale.
+        Elle est stockée de manière chiffrée sur des serveurs sécurisés.
+        Vous pouvez demander sa suppression en contactant TUITA.
+      </p>
+    </section>
+
+    <section>
+      <h3>4. Sécurité</h3>
+      <p>
+        La vérification est effectuée par des algorithmes d'IA certifiés
+        (taux de précision supérieur à 98%). Aucun humain n'accède à votre vidéo
+        sauf en cas de révision manuelle nécessaire.
+      </p>
+    </section>
+
+    <section>
+      <h3>5. Droit de refus</h3>
+      <p>
+        Vous pouvez refuser la vérification d'identité. Dans ce cas, vous ne pourrez
+        pas intervenir sur les missions TUITA tant que la vérification n'est pas effectuée.
+      </p>
+    </section>
+  </div>
+
+  <div class="terms-dialog__actions">
+    <button mat-button (click)="decline()">Refuser</button>
+    <button mat-raised-button color="primary" (click)="accept()">
+      <mat-icon>check</mat-icon>
+      J'accepte les conditions
+    </button>
+  </div>
+</div>

@@ -1,0 +1,183 @@
+@if (isLoading()) {
+  <div class="detail-loading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (notFound()) {
+  <div class="detail-page">
+    <button mat-button class="back-btn" routerLink="/interventions">
+      <mat-icon>arrow_back</mat-icon>
+      Mes missions
+    </button>
+    <div class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <p>Mission introuvable</p>
+    </div>
+  </div>
+} @else {
+  @if (mission(); as m) {
+    <div class="detail-page">
+
+      <!-- Back -->
+      <button mat-button class="back-btn" routerLink="/interventions">
+        <mat-icon>arrow_back</mat-icon>
+        Mes missions
+      </button>
+
+      <!-- Title -->
+      <div class="detail-header">
+        <mat-icon class="detail-header__icon">{{ operationIcon(m.operationType) }}</mat-icon>
+        <div class="detail-header__info">
+          <h1>{{ m.missionTitle }}</h1>
+          <span class="detail-header__ref">{{ m.caseNumber }}</span>
+        </div>
+      </div>
+
+      <!-- Info card -->
+      <div class="info-card">
+        <div class="info-card__row">
+          <mat-icon>category</mat-icon>
+          <div>
+            <span class="info-card__label">Type d'opération</span>
+            <span class="info-card__value">{{ m.operationTypeLabel || m.operationType }}</span>
+          </div>
+        </div>
+
+        <div class="info-card__row">
+          <mat-icon>place</mat-icon>
+          <div>
+            <span class="info-card__label">Lieu</span>
+            <span class="info-card__value">{{ m.city }} - {{ m.targetAddress }}</span>
+          </div>
+        </div>
+
+        <div class="info-card__row">
+          <mat-icon>event</mat-icon>
+          <div>
+            <span class="info-card__label">Date de visite</span>
+            <span class="info-card__value">{{ formatDate(m.visitDateConfirmed) }}</span>
+          </div>
+        </div>
+
+        @if (m.signedAt) {
+          <div class="info-card__row">
+            <mat-icon>draw</mat-icon>
+            <div>
+              <span class="info-card__label">Signe le</span>
+              <span class="info-card__value">{{ formatDate(m.signedAt) }}</span>
+            </div>
+          </div>
+        }
+
+        <div class="info-card__row">
+          <mat-icon>euro</mat-icon>
+          <div>
+            <span class="info-card__label">Montant</span>
+            <span class="info-card__value info-card__value--price">
+              @if (m.price > 0) {
+                {{ formatPrice(m.price) }}
+              } @else {
+                Aucune facturation
+              }
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoice status -->
+      <div class="invoice-section">
+        <h2>Facturation</h2>
+        <div class="invoice-status" [class]="'invoice-status--' + m.invoice_status"
+             [matTooltip]="invoiceStatusTooltip(m.invoice_status)"
+             matTooltipPosition="above"
+             matTooltipClass="invoice-status-tooltip">
+          <mat-icon>{{ invoiceStatusIcon(m.invoice_status) }}</mat-icon>
+          <span class="badge" [class]="invoiceStatusClass(m.invoice_status)">
+            {{ invoiceStatusLabel(m.invoice_status) }}
+          </span>
+          <mat-icon class="invoice-status__info-icon">info_outline</mat-icon>
+        </div>
+
+        <!-- Status `none` : aucune facture associée. -->
+        <!--   Plan Pro      → message "auto-générée" (la simulation fin de mission est plus bas) -->
+        <!--   Plan Freemium → bouton "Envoyer ma facture" (upload sync OCR sur /invoices) -->
+        @if (m.price > 0 && m.invoice_status === 'none') {
+          @if (isPaidPlan) {
+            <p class="invoice-auto-info">
+              <mat-icon>auto_awesome</mat-icon>
+              Votre facture sera générée automatiquement par Tuita à la fin de la mission.
+            </p>
+          } @else {
+            <p class="invoice-auto-info">
+              <mat-icon>info_outline</mat-icon>
+              Plan gratuit : déposez votre facture (PDF). On la lit automatiquement et vous
+              recevez le verdict immédiatement (acceptée ou raison du refus).
+            </p>
+            <button mat-raised-button color="primary" class="invoice-action-btn" (click)="goToInvoice(m)">
+              <mat-icon>upload_file</mat-icon>
+              Envoyer ma facture
+            </button>
+          }
+        }
+
+        <!-- Une facture existe (UUID renvoyé par le backend) — elle peut être -->
+        <!-- en cours de validation, payée, rejetée, etc. On ouvre un panel    -->
+        <!-- latéral droit pour visualiser le détail SANS quitter la mission.  -->
+        @if (m.invoice_uuid && m.invoice_status !== 'none') {
+          <button mat-stroked-button color="primary" class="invoice-action-btn"
+                  (click)="openInvoicePanel(m)">
+            <mat-icon>receipt_long</mat-icon>
+            Voir la facture {{ m.invoice_number ? '- ' + m.invoice_number : '' }}
+          </button>
+        }
+
+        <!-- Statut rejected : on garde le bouton "Corriger" qui mène au flow -->
+        <!-- de re-upload côté /invoices (plus complet qu'un simple panel).   -->
+        @if (m.price > 0 && m.invoice_status === 'rejected' && !isPaidPlan) {
+          <button mat-raised-button color="warn" class="invoice-action-btn" (click)="goToInvoice(m)">
+            <mat-icon>refresh</mat-icon>
+            Corriger la facture
+          </button>
+        }
+      </div>
+
+      <!-- Simulation (dev/mock) — genere la facture via le vrai pipeline.
+           Visible uniquement hors production (cf. showDevSimulation flag) —
+           un contractor réel ne doit jamais voir ce bouton. -->
+      @if (showDevSimulation && m.price > 0 && m.invoice_status === 'none') {
+        <div class="simulate-section">
+          <h2>
+            <mat-icon>science</mat-icon>
+            Simulation (dev)
+          </h2>
+          <p>Simule la fin de mission et déclenche la génération automatique de facture via le vrai pipeline.</p>
+
+          <button mat-raised-button class="simulate-btn"
+                  [disabled]="isSimulating()"
+                  (click)="simulateComplete()">
+            @if (isSimulating()) {
+              <mat-spinner diameter="18"></mat-spinner>
+              Génération en cours...
+            } @else {
+              <mat-icon>play_arrow</mat-icon>
+              Simuler fin de mission
+            }
+          </button>
+
+          @if (simulateResult()) {
+            <div class="simulate-success">
+              <mat-icon>check_circle</mat-icon>
+              {{ simulateResult() }}
+            </div>
+          }
+          @if (simulateError()) {
+            <div class="simulate-error">
+              <mat-icon>error_outline</mat-icon>
+              {{ simulateError() }}
+            </div>
+          }
+        </div>
+      }
+
+    </div>
+  }
+}

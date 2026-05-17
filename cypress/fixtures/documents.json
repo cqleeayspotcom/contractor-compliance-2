@@ -1,0 +1,57 @@
+{
+  "success": true,
+  "data": [
+    {
+      "uuid": "doc-kbis-uuid-001",
+      "type": "kbis",
+      "status": "verified",
+      "file_name": "kbis_2026.pdf",
+      "file_size": 245000,
+      "mime_type": "application/pdf",
+      "uploaded_at": "2026-04-10T10:00:00Z",
+      "expires_at": "2027-04-10T10:00:00Z",
+      "detected_type": "kbis",
+      "detection_confidence": 0.97,
+      "is_current_version": true,
+      "verified_at": "2026-04-10T10:30:00Z",
+      "failure_reason": null,
+      "failure_detail": null,
+      "verification_result": { "is_valid": true, "confidence_score": 0.95 }
+    },
+    {
+      "uuid": "doc-rc-uuid-001",
+      "type": "rc",
+      "status": "verified",
+      "file_name": "attestation_rc_pro.pdf",
+      "file_size": 312000,
+      "mime_type": "application/pdf",
+      "uploaded_at": "2026-04-08T14:00:00Z",
+      "expires_at": "2027-01-01T00:00:00Z",
+      "detected_type": "rc",
+      "detection_confidence": 0.94,
+      "is_current_version": true,
+      "verified_at": "2026-04-08T14:20:00Z",
+      "failure_reason": null,
+      "failure_detail": null,
+      "verification_result": { "is_valid": true, "confidence_score": 0.92 }
+    },
+    {
+      "uuid": "doc-urssaf-uuid-001",
+      "type": "urssaf",
+      "status": "pending",
+      "file_name": "attestation_urssaf.pdf",
+      "file_size": 180000,
+      "mime_type": "application/pdf",
+      "uploaded_at": "2026-04-12T09:00:00Z",
+      "expires_at": null,
+      "detected_type": "urssaf",
+      "detection_confidence": 0.88,
+      "is_current_version": true,
+      "verified_at": null,
+      "failure_reason": null,
+      "failure_detail": null,
+      "verification_result": null
+    }
+  ],
+  "meta": { "current_page": 1, "total": 3, "per_page": 15, "last_page": 1 }
+}

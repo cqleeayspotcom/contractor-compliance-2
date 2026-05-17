@@ -1,0 +1,113 @@
+@use '../../../styles/variables' as *;
+
+.contractor-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  background-color: #ffffff;
+  border-top: 3px solid $t-base-green;
+  box-shadow: 0 2px 8px rgba($t-text-black, 0.08);
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    height: 64px;
+    width: 100%;
+    padding: 0 $t-gap-32;
+  }
+
+  // Logo
+  &__logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  &__logo-img {
+    height: 38px;
+    width: auto;
+  }
+
+  // Spacer pushes nav to the right
+  &__spacer {
+    flex: 1;
+  }
+
+  // Navigation icon row
+  &__nav {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+  }
+
+  // Individual nav button
+  &__btn {
+    color: rgba($t-text-black, 0.45);
+    transition: color 0.2s ease, background-color 0.2s ease;
+
+    // FIX-038 — Refresh + Quitter cachés sur mobile : pull-to-refresh natif
+    // OS suffit pour rafraîchir, et la déconnexion est déjà disponible dans
+    // /profile (bouton "Se déconnecter"). Libère 2 slots dans le header
+    // mobile pour les actions vraiment utiles.
+    &--desktop-only {
+      @media (max-width: 768px) {
+        display: none !important;
+      }
+    }
+
+    .mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    &:hover {
+      color: $t-base-green;
+      background-color: rgba($t-base-green, 0.06);
+    }
+
+    // Active page indicator (compliance)
+    &--active {
+      color: $t-base-green;
+      position: relative;
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 22px;
+        height: 3px;
+        border-radius: 2px;
+        background-color: $t-base-green;
+      }
+    }
+  }
+}
+
+// Responsive -- tighter padding on small screens
+@media (max-width: 600px) {
+  .contractor-header {
+    &__inner {
+      padding: 0 $t-gap-16;
+      height: 56px;
+    }
+
+    &__logo-img {
+      height: 30px;
+    }
+
+    &__nav {
+      gap: 2px;
+    }
+
+    &__btn .mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+}

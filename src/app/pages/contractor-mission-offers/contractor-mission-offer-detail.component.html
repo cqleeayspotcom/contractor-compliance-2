@@ -1,0 +1,92 @@
+<section class="offer-detail">
+  <header class="offer-detail__header">
+    <app-back-button label="Retour aux missions" [to]="'/missions'" />
+  </header>
+
+  @if (state().kind === 'loading') {
+    <div class="offer-detail__loading" aria-busy="true">Chargement...</div>
+  } @else if (errorMessage()) {
+    <div class="offer-detail__error">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage() }}</p>
+    </div>
+  } @else if (offer(); as o) {
+    <!-- FIX-054 — Bandeau pédagogique compacté : on retire le bouton
+         "Continuer mon dossier" (redondant avec le CTA "Finir mon dossier
+         pour accepter" en bas). Reste juste l'icône lock + 1 phrase claire
+         pour expliquer le blocage. Le CTA aval reste l'unique action. -->
+    @if (showVerificationAlert()) {
+      <div class="offer-detail__verify-alert" role="status" data-testid="verify-alert">
+        <mat-icon aria-hidden="true">lock</mat-icon>
+        <div class="offer-detail__verify-alert-body">
+          <strong>Finis ton dossier pour accepter ce chantier.</strong>
+        </div>
+      </div>
+    }
+    <article class="offer-detail__body">
+      <span class="offer-detail__badge offer-detail__badge--{{ o.category }}">{{ o.category }}</span>
+      <h1 class="offer-detail__title">{{ o.title }}</h1>
+      <p class="offer-detail__ref">{{ o.mission_ref }}</p>
+
+      <section class="offer-detail__block">
+        <h2><mat-icon>event</mat-icon> Quand</h2>
+        <p>{{ formatDate(o.scheduled_at) }}</p>
+      </section>
+
+      <section class="offer-detail__block">
+        <h2><mat-icon>place</mat-icon> Où</h2>
+        <p>
+          {{ o.address.street }}<br>
+          {{ o.address.postal_code }} {{ o.address.city }}
+        </p>
+      </section>
+
+      @if (o.description_short) {
+        <section class="offer-detail__block">
+          <h2><mat-icon>description</mat-icon> Description</h2>
+          <p>{{ o.description_short }}</p>
+        </section>
+      }
+
+      @if (o.expected_amount_ttc) {
+        <section class="offer-detail__block offer-detail__amount">
+          <h2><mat-icon>payments</mat-icon> Montant attendu</h2>
+          <p>{{ o.expected_amount_ttc | number:'1.2-2' }} €</p>
+        </section>
+      }
+
+      @if (o.required_badges && o.required_badges.length > 0) {
+        <section class="offer-detail__block">
+          <h2><mat-icon>verified</mat-icon> Badges requis</h2>
+          <ul>
+            @for (b of o.required_badges; track b) {
+              <li>{{ b }}</li>
+            }
+          </ul>
+        </section>
+      }
+
+      <div class="offer-detail__actions">
+        @if (canAccept()) {
+          <button mat-stroked-button color="warn" [disabled]="busy()" (click)="confirmDecline()">Décliner</button>
+          <button mat-flat-button color="primary" [disabled]="busy()" (click)="openAcceptConfirm()">Accepter</button>
+        } @else {
+          <a mat-flat-button color="primary" routerLink="/documents/upload" class="offer-detail__finish-cta">
+            <mat-icon>arrow_forward</mat-icon>
+            Finir mon dossier pour accepter
+          </a>
+        }
+      </div>
+
+      @if (canAccept()) {
+        <details class="offer-detail__decline-reason">
+          <summary>Ajouter une raison de refus (optionnel)</summary>
+          <mat-form-field appearance="outline">
+            <mat-label>Raison</mat-label>
+            <textarea matInput [ngModel]="declineReason()" (ngModelChange)="declineReason.set($event)" rows="3"></textarea>
+          </mat-form-field>
+        </details>
+      }
+    </article>
+  }
+</section>

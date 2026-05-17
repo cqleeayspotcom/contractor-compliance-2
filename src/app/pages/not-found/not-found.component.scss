@@ -1,0 +1,95 @@
+@use '../../../styles/variables' as *;
+
+.not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: $t-back-grey-light;
+  padding: $t-gap-24;
+
+  &__card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    padding: $t-gap-48 $t-gap-40;
+    text-align: center;
+    max-width: 440px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $t-gap-12;
+  }
+
+  &__icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba($t-base-orange, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: $t-gap-8;
+
+    mat-icon {
+      font-size: 40px;
+      width: 40px;
+      height: 40px;
+      color: $t-base-orange;
+    }
+  }
+
+  &__code {
+    font-size: 5rem;
+    font-weight: 800;
+    color: $t-text-black;
+    margin: 0;
+    line-height: 1;
+    opacity: 0.15;
+  }
+
+  &__title {
+    font-size: $t-headline-5;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+  }
+
+  &__text {
+    font-size: $t-body-2;
+    color: $t-color-light;
+    margin: 0;
+    max-width: 300px;
+    line-height: 1.5;
+  }
+
+  &__btn {
+    margin-top: $t-gap-12;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: $t-body-1;
+    padding: $t-gap-10 $t-gap-24;
+    gap: $t-gap-8;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .not-found {
+    padding: $t-gap-16;
+
+    &__card {
+      padding: $t-gap-32 $t-gap-20;
+    }
+
+    &__code {
+      font-size: 4rem;
+    }
+  }
+}

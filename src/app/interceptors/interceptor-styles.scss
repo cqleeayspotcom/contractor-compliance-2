@@ -1,0 +1,257 @@
+/**
+ * HTTP Interceptor Styles
+ * Custom styles for Tuita HTTP interceptors (snackbars, loading indicators, etc.)
+ *
+ * These styles should be imported in your global styles file or component styles.
+ */
+
+@use '../../styles/variables' as tuita;
+
+// ============================================================================
+// ERROR SNACKBAR STYLES
+// ============================================================================
+
+.tuita-error-snackbar {
+  background-color: tuita.$t-base-orange !important;
+  color: #ffffff !important;
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  font-size: tuita.$t-body-2;
+  border-radius: tuita.$t-border-radius;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15);
+
+  .mat-mdc-button {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  .mat-mdc-button-touch-target {
+    // Ensure proper touch target size
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+// ============================================================================
+// SUCCESS SNACKBAR STYLES
+// ============================================================================
+
+.tuita-success-snackbar {
+  background-color: tuita.$t-base-green !important;
+  color: #ffffff !important;
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  font-size: tuita.$t-body-2;
+  border-radius: tuita.$t-border-radius;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15);
+
+  .mat-mdc-button {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// ============================================================================
+// INFO SNACKBAR STYLES
+// ============================================================================
+
+.tuita-info-snackbar {
+  background-color: tuita.$t-logo-blue !important;
+  color: #ffffff !important;
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  font-size: tuita.$t-body-2;
+  border-radius: tuita.$t-border-radius;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15);
+
+  .mat-mdc-button {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// ============================================================================
+// WARNING SNACKBAR STYLES
+// ============================================================================
+
+.tuita-warning-snackbar {
+  background-color: tuita.$t-base-warn-800 !important;
+  color: #ffffff !important;
+  font-family: tuita.$t-default-font;
+  font-weight: 500;
+  font-size: tuita.$t-body-2;
+  border-radius: tuita.$t-border-radius;
+  box-shadow: 0 4px 12px rgba(tuita.$t-text-black, 0.15);
+
+  .mat-mdc-button {
+    color: #ffffff !important;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+// ============================================================================
+// LOADING OVERLAY STYLES
+// ============================================================================
+
+.tuita-loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(tuita.$t-back-grey-light, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  backdrop-filter: blur(2px);
+
+  .mat-mdc-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: tuita.$primary-600 !important;
+  }
+}
+
+// ============================================================================
+// LOADING SPINNER (INLINE) STYLES
+// ============================================================================
+
+.tuita-loading-spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: tuita.$t-gap-16;
+  background-color: #ffffff;
+  border-radius: tuita.$t-card-border-radius;
+  box-shadow: 0 2px 8px rgba(tuita.$t-text-black, 0.08);
+
+  .mat-mdc-progress-spinner {
+    --mdc-circular-progress-active-indicator-color: tuita.$primary-600 !important;
+  }
+}
+
+// ============================================================================
+// SNACKBAR POSITIONING
+// ============================================================================
+
+// Global snackbar container styles
+.mat-mdc-snack-bar-container {
+  // Position snackbars at the top
+  &.mat-mdc-snack-bar-top {
+    top: tuita.$top-sticky-bar-height !important;
+  }
+
+  // Centered snackbars
+  &.mat-mdc-snack-bar-center {
+    transform: translateX(-50%);
+    left: 50% !important;
+  }
+
+  // Right-aligned snackbars (default for errors)
+  &.mat-mdc-snack-bar-end {
+    right: tuita.$t-gap-16 !important;
+  }
+}
+
+// ============================================================================
+// RESPONSIVE ADJUSTMENTS
+// ============================================================================
+
+@media (max-width: 600px) {
+  .mat-mdc-snack-bar-container {
+    // On mobile, center all snackbars
+    &.mat-mdc-snack-bar-end,
+    &.mat-mdc-snack-bar-start {
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%);
+      margin: 0 tuita.$t-gap-8 !important;
+      width: calc(100% - 2 * tuita.$t-gap-16);
+      max-width: none !important;
+    }
+  }
+
+  .tuita-loading-overlay {
+    // On mobile, use less blur for better performance
+    backdrop-filter: blur(1px);
+  }
+}
+
+// ============================================================================
+// ACCESSIBILITY
+// ============================================================================
+
+// Ensure high contrast for accessibility
+@media (prefers-contrast: high) {
+  .tuita-error-snackbar,
+  .tuita-success-snackbar,
+  .tuita-info-snackbar,
+  .tuita-warning-snackbar {
+    border: 2px solid tuita.$t-text-black;
+  }
+}
+
+// Respect reduced motion preference
+@media (prefers-reduced-motion: reduce) {
+  .mat-mdc-snack-bar-container {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .tuita-loading-overlay {
+    transition: opacity 0.1s ease;
+  }
+}
+
+// ============================================================================
+// DARK MODE SUPPORT (if implemented)
+// ============================================================================
+
+@media (prefers-color-scheme: dark) {
+  .tuita-loading-overlay {
+    background-color: rgba(tuita.$primary-900, 0.9);
+  }
+}
+
+// ============================================================================
+// UTILITY CLASSES
+// ============================================================================
+
+.tuita-snackbar-success {
+  @extend .tuita-success-snackbar;
+}
+
+.tuita-snackbar-error {
+  @extend .tuita-error-snackbar;
+}
+
+.tuita-snackbar-info {
+  @extend .tuita-info-snackbar;
+}
+
+.tuita-snackbar-warning {
+  @extend .tuita-warning-snackbar;
+}

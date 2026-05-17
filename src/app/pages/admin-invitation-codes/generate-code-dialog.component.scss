@@ -1,0 +1,207 @@
+@use '../../../styles/variables' as *;
+
+.generate-dialog {
+  font-family: $t-default-font;
+
+  h2 {
+    margin: 0 0 8px;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: $t-logo-blue;
+  }
+
+  &__intro {
+    color: rgba($t-logo-blue, 0.75);
+    font-size: 0.875rem;
+    margin: 0 0 16px;
+    line-height: 1.5;
+  }
+
+  &__field {
+    margin-bottom: 18px;
+
+    label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: rgba($t-logo-blue, 0.85);
+      margin-bottom: 8px;
+    }
+  }
+
+  &__form-field {
+    width: 100%;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  &__hint {
+    margin: 4px 0 0;
+    font-size: 0.75rem;
+    color: rgba($t-logo-blue, 0.55);
+
+    &--center { text-align: center; }
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba($t-base-orange, 0.1);
+    color: darken($t-base-orange, 4%);
+    font-size: 0.85rem;
+    margin: 8px 0 0;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__success {
+    text-align: center;
+    padding: 20px 8px 8px !important;
+  }
+
+  &__success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba($t-base-green, 0.18);
+    color: darken($t-base-green, 4%);
+    margin-bottom: 12px;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  h3 {
+    margin: 0 0 4px;
+    font-size: 1.1rem;
+    color: $t-logo-blue;
+  }
+
+  &__success p {
+    margin: 0 0 16px;
+    color: rgba($t-logo-blue, 0.7);
+    font-size: 0.875rem;
+  }
+
+  &__actions {
+    padding: 12px 0 4px !important;
+    gap: 12px;
+  }
+
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: $t-logo-blue;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba($t-logo-blue, 0.28);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover:not(:disabled) {
+      background: lighten($t-logo-blue, 6%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba($t-logo-blue, 0.38);
+    }
+
+    &:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba($t-logo-blue, 0.28);
+    }
+
+    &:disabled {
+      background: rgba($t-logo-blue, 0.32);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+  }
+}
+
+.ttl-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ttl-btn {
+  border: 1px solid rgba($t-logo-blue, 0.18);
+  background: #ffffff;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba($t-logo-blue, 0.75);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    border-color: $t-logo-blue;
+    color: $t-logo-blue;
+  }
+
+  &--active {
+    background: $t-logo-blue;
+    color: #ffffff;
+    border-color: $t-logo-blue;
+  }
+}
+
+.generated-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba($t-base-green, 0.1) 0%, rgba($t-base-green, 0.18) 100%);
+  border: 2px solid $t-base-green;
+  border-radius: 14px;
+  padding: 18px 28px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-bottom: 12px;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba($t-base-green, 0.3);
+  }
+
+  &__value {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 2rem;
+    font-weight: 800;
+    color: $t-logo-blue;
+    letter-spacing: 0.12em;
+  }
+
+  mat-icon {
+    color: rgba($t-logo-blue, 0.6);
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}

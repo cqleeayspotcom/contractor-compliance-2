@@ -1,0 +1,54 @@
+<div class="doc-preview">
+  <div class="doc-preview__header">
+    <div class="doc-preview__title">
+      <mat-icon>description</mat-icon>
+      <div>
+        <h2>{{ row.original_filename || row.uuid.slice(0, 8) }}</h2>
+        <p class="doc-preview__meta">
+          <code>{{ row.type }}</code>
+          · <span class="status-pill" [class]="'status-' + row.status">{{ row.status }}</span>
+          <span *ngIf="row.document_version > 1"> · v{{ row.document_version }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="doc-preview__actions">
+      <button mat-stroked-button (click)="download()" [disabled]="loading() || !!errorMsg()">
+        <mat-icon>download</mat-icon> Télécharger
+      </button>
+      <button mat-icon-button (click)="close()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <div class="doc-preview__body">
+    <div *ngIf="loading()" class="doc-preview__state">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Chargement du document…</p>
+    </div>
+
+    <div *ngIf="!loading() && errorMsg() as err" class="doc-preview__state doc-preview__state--error">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ err }}</p>
+    </div>
+
+    <ng-container *ngIf="!loading() && !errorMsg() && safeUrl() as url">
+      <iframe
+        *ngIf="isPdf()"
+        [src]="url"
+        class="doc-preview__iframe"
+        title="Aperçu PDF"
+      ></iframe>
+      <img
+        *ngIf="isImage()"
+        [src]="url"
+        alt="Aperçu image"
+        class="doc-preview__img"
+      />
+      <div *ngIf="!isPdf() && !isImage()" class="doc-preview__state">
+        <mat-icon>insert_drive_file</mat-icon>
+        <p>Format non prévisualisable ({{ mimeType() }}). Utilisez le bouton Télécharger.</p>
+      </div>
+    </ng-container>
+  </div>
+</div>

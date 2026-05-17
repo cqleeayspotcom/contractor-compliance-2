@@ -1,0 +1,396 @@
+<div class="dialog-header">
+  <div class="dialog-header__main">
+    <h2 mat-dialog-title>Session KYC — <code>{{ shortUuid() }}</code></h2>
+    <span [class]="statusClass()">
+      <mat-icon class="status-icon">{{ statusIcon() }}</mat-icon>
+      {{ session.status || '—' }}
+    </span>
+  </div>
+  <button mat-icon-button (click)="close()" aria-label="Fermer">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+
+<mat-dialog-content class="dialog-content">
+
+  <!-- 1. Identity ────────────────────────────────────────────────────────── -->
+  <section class="info-card">
+    <h3><mat-icon>person</mat-icon> Identité</h3>
+    <div class="info-grid">
+      <div>
+        <label>Contractor</label>
+        <strong>{{ contractorName() }}</strong>
+      </div>
+      <div>
+        <label>Téléphone</label>
+        <strong><code>{{ (session.contractor_phone | phoneDisplay) || '—' }}</code></strong>
+      </div>
+      <div>
+        <label>User ID</label>
+        <strong>{{ session.user_id ?? '—' }}</strong>
+      </div>
+      @if (companyName()) {
+        <div>
+          <label>Société</label>
+          <strong>{{ companyName() }}</strong>
+        </div>
+      }
+      @if (siren()) {
+        <div>
+          <label>SIREN</label>
+          <strong><code>{{ siren() }}</code></strong>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- 2. Verdict ─────────────────────────────────────────────────────────── -->
+  <section
+    class="info-card"
+    [class.info-card--alert]="session.status === 'rejected'"
+    [class.info-card--warn]="session.status === 'pending_manual_review' || session.status === 'expired'"
+  >
+    <h3><mat-icon>{{ statusIcon() }}</mat-icon> Verdict</h3>
+    <div class="verdict-row">
+      <mat-icon class="verdict-icon" [attr.data-status]="session.status">{{ statusIcon() }}</mat-icon>
+      <div class="verdict-body">
+        @if (session.failure_reason) {
+          <div class="verdict-line">
+            <code>{{ session.failure_reason }}</code>
+            <span>{{ failureReasonLabel() }}</span>
+          </div>
+        } @else {
+          <div class="verdict-line">
+            <span>{{ failureReasonLabel() }}</span>
+          </div>
+        }
+        @if (session.failure_detail) {
+          <p class="verdict-detail">{{ session.failure_detail }}</p>
+        }
+      </div>
+    </div>
+    <div class="info-grid" style="margin-top: 12px;">
+      <div>
+        <label>Retry count</label>
+        <strong>{{ session.retry_count ?? 0 }}</strong>
+      </div>
+      <div>
+        <label>Dernier retry</label>
+        <strong>{{ formatDate(session.last_retried_at) }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Biometric scores (KEY) ──────────────────────────────────────────── -->
+  <section class="info-card" [class.info-card--alert]="spoofingDetected() === true">
+    <h3><mat-icon>verified_user</mat-icon> Scores biométriques</h3>
+
+    <div class="provider-row">
+      <span class="provider-badge"
+        [class.provider-badge--mock]="provider() === 'mock'"
+      >{{ provider() }}</span>
+      @if (framesAnalyzed() !== null) {
+        <span class="frames-badge">
+          <mat-icon>movie_filter</mat-icon>
+          {{ framesAnalyzed() }} frames analysées
+        </span>
+      }
+    </div>
+
+    <!-- Liveness -->
+    <div class="metric-block">
+      <div class="score-bar">
+        <div class="score-bar__head">
+          <span>
+            Liveness (anti-spoofing)
+            @if (livenessPassed() === true) {
+              <mat-icon class="metric-icon metric-icon--ok">check_circle</mat-icon>
+            } @else if (livenessPassed() === false) {
+              <mat-icon class="metric-icon metric-icon--err">cancel</mat-icon>
+            }
+          </span>
+          <span class="score-bar__value" [class.score-bar__value--ok]="livenessPassed() === true">
+            @if (livenessPercent() !== null) {
+              {{ livenessPercent()!.toFixed(1) }}%
+            } @else {
+              —
+            }
+          </span>
+        </div>
+        <div class="score-bar__track">
+          <div
+            class="score-bar__fill"
+            [class.score-bar__fill--ok]="livenessPassed() === true"
+            [style.width.%]="livenessPercent() ?? 0"
+          ></div>
+        </div>
+        @if (livenessThreshold() !== null) {
+          <div class="threshold-line">
+            seuil : <strong>{{ formatScore(livenessThreshold(), 2) }}</strong>
+            · score brut : <strong>{{ formatScore(livenessScore(), 4) }}</strong>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Face match -->
+    <div class="metric-block">
+      <div class="score-bar">
+        <div class="score-bar__head">
+          <span>
+            Face match
+            @if (faceMatchPassed() === true) {
+              <mat-icon class="metric-icon metric-icon--ok">check_circle</mat-icon>
+            } @else if (faceMatchPassed() === false) {
+              <mat-icon class="metric-icon metric-icon--err">cancel</mat-icon>
+            }
+          </span>
+          <span class="score-bar__value" [class.score-bar__value--ok]="faceMatchPassed() === true">
+            @if (faceMatchPercent() !== null) {
+              {{ faceMatchPercent()!.toFixed(1) }}%
+            } @else {
+              —
+            }
+          </span>
+        </div>
+        <div class="score-bar__track">
+          <div
+            class="score-bar__fill"
+            [class.score-bar__fill--ok]="faceMatchPassed() === true"
+            [style.width.%]="faceMatchPercent() ?? 0"
+          ></div>
+        </div>
+        @if (faceMatchThreshold() !== null) {
+          <div class="threshold-line">
+            seuil : <strong>{{ formatScore(faceMatchThreshold(), 2) }}</strong>
+            · score brut : <strong>{{ formatScore(faceMatchScore(), 4) }}</strong>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Face detected + Spoofing -->
+    <div class="info-grid" style="margin-top: 12px;">
+      <div class="flag-cell">
+        <label>Visage détecté</label>
+        @if (faceDetected() === true) {
+          <strong class="flag flag--ok"><mat-icon>check_circle</mat-icon> Oui</strong>
+        } @else if (faceDetected() === false) {
+          <strong class="flag flag--err"><mat-icon>cancel</mat-icon> Non</strong>
+        } @else {
+          <strong class="muted">—</strong>
+        }
+      </div>
+      <div class="flag-cell">
+        <label>Spoofing</label>
+        @if (spoofingDetected() === true) {
+          <strong class="flag flag--err"><mat-icon>warning</mat-icon> Détecté</strong>
+        } @else if (spoofingDetected() === false) {
+          <strong class="flag flag--ok"><mat-icon>shield</mat-icon> Pas de spoof</strong>
+        } @else {
+          <strong class="muted">—</strong>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. Challenges 3D ───────────────────────────────────────────────────── -->
+  @if (challenges().length > 0) {
+    <section class="info-card">
+      <h3><mat-icon>3d_rotation</mat-icon> Challenges 3D</h3>
+      <div class="challenges-grid">
+        @for (c of challenges(); track trackByChallengeKey($index, c)) {
+          <div class="challenge-card"
+            [class.challenge-card--ok]="c.passed === true"
+            [class.challenge-card--err]="c.passed === false"
+          >
+            <div class="challenge-card__head">
+              <strong>{{ c.label }}</strong>
+              @if (c.passed === true) {
+                <mat-icon class="metric-icon metric-icon--ok">check_circle</mat-icon>
+              } @else if (c.passed === false) {
+                <mat-icon class="metric-icon metric-icon--err">cancel</mat-icon>
+              }
+            </div>
+            @if (c.type) {
+              <div class="challenge-card__type"><code>{{ c.type }}</code></div>
+            }
+            @if (c.score !== null) {
+              <div class="score-bar">
+                <div class="score-bar__head">
+                  <span class="muted">Score</span>
+                  <span class="score-bar__value" [class.score-bar__value--ok]="c.passed === true">
+                    {{ challengePercent(c.score).toFixed(1) }}%
+                  </span>
+                </div>
+                <div class="score-bar__track">
+                  <div
+                    class="score-bar__fill"
+                    [class.score-bar__fill--ok]="c.passed === true"
+                    [style.width.%]="challengePercent(c.score)"
+                  ></div>
+                </div>
+              </div>
+            }
+            @if (c.reason) {
+              <p class="challenge-card__reason">{{ c.reason }}</p>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- 5. Rematch (conditionnel) ──────────────────────────────────────────── -->
+  @if (hasRematch()) {
+    <section class="info-card"
+      [class.info-card--warn]="!rematchIsMismatch()"
+      [class.info-card--alert]="rematchIsMismatch()"
+    >
+      <h3><mat-icon>compare</mat-icon> Re-match sur changement de pièce d'identité</h3>
+      <div class="info-grid">
+        @if (rematchData()?.document_uuid) {
+          <div>
+            <label>Nouveau document</label>
+            <strong><code>{{ rematchData()!.document_uuid }}</code></strong>
+          </div>
+        }
+        @if (rematchData()?.score !== undefined && rematchData()?.score !== null) {
+          <div>
+            <label>Score de re-match</label>
+            <strong>{{ formatScore(rematchData()!.score, 4) }}</strong>
+          </div>
+        }
+        @if (rematchData()?.threshold !== undefined && rematchData()?.threshold !== null) {
+          <div>
+            <label>Seuil</label>
+            <strong>{{ formatScore(rematchData()!.threshold, 2) }}</strong>
+          </div>
+        }
+        @if (rematchData()?.decision) {
+          <div>
+            <label>Décision</label>
+            <strong><code>{{ rematchData()!.decision }}</code></strong>
+          </div>
+        }
+        @if (rematchData()?.reason) {
+          <div>
+            <label>Raison</label>
+            <strong><code>{{ rematchData()!.reason }}</code></strong>
+          </div>
+        }
+        @if (rematchData()?.provider) {
+          <div>
+            <label>Provider</label>
+            <strong>{{ rematchData()!.provider }}</strong>
+          </div>
+        }
+        @if (rematchData()?.at) {
+          <div>
+            <label>Effectué le</label>
+            <strong>{{ formatDate(rematchData()!.at) }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+  }
+
+  <!-- 6. Artifacts ───────────────────────────────────────────────────────── -->
+  <section class="info-card">
+    <h3><mat-icon>image</mat-icon> Artefacts visuels</h3>
+
+    @if (artifactsLoading()) {
+      <div class="centered">
+        <mat-spinner diameter="32"></mat-spinner>
+      </div>
+    } @else if (artifactsError()) {
+      <div class="error-banner">{{ artifactsError() }}</div>
+    } @else if (artifacts().length === 0) {
+      <p class="muted">Aucun artefact disponible pour cette session.</p>
+    } @else {
+      <div class="thumbnail-grid">
+        @for (a of artifacts(); track trackByPath($index, a)) {
+          <div class="thumbnail-card">
+            <div class="thumbnail-image" (click)="openFullSize(a)">
+              @if (a.blobUrl) {
+                <img [src]="a.blobUrl" [alt]="a.label ?? a.type" />
+              } @else {
+                <div class="thumbnail-fallback">
+                  <mat-icon>broken_image</mat-icon>
+                </div>
+              }
+            </div>
+            <div class="thumbnail-meta">
+              <span class="thumbnail-label">{{ a.label || a.type }}</span>
+              @if (a.score !== null && a.score !== undefined) {
+                <span class="thumbnail-score">{{ a.score }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- 7. Audit / metadata ────────────────────────────────────────────────── -->
+  <section class="info-card">
+    <h3><mat-icon>fingerprint</mat-icon> Audit & métadonnées</h3>
+    <div class="info-grid">
+      <div>
+        <label>Provider biométrique</label>
+        <strong>{{ session.biometric_provider || '—' }}</strong>
+      </div>
+      <div>
+        <label>Started at</label>
+        <strong>{{ formatDate(session.started_at) }}</strong>
+      </div>
+      <div>
+        <label>Completed at</label>
+        <strong>{{ formatDate(session.completed_at) }}</strong>
+      </div>
+      <div>
+        <label>Created at</label>
+        <strong>{{ formatDate(session.created_at) }}</strong>
+      </div>
+      @if (videoStoragePath()) {
+        <div>
+          <label>Video path</label>
+          <strong>
+            <code [matTooltip]="videoStoragePath()!">{{ truncate(videoStoragePath(), 50) }}</code>
+          </strong>
+        </div>
+      }
+      @if (ipAddress()) {
+        <div>
+          <label>IP</label>
+          <strong><code>{{ ipAddress() }}</code></strong>
+        </div>
+      }
+      @if (userAgent()) {
+        <div>
+          <label>User agent</label>
+          <strong [matTooltip]="userAgent()!">{{ truncate(userAgent(), 50) }}</strong>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Raw JSON fallback ─────────────────────────────────────────────────── -->
+  <mat-expansion-panel class="raw-json-panel" [expanded]="rawJsonExpanded()" (opened)="rawJsonExpanded.set(true)" (closed)="rawJsonExpanded.set(false)">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon class="raw-icon">data_object</mat-icon>
+        Données brutes (JSON)
+      </mat-panel-title>
+      <mat-panel-description>
+        biometric_result complet (power-user fallback)
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <pre class="json-block">{{ prettyJson(session.biometric_result) }}</pre>
+  </mat-expansion-panel>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()">Fermer</button>
+</mat-dialog-actions>

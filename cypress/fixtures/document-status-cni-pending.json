@@ -1,0 +1,18 @@
+{
+  "data": {
+    "uuid": "doc-cni-uuid-002",
+    "type": "id_card",
+    "status": "processing",
+    "file_name": "cni_lucian_sirbu_2026.jpg",
+    "file_size": 1850000,
+    "mime_type": "image/jpeg",
+    "detected_type": "cni",
+    "detection_confidence": 0.92,
+    "uploaded_at": "2026-07-15T10:00:00Z",
+    "expires_at": "2031-07-15T00:00:00Z",
+    "failure_reason": null,
+    "failure_detail": null,
+    "verified_at": null,
+    "verification_result": null
+  }
+}

@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+.logout-confirm__icon {
+  color: #F75C03;
+}
+
+mat-dialog-content p {
+  margin: 8px 0 4px;
+  color: #333;
+  line-height: 1.5;
+}
+
+mat-dialog-actions {
+  gap: 8px;
+}
+
+mat-dialog-actions button mat-icon {
+  margin-right: 4px;
+}

@@ -1,0 +1,165 @@
+@if (isLoading()) {
+  <div class="detail-loading">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (notFound()) {
+  <div class="detail-page">
+    <button mat-button class="back-btn" routerLink="/invoices">
+      <mat-icon>arrow_back</mat-icon>
+      Mes factures
+    </button>
+    <div class="empty-state">
+      <mat-icon>search_off</mat-icon>
+      <p>Facture introuvable</p>
+    </div>
+  </div>
+} @else {
+  @if (invoice(); as inv) {
+    <div class="detail-page">
+
+      <!-- Back -->
+      <button mat-button class="back-btn" routerLink="/invoices">
+        <mat-icon>arrow_back</mat-icon>
+        Mes factures
+      </button>
+
+      <!-- Title -->
+      <div class="detail-header">
+        <mat-icon class="detail-header__icon">receipt_long</mat-icon>
+        <div class="detail-header__info">
+          <h1>{{ inv.invoice_number }}</h1>
+          <span class="detail-header__source">{{ sourceLabel(inv.source) }}</span>
+        </div>
+        <span class="badge" [class]="statusClass(inv.status)">
+          <mat-icon>{{ statusIcon(inv.status) }}</mat-icon>
+          {{ statusLabel(inv.status) }}
+        </span>
+      </div>
+
+      <!-- Amount card -->
+      <div class="amount-card">
+        <div class="amount-card__main">
+          <span class="amount-card__label">Montant TTC</span>
+          <span class="amount-card__value">{{ formatAmount(inv.amount_ttc) }}</span>
+        </div>
+        @if (inv.amount_ht > 0 && inv.amount_ht !== inv.amount_ttc) {
+          <div class="amount-card__detail">
+            <span>HT : {{ formatAmount(inv.amount_ht) }}</span>
+            <span>TVA : {{ formatAmount(inv.amount_ttc - inv.amount_ht) }}</span>
+          </div>
+        }
+      </div>
+
+      <!--
+        Timeline du pipeline de paiement — transparence totale pour le contractor.
+        Branché visuellement uniquement : l'endpoint backend enrichira `invoice.timeline`
+        plus tard. Si absent, rien ne s'affiche (fail-soft).
+      -->
+      <app-invoice-timeline *ngIf="inv.timeline" [timeline]="inv.timeline"></app-invoice-timeline>
+
+      <!-- Info card -->
+      <div class="info-card">
+        <div class="info-card__row">
+          <mat-icon>event</mat-icon>
+          <div>
+            <span class="info-card__label">Date d'emission</span>
+            <span class="info-card__value">{{ formatDate(inv.issued_at) }}</span>
+          </div>
+        </div>
+
+        <div class="info-card__row">
+          <mat-icon>tag</mat-icon>
+          <div>
+            <span class="info-card__label">Reference mission</span>
+            <span class="info-card__value">{{ inv.mission_ref }}</span>
+          </div>
+        </div>
+
+        <div class="info-card__row">
+          <mat-icon>calendar_today</mat-icon>
+          <div>
+            <span class="info-card__label">Creee le</span>
+            <span class="info-card__value">{{ formatDate(inv.created_at) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission context -->
+      @if (inv.mission) {
+        <div class="mission-card" (click)="goToMission(inv.mission.mid)">
+          <h2>Mission associee</h2>
+          <div class="mission-card__content">
+            <mat-icon>{{ operationIcon(inv.mission.operation_type) }}</mat-icon>
+            <div class="mission-card__info">
+              <span class="mission-card__title">{{ inv.mission.title }}</span>
+              <span class="mission-card__detail">{{ inv.mission.city }} - {{ formatDate(inv.mission.visit_date) }}</span>
+            </div>
+            <mat-icon class="mission-card__chevron">chevron_right</mat-icon>
+          </div>
+        </div>
+      }
+
+      <!--
+        Bloc REJET — affiche un message clair au contractor pour qu'il sache
+        EXACTEMENT quoi corriger. Source : ValidateInvoiceOcrJob →
+        rejection_reason (code machine) + rejection_details (array strings).
+        Mapping user-friendly dans invoice-rejection-messages.ts.
+        Exemple critique : `invoice_too_many_pages` → "retirez devis/bons annexés".
+      -->
+      @if (inv.status === 'rejected' && rejectionCopy(); as rej) {
+        <div class="rejection-block" role="alert">
+          <div class="rejection-block__header">
+            <mat-icon class="rejection-block__icon">error_outline</mat-icon>
+            <h3 class="rejection-block__title">{{ rej.title }}</h3>
+          </div>
+          <p class="rejection-block__desc">{{ rej.description }}</p>
+
+          @if (rejectionDetails().length > 0) {
+            <div class="rejection-block__details">
+              <strong>Points à corriger :</strong>
+              <ul>
+                @for (d of rejectionDetails(); track d) {
+                  <li>{{ d }}</li>
+                }
+              </ul>
+            </div>
+          }
+
+          @if (inv.pages_count) {
+            <p class="rejection-block__meta">
+              <mat-icon>description</mat-icon>
+              Votre PDF contient {{ inv.pages_count }} page(s).
+              @if (inv.pages_count > 5) {
+                <strong>Maximum autorisé : 5 pages.</strong>
+              }
+            </p>
+          }
+        </div>
+      }
+
+      <!-- Actions -->
+      <div class="detail-actions">
+        @if (inv.status !== 'rejected') {
+          <button mat-raised-button color="primary" (click)="downloadPdf()">
+            <mat-icon>download</mat-icon>
+            Telecharger le PDF
+          </button>
+        }
+        @if (inv.status === 'rejected' && rejectionCopy(); as rej) {
+          <button mat-raised-button color="warn" (click)="goToReupload()">
+            <mat-icon>refresh</mat-icon>
+            {{ rej.actionLabel }}
+          </button>
+        }
+      </div>
+
+      @if (downloadError()) {
+        <div class="error-msg">
+          <mat-icon>error_outline</mat-icon>
+          Le PDF de cette facture n'est pas encore disponible.
+        </div>
+      }
+
+    </div>
+  }
+}

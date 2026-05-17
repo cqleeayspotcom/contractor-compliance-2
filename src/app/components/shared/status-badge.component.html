@@ -1,0 +1,18 @@
+<span
+  [ngClass]="badgeClasses"
+  [ngStyle]="customStyles"
+  class="status-badge"
+  [attr.aria-label]="'Status: ' + displayText"
+>
+  @if (shouldShowDot) {
+    <span class="status-badge-dot"></span>
+  }
+
+  <tuita-icon
+    [icon]="iconName"
+    size="sm"
+    class="status-badge-icon"
+  ></tuita-icon>
+
+  <span class="status-badge-text">{{ displayText }}</span>
+</span>

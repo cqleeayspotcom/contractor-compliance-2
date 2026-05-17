@@ -1,0 +1,132 @@
+<div class="page-wrapper">
+  <!-- Bascule onglets factures mission / factures libres (partagée avec /invoices) -->
+  <nav class="invoice-tabs">
+    <a routerLink="/invoices" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Mes factures mission</a>
+    <a routerLink="/invoices/free" routerLinkActive="active">Mes factures libres</a>
+  </nav>
+
+  <header class="page-header">
+    <div class="page-header__left">
+      <app-back-button />
+      <h1>Mes factures libres</h1>
+    </div>
+    <!-- FIX-045 : sur mobile, bouton réduit à un FAB icône-seule (+).
+         Le label texte est uniquement présent en desktop ; sur mobile
+         le contexte de la page (titre "Mes factures libres" juste à
+         gauche) suffit à comprendre l'action. Hit target 40 px, hover
+         coloré, aria-label conservé pour les screen-readers. -->
+    <button mat-flat-button color="primary" class="page-header__add-cta"
+            (click)="openNew()"
+            aria-label="Nouvelle demande de facture libre">
+      <mat-icon>add</mat-icon>
+      <span class="page-header__add-cta-label">Nouvelle demande</span>
+    </button>
+  </header>
+
+  <p class="intro">
+    Tuita valide ta demande avec tes justificatifs avant l'upload.
+  </p>
+
+  @if (loading()) {
+    <div class="empty">Chargement...</div>
+  } @else if (requests().length === 0) {
+    <div class="empty">
+      <mat-icon>inbox</mat-icon>
+      <p>Aucune demande pour le moment.</p>
+    </div>
+  } @else {
+    <div class="cards">
+      @for (r of requests(); track r.uuid) {
+        <article class="card status-{{ r.status }}">
+          <header>
+            <span class="badge">{{ statusLabel(r.status) }}</span>
+            <h3>{{ r.subject }}</h3>
+          </header>
+          <dl>
+            <dt>Montant demandé</dt><dd>{{ r.requested_amount_ttc | number:'1.2-2' }} € TTC</dd>
+            @if (r.amount_authorized_ttc !== null) {
+              <dt>Montant autorisé</dt><dd>{{ r.amount_authorized_ttc | number:'1.2-2' }} € TTC</dd>
+            }
+            <dt>Créée le</dt><dd>{{ r.created_at | date:'dd/MM/yyyy' }}</dd>
+            @if (r.status === 'authorized' && r.expires_at) {
+              <dt>À uploader avant le</dt><dd>{{ r.expires_at | date:'dd/MM/yyyy' }}</dd>
+            } @else if (r.expires_at) {
+              <dt>Expire le</dt><dd>{{ r.expires_at | date:'dd/MM/yyyy' }}</dd>
+            }
+            @if (r.rejected_reason) {
+              <dt>Raison du rejet</dt><dd class="reject-reason">{{ r.rejected_reason }}</dd>
+            }
+          </dl>
+
+          @if (r.status === 'authorized' && !r.invoice_status) {
+            <p class="next-step">
+              Émettez maintenant votre facture officielle de
+              <strong>{{ (r.amount_authorized_ttc ?? r.requested_amount_ttc) | number:'1.2-2' }} € TTC</strong>
+              adressée à <strong>Tuita SAS</strong>, puis téléversez-la ici avant le
+              <strong>{{ r.expires_at | date:'dd/MM/yyyy' }}</strong>.
+            </p>
+          }
+
+          <!-- Statut de la dernière facture uploadée (si une existe) -->
+          @if (r.invoice_status) {
+            <div class="invoice-state invoice-state--{{ invoiceStateBadge(r.invoice_status) }}">
+              <mat-icon>{{ invoiceStateIcon(r.invoice_status) }}</mat-icon>
+              <div class="invoice-state__text">
+                <strong>{{ invoiceStateLabel(r.invoice_status) }}</strong>
+                @if (r.last_invoice_rejection_details && r.last_invoice_rejection_details.length > 0) {
+                  <p class="invoice-state__detail">{{ r.last_invoice_rejection_details[0] }}</p>
+                } @else if (r.last_invoice_rejection_reason) {
+                  <p class="invoice-state__detail">{{ r.last_invoice_rejection_reason }}</p>
+                }
+              </div>
+            </div>
+          }
+
+          <footer>
+            @if (r.status === 'pending_admin_approval') {
+              <button mat-button (click)="cancel(r.uuid)">Annuler ma demande</button>
+            }
+            <!--
+              Le bouton "Uploader" n'apparaît que :
+                - status request = authorized
+                - aucune facture active rattachée (le backend filtre déjà via activeInvoice mais on
+                  re-vérifie côté UI pour éviter d'afficher un bouton qui mènera à un 409)
+                - OU la dernière facture a été rejetée → label "Re-uploader" + raison visible plus haut
+            -->
+            @if (r.status === 'authorized' && canUpload(r)) {
+              <button mat-flat-button color="primary" (click)="openUpload(r)">
+                {{ r.invoice_status === 'rejected' ? 'Re-uploader la facture corrigée' : 'Uploader la facture' }}
+              </button>
+            }
+            @if (r.invoice_uuid && r.invoice_status !== 'rejected') {
+              <a mat-button [routerLink]="['/invoices', r.invoice_uuid]">Voir la facture</a>
+            }
+          </footer>
+        </article>
+      }
+    </div>
+
+    @if (totalPages() > 1) {
+      <nav class="pagination" aria-label="Pagination des demandes">
+        <button mat-stroked-button
+                class="pagination__btn"
+                (click)="goToPage(currentPage() - 1)"
+                [disabled]="!hasPrev()">
+          <mat-icon>chevron_left</mat-icon>
+          <span>Précédent</span>
+        </button>
+        <span class="pagination__info">
+          <strong>{{ total() }} demandes</strong>
+          <span class="pagination__page">page {{ currentPage() }} / {{ totalPages() }}</span>
+        </span>
+        <button mat-stroked-button
+                class="pagination__btn"
+                (click)="goToPage(currentPage() + 1)"
+                [disabled]="!hasNext()">
+          <span>Suivant</span>
+          <mat-icon iconPositionEnd>chevron_right</mat-icon>
+        </button>
+      </nav>
+    }
+  }
+</div>

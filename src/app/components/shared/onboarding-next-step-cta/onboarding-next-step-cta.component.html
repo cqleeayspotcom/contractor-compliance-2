@@ -1,0 +1,15 @@
+@if (step(); as s) {
+  <div class="next-step-cta">
+    <div class="next-step-cta__icon" aria-hidden="true">
+      <mat-icon>{{ s.icon }}</mat-icon>
+    </div>
+    <div class="next-step-cta__body">
+      <h3 class="next-step-cta__title">{{ s.title }}</h3>
+      <p class="next-step-cta__subtitle">{{ s.subtitle }}</p>
+    </div>
+    <a mat-flat-button color="primary" class="next-step-cta__action tui-attract" [routerLink]="s.route">
+      {{ s.cta }}
+      <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+    </a>
+  </div>
+}

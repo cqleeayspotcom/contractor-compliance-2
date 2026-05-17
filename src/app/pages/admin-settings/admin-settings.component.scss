@@ -1,0 +1,140 @@
+.settings {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+
+  &__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: #666;
+      font-size: 14px;
+    }
+  }
+
+  &__header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  &__header-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: #1a1a1a;
+  }
+
+  &__header-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #fee;
+    color: #b91c1c;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+
+  &__filter {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  &__search {
+    flex: 1;
+    min-width: 320px;
+    max-width: 560px;
+  }
+
+  &__count {
+    color: #666;
+    font-size: 13px;
+  }
+
+  &__table-wrap {
+    background: white;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  &__table {
+    width: 100%;
+  }
+
+  &__key {
+    background: #f5f5f5;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+    display: inline-block;
+  }
+
+  &__desc {
+    color: #777;
+    font-size: 12px;
+    margin-top: 4px;
+  }
+
+  &__value {
+    font-family: monospace;
+    color: #1a1a1a;
+  }
+
+  &__source-badge {
+    display: inline-block;
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  &__actions-col {
+    width: 220px;
+  }
+
+  &__actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 48px 16px;
+    color: #888;
+
+    mat-icon {
+      font-size: 48px;
+      width: 48px;
+      height: 48px;
+    }
+  }
+}

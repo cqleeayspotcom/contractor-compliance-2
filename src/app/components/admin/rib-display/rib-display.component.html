@@ -1,0 +1,46 @@
+<div class="rib-display"
+     [class.rib-fresh]="rib().status === 'verified_fresh'"
+     [class.rib-stale]="rib().status === 'verified_stale'"
+     [class.rib-missing]="rib().status === 'missing'">
+  @if (rib().status !== 'missing') {
+    <dl class="rib-grid">
+      <dt>Titulaire</dt>
+      <dd>
+        <span>{{ rib().iban_holder || '—' }}</span>
+        <button mat-icon-button (click)="copy(rib().iban_holder, 'Titulaire copié')" [disabled]="!rib().iban_holder" matTooltip="Copier">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </dd>
+      <dt>IBAN</dt>
+      <dd class="iban-line">
+        <code>{{ rib().iban || '—' }}</code>
+        <button mat-icon-button (click)="copyIban()" [disabled]="!rib().iban" matTooltip="Copier IBAN (sans espaces)">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </dd>
+      <dt>BIC</dt>
+      <dd>
+        <code>{{ rib().bic || '—' }}</code>
+        <button mat-icon-button (click)="copy(rib().bic, 'BIC copié')" [disabled]="!rib().bic" matTooltip="Copier">
+          <mat-icon>content_copy</mat-icon>
+        </button>
+      </dd>
+      <dt>Banque</dt>
+      <dd>{{ rib().bank_name || '—' }}</dd>
+    </dl>
+    <p class="rib-status">
+      <mat-icon>{{ rib().status === 'verified_fresh' ? 'check_circle' : 'warning' }}</mat-icon>
+      @if (rib().status === 'verified_fresh') {
+        <span>RIB vérifié le {{ rib().verified_at | date:'dd/MM/yyyy' }}</span>
+      }
+      @if (rib().status === 'verified_stale') {
+        <span>RIB vérifié le {{ rib().verified_at | date:'dd/MM/yyyy' }} (&gt; 6 mois — à reconfirmer)</span>
+      }
+    </p>
+  } @else {
+    <p class="rib-missing-msg">
+      <mat-icon>error</mat-icon>
+      Pas de RIB validé — virement bloqué tant que le contractor n'a pas uploadé un RIB
+    </p>
+  }
+</div>

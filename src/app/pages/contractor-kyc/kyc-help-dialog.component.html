@@ -1,0 +1,85 @@
+<div class="help-dialog">
+  <div class="help-dialog__header">
+    <mat-icon class="help-dialog__icon">help_outline</mat-icon>
+    <h2>Comment ça marche ?</h2>
+    <button type="button"
+            class="help-dialog__close"
+            aria-label="Fermer"
+            (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="help-dialog__body">
+    <section>
+      <h3><mat-icon>photo_camera</mat-icon>Avant de commencer</h3>
+      <ul>
+        <li><strong>Lumière</strong> - face à une fenêtre ou une lampe, jamais dos à la lumière (sinon visage cramé).</li>
+        <li><strong>Distance</strong> - 40-50 cm de la caméra : votre visage doit remplir l'ovale vert.</li>
+        <li><strong>Pas de casquette, lunettes de soleil ou masque</strong> qui cachent les yeux ou le front.</li>
+        <li><strong>Décor neutre</strong> - évitez qu'une autre personne soit derrière vous.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h3><mat-icon>bolt</mat-icon>Les gestes</h3>
+      <p>
+        Un décompte <strong>3-2-1</strong> vous laisse le temps de vous caler.
+        Ensuite, l'enregistrement dure <strong>10 secondes</strong> avec 2 gestes à enchaîner.
+      </p>
+      <ul>
+        <li><strong>Tournez la tête</strong> - menton qui traverse vers l'épaule, pas juste le regard.</li>
+        <li><strong>Regardez en haut</strong> - levez bien le menton vers le plafond.</li>
+        <li><strong>Souriez</strong> - grand sourire franc, montrez les dents.</li>
+        <li><strong>Clignez des yeux</strong> - fermez 1 seconde complète, puis rouvrez.</li>
+      </ul>
+      <p class="help-tip">
+        <mat-icon>lightbulb</mat-icon>
+        <span>Les gestes doivent être <strong>francs</strong>. Un mouvement timide ne sera pas détecté.</span>
+      </p>
+    </section>
+
+    <!-- <section>
+      <h3><mat-icon>shield</mat-icon>Sécurité</h3>
+      <p>
+        La vidéo est comparée à la photo de votre pièce d'identité par notre IA. Elle ne quitte
+        jamais nos serveurs et est supprimée après vérification.
+      </p>
+    </section> -->
+
+    <section>
+      <h3><mat-icon>error_outline</mat-icon>Si ça échoue</h3>
+      <ul>
+        <li><strong>Visage non détecté</strong> - Rapprochez-vous, améliorez la lumière.</li>
+        <li><strong>Geste pas détecté</strong> - Faites-le plus franc, tournez vraiment la tête.</li>
+        <li><strong>Visage différent</strong> - Enlevez casquette/lunettes, face caméra.</li>
+      </ul>
+      <p>Vous pouvez recommencer autant de fois que nécessaire.</p>
+    </section>
+
+    <section>
+      <h3><mat-icon>credit_card</mat-icon>Votre CNI est ancienne ?</h3>
+      <p>
+        Si votre carte nationale d'identité a été délivrée <strong>entre 2004 et 2013</strong>
+        (carte plastifiée bleue avec photo noir &amp; blanc), pas d'inquiétude : on en tient
+        compte automatiquement. Notre vérification compare votre visage avec une <strong>tolérance
+        adaptée</strong> à ce type de carte - vous n'avez rien à faire de spécial.
+      </p>
+      <p class="help-tip">
+        <mat-icon>lightbulb</mat-icon>
+        <span>
+          Le secret c'est la lumière : placez-vous face à une fenêtre, retirez lunettes et
+          casquette, visage neutre comme sur votre CNI. La photo originale de votre carte est
+          en N&amp;B et de moins bonne résolution que votre webcam moderne - on a calibré
+          pour ça.
+        </span>
+      </p>
+    </section>
+  </div>
+
+  <div class="help-dialog__actions">
+    <button mat-raised-button color="primary" (click)="close()">
+      J'ai compris
+    </button>
+  </div>
+</div>

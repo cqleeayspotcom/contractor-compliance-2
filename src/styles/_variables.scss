@@ -1,0 +1,204 @@
+$t-blank-char: "ㅤ";
+$t_char-close: '✕';
+$t-ellipsis: '…';
+
+$t-default-font: 'M PLUS Rounded 1c', sans-serif;
+
+$t-logo-blue: #073148; //prussian-blue
+$t-text-black: #073148; //#07131A;
+$t-color: rgba($t-text-black, 0.87);
+$t-color-light: rgba($t-text-black, 0.58);
+$t-color-extra-light: rgba($t-text-black, 0.28);
+$t-color-dark: rgba($t-text-black, 0.87);
+
+
+$t-base-grey: #C6D8D3;
+$t-base-orange: #F75C03;
+$t-base-green: #04A777;
+$t-base-yellow: #FDF0D5;
+
+$t-error-color: $t-base-orange;
+$t-warn-color: $t-base-orange;
+
+
+$t-back-grey-high: #F1F3F8;// parcel color: 073148
+$t-back-grey-medium: #F7F8FC;
+$t-back-grey-light: #FCFCFF; // also used for the body background
+
+/* Text-size styles */
+$t-headline-1: 3.875rem;
+$t-headline-2: 3.25rem;
+$t-headline-3: 2.75rem;
+$t-headline-4: 1.875rem;
+$t-headline-5: 1.5rem;
+$t-headline-6: 1.125rem;
+
+$t-subtitle-1: .875rem;
+$t-subtitle-2: 0.75rem;
+
+$t-body-1: 1rem;
+$t-body-2: .875rem;
+$t-body-3: 0.75rem;
+$t-body-4: 0.625rem;
+$t-body-5: 0.5rem;
+
+$t-button: 1rem;
+
+$t-border-radius: 4px;
+$t-card-border-radius: 2 * $t-border-radius;
+$tools-radius: $t-border-radius * 4;
+
+$t-caption: 0.875rem;
+$t-overline: 0.75rem;
+$t-input-label-text: 1rem;
+$t-line-height: $t-input-label-text+0.325rem;
+$t-letter-spacing: 0.5px;
+
+$t-on-primary-high-emphasis: rgba(7, 49, 72, 0.8700000047683716); // #073148: text color
+$t-on-primary-medium-emphasis: rgba(7, 49, 72, 0.6000000238418579);
+$t-on-primary-disabled: rgba(7, 49, 72, 0.3799999952316284);
+
+$t-on-surface-high-emphasis: rgba(5, 34, 50, 0.8700000047683716);
+$t-on-surface-medium-emphasis: rgba(5, 34, 50, 0.6000000238418579);
+$t-on-surface-disabled: rgba(5, 34, 50, 0.38);
+$t-color-medium-emphasis: rgba(5, 34, 50, 0.6000000238418579);
+
+
+$t-gap-2: 2px;
+$t-gap-4: 4px;
+$t-gap-6: 6px;
+$t-gap-8: 8px;
+$t-gap-10: 10px;
+$t-gap-12: 12px;
+$t-gap-14: 14px;
+$t-gap-16: 16px;
+$t-gap-20: 20px;
+$t-gap-24: 24px;
+$t-gap-32: 32px;
+$t-gap-40: 40px;
+$t-gap-44: 44px;
+$t-gap-48: 48px;
+$t-gap-56: 56px;
+$t-gap-64: 64px;
+
+$primary-900: #07131A; // used also for mat-divide dark, alpha=0.12
+$primary-800: #073148;
+$primary-700: #346F96;
+$primary-600: #699CBE;
+$primary-500: #88B1CD;
+$primary-400: #A7C8E0;
+$primary-300: #ABCDDF;
+$primary-200: #D4EAF5;
+$primary-100: #ECF7FD;
+$primary-50: #F5FCFF;
+
+$base-foreground-grey-900: #202730;
+$base-foreground-grey-800: #323b46;
+$base-foreground-grey-700: #414d5c;
+$base-foreground-grey-600: #516072;
+$base-foreground-grey-500: #5e6e82;
+$base-foreground-grey-400: #758294;
+$base-foreground-grey-300: #8d98a7;
+$base-foreground-grey-200: #adb5c0;
+$base-foreground-grey-100: #cdd3da;
+$base-foreground-grey-50: #ebedf0;
+
+// base orange declinaison
+$base-orange-900: #F75C03;
+$base-orange-800: #FF7805;
+$base-orange-700: #FF8807;
+$base-orange-600: #ff9908;
+$base-orange-500: #ffa50a;
+$base-orange-400: #ffb32c;
+$base-orange-300: #ffc252;
+$base-orange-200: #ffd484;
+$base-orange-100: #ffe5b5;
+$base-orange-50: #fff5e1;
+
+$base-green-900: #007a20;
+$base-green-800: #009b35;
+$base-green-700: #00ad42;
+$base-green-600: #00c04f;
+$base-green-500: #00d05a;
+$base-green-400: #03d975;
+$base-green-300: #5be190;
+$base-green-200: #93eab1;
+$base-green-100: #c0f2d0;
+$base-green-50: #e5faec;
+
+$base-warn-900: #cb0003;
+$base-warn-800: #d80015;
+$base-warn-700: #e5001e;
+$base-warn-600: #f70324;
+$base-warn-500: #ff1d22;
+$base-warn-400: #ff3d43;
+$base-warn-300: #f5686a; //actully $base-warn
+$base-warn-200: #fb9494;
+$base-warn-100: #ffcad0;
+$base-warn-50: #ffeaed;
+
+$base-magenta-900: #880054;
+$base-magenta-800: #ad025d;
+$base-magenta-700: #C30461;
+$base-magenta-600: #D90367;
+$base-magenta-500: #EA036A;
+$base-magenta-400: #ec3981;
+$base-magenta-300: #EF5F99; //actully $base-magenta
+$base-magenta-200: #F38DB6;
+$base-magenta-100: #F7BAD3;
+$base-magenta-50: #fce4ed;
+
+
+$base-brown-900: #462211;
+$base-brown-800: #56301b;
+$base-brown-700: #895432;
+$base-brown-600: #9C6A46;
+$base-brown-500: #BF9474;
+$base-brown-400: #CEA689;
+$base-brown-300: #DCBAA3; //actully $base-brown
+$base-brown-200: #F6D3BB;
+$base-brown-100: #FDF1E5;
+$base-brown-50: #FFF8F1;
+
+
+$forbidden-height: 340; // Size on application start. Use interpolation #{$forbidden-height}px
+$extra-small-height: 340; // use interpolation #{$extra-small-height}px
+$small-height: 556px; // small sevice, tested on david smartphone
+$t-outline-color: rgba($primary-900, 0.12); //rgba($t-logo-blue,0.12);
+
+$t-first-container-top-margin: 2.75rem;
+$t-container-fluid-gutter: var(--bs-gutter-x, 1.275rem);
+$t-container-gutter: var(--bs-gutter-x, 1.275rem);
+
+$top-sticky-bar-height: 4.25rem;
+$focusing-footer-height: 24px;
+
+
+
+$t-multi-color-gradient: linear-gradient(125deg,
+  hsl(200deg 62% 90%) 0%,
+  hsl(164deg 73% 74%) 33%,
+  hsl(76deg 59% 72%) 50%,
+  hsl(31deg 100% 76%) 67%,
+  hsl(0deg 93% 78%) 100%);
+
+$t-simple-multi-color-gradient-normal: linear-gradient(125deg,
+  hsl(200deg 62% 90%) 10%,
+  hsl(76deg 59% 72%) 60%,
+);
+
+$t-simple-multi-color-gradient-emergency: linear-gradient(125deg,
+  hsl(200deg 62% 90%) 0%,
+  hsl(76deg 59% 72%) 50%,
+  hsl(31deg 100% 76%) 67%);
+
+
+$menu-action-vpadding: var(--menu-action-padding-y, 1rem);
+
+// Additional variables referenced in components
+$t-color-disabled: rgba($t-text-black, 0.38);
+$t-border-color: rgba($t-text-black, 0.12);
+$t-gap-72: 72px;
+$t-gap-80: 80px;
+$t-gap-96: 96px;
+$t-transition-ease-in-out: 0.3s ease-in-out;

@@ -1,0 +1,110 @@
+<div class="invoice-panel">
+
+  <header class="invoice-panel__header">
+    <div class="invoice-panel__header-text">
+      <h2>Facture</h2>
+      @if (data.number || invoice()?.number) {
+        <p class="invoice-panel__subtitle">{{ invoice()?.number ?? data.number }}</p>
+      } @else if (data.missionRef) {
+        <p class="invoice-panel__subtitle">Mission {{ data.missionRef }}</p>
+      }
+    </div>
+    <button mat-icon-button (click)="close()" aria-label="Fermer">
+      <mat-icon>close</mat-icon>
+    </button>
+  </header>
+
+  <div class="invoice-panel__body">
+
+    @if (isLoading()) {
+      <div class="invoice-panel__loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Chargement de la facture...</p>
+      </div>
+    } @else if (error()) {
+      <div class="invoice-panel__error">
+        <mat-icon>error_outline</mat-icon>
+        <p>{{ error() }}</p>
+      </div>
+    } @else if (invoice(); as inv) {
+
+      <!-- Status badge -->
+      <div class="invoice-panel__status">
+        <span class="badge" [class]="statusBadgeClass()">{{ statusLabel() }}</span>
+        <span class="invoice-panel__date">Émise le {{ formatDate(inv.issued_at ?? inv.created_at) }}</span>
+      </div>
+
+      <!-- KPI cards -->
+      <dl class="invoice-panel__kpis">
+        <div class="kpi">
+          <dt>Montant TTC</dt>
+          <dd class="kpi__value">{{ formatAmount(inv.amount_ttc) }}</dd>
+        </div>
+        <div class="kpi">
+          <dt>Mission</dt>
+          <dd>{{ inv.mission_ref ?? data.missionRef ?? '-' }}</dd>
+        </div>
+        @if (inv.amount_ht) {
+          <div class="kpi">
+            <dt>HT</dt>
+            <dd>{{ formatAmount(inv.amount_ht) }}</dd>
+          </div>
+        }
+        @if (inv.amount_tva) {
+          <div class="kpi">
+            <dt>TVA</dt>
+            <dd>{{ formatAmount(inv.amount_tva) }}</dd>
+          </div>
+        }
+      </dl>
+
+      <!-- Timeline (validators) -->
+      @if (inv.payment_validations?.length || inv.timeline_events?.length) {
+        <div class="invoice-panel__timeline">
+          <h3>Suivi de validation</h3>
+          <ul>
+            @for (v of inv.payment_validations ?? []; track v.id) {
+              <li class="timeline-item" [class.timeline-item--rejected]="v.status === 'rejected'">
+                <mat-icon>{{ v.status === 'approved' ? 'check_circle' : 'cancel' }}</mat-icon>
+                <div>
+                  <strong>{{ v.validator_type | titlecase }}</strong>
+                  <span class="timeline-item__meta">
+                    {{ v.status === 'approved' ? 'Validé' : 'Rejeté' }}
+                    @if (v.validated_at) { · {{ formatDate(v.validated_at) }} }
+                  </span>
+                </div>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (inv.rejection_reason) {
+        <div class="invoice-panel__rejection">
+          <mat-icon>warning_amber</mat-icon>
+          <div>
+            <strong>{{ inv.rejection_reason }}</strong>
+            @if (inv.rejection_details) { <p>{{ inv.rejection_details }}</p> }
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  <footer class="invoice-panel__footer">
+    @if (invoice()) {
+      <button mat-stroked-button (click)="downloadPdf()" [disabled]="isDownloading()">
+        @if (isDownloading()) {
+          <mat-spinner diameter="18"></mat-spinner>
+        } @else {
+          <mat-icon>download</mat-icon>
+        }
+        PDF
+      </button>
+      <button mat-flat-button color="primary" (click)="openFullPage()">
+        <mat-icon>open_in_new</mat-icon>
+        Page complète
+      </button>
+    }
+  </footer>
+</div>

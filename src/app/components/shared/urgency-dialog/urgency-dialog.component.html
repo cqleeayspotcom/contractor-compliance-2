@@ -1,0 +1,24 @@
+<div class="urgency-dialog">
+  <div class="urgency-dialog__icon-wrap" aria-hidden="true">
+    <mat-icon>{{ content.icon }}</mat-icon>
+    <span class="urgency-dialog__pulse"></span>
+  </div>
+
+  <h2 class="urgency-dialog__title" mat-dialog-title>
+    {{ greeting() }}{{ content.title }}
+  </h2>
+
+  <mat-dialog-content class="urgency-dialog__body">
+    <p>{{ content.body }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="urgency-dialog__actions" align="end">
+    <button mat-button type="button" (click)="later()">
+      Plus tard
+    </button>
+    <button mat-flat-button color="primary" type="button" (click)="goToAction()">
+      <mat-icon>arrow_forward</mat-icon>
+      {{ content.cta }}
+    </button>
+  </mat-dialog-actions>
+</div>

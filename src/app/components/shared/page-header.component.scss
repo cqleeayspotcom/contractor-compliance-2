@@ -1,0 +1,245 @@
+/* Tuita Page Header Component */
+
+:host {
+  display: block;
+}
+
+.page-header {
+  padding: 1.5rem 2rem;
+  background-color: #ffffff;
+  border-bottom: 1px solid #E5E7EB;
+  margin-bottom: 2rem;
+
+  &-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    color: #073148; /* Tuita blue */
+    background-color: transparent;
+    border: 1px solid #E5E7EB;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: #F3F4F6;
+      border-color: #D1D5DB;
+    }
+
+    &:active {
+      background-color: #E5E7EB;
+    }
+
+    &:focus {
+      outline: 2px solid #073148;
+      outline-offset: 2px;
+    }
+
+    span {
+      line-height: 1;
+    }
+  }
+
+  &-breadcrumbs {
+    margin-bottom: 1rem;
+  }
+
+  &-breadcrumbs-list {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex-wrap: wrap;
+  }
+
+  &-breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem; /* 14px */
+
+    &:not(:last-child)::after {
+      content: '/';
+      color: #9CA3AF;
+      font-weight: 400;
+    }
+
+    &-current {
+      color: #6B7280;
+      font-weight: 500;
+    }
+  }
+
+  &-breadcrumb-link {
+    color: #073148; /* Tuita blue */
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: #04A777; /* Tuita green */
+      text-decoration: underline;
+    }
+
+    &:focus {
+      outline: 2px solid #073148;
+      outline-offset: 2px;
+      border-radius: 0.125rem;
+    }
+  }
+
+  &-breadcrumb-label {
+    color: #6B7280;
+  }
+
+  &-content {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  &-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &-title {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.75rem; /* 28px */
+    font-weight: 700;
+    line-height: 1.2;
+    color: #073148; /* Tuita blue */
+    word-wrap: break-word;
+  }
+
+  &-subtitle {
+    margin: 0;
+    font-size: 1rem; /* 16px */
+    line-height: 1.5;
+    color: #6B7280;
+    max-width: 800px;
+  }
+
+  /* Actions slot styling */
+  ::ng-content[select="[actions]"] {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+  .page-header {
+    padding: 1.25rem 1.5rem;
+
+    &-content {
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    ::ng-content[select="[actions]"] {
+      width: 100%;
+      justify-content: flex-start;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .page-header {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+
+    &-back {
+      padding: 0.375rem 0.625rem;
+      font-size: 0.8125rem; /* 13px */
+    }
+
+    &-breadcrumbs-list {
+      gap: 0.25rem;
+    }
+
+    &-breadcrumb-item {
+      font-size: 0.8125rem; /* 13px */
+    }
+
+    &-title {
+      font-size: 1.5rem; /* 24px */
+    }
+
+    &-subtitle {
+      font-size: 0.9375rem; /* 15px */
+    }
+
+    ::ng-content[select="[actions]"] {
+      flex-wrap: wrap;
+    }
+  }
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+  .page-header {
+    background-color: #1A202C;
+    border-bottom-color: #2D3748;
+
+    &-back {
+      color: #ffffff;
+      border-color: #4A5568;
+
+      &:hover {
+        background-color: #2D3748;
+        border-color: #718096;
+      }
+
+      &:active {
+        background-color: #4A5568;
+      }
+
+      &:focus {
+        outline-color: #073148;
+      }
+    }
+
+    &-breadcrumb-link {
+      color: #4DB6AC;
+
+      &:hover {
+        color: #4DB6AC;
+      }
+    }
+
+    &-breadcrumb-label,
+    &-breadcrumb-item-current {
+      color: #9CA3AF;
+    }
+
+    &-title {
+      color: #ffffff;
+    }
+
+    &-subtitle {
+      color: #9CA3AF;
+    }
+  }
+}
+
+/* Print styles */
+@media print {
+  .page-header {
+    page-break-after: avoid;
+    border-bottom: 1px solid #000000;
+
+    &-back,
+    &-breadcrumbs {
+      display: none;
+    }
+  }
+}

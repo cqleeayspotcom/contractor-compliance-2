@@ -1,0 +1,137 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  line-height: 1;
+}
+
+:host svg {
+  display: block;
+  width: 1em;
+  height: 1em;
+  font-size: inherit;
+}
+
+/* Color variants using Tuita's design tokens */
+:host.tuita-icon-primary {
+  color: #073148;
+}
+
+:host.tuita-icon-secondary {
+  color: #04A777;
+}
+
+:host.tuita-icon-error {
+  color: #F75C03;
+}
+
+:host.tuita-icon-warning {
+  color: #F75C03;
+}
+
+:host.tuita-icon-info {
+  color: #073148;
+}
+
+:host.tuita-icon-success {
+  color: #04A777;
+}
+
+:host.tuita-icon-light {
+  color: #8d98a7;
+}
+
+:host.tuita-icon-lighter {
+  color: #adb5c0;
+}
+
+:host.tuita-icon-muted {
+  color: #cdd3da;
+}
+
+/* Icon rotation */
+:host.tuita-icon-rotate-90 {
+  transform: rotate(90deg);
+}
+
+:host.tuita-icon-rotate-180 {
+  transform: rotate(180deg);
+}
+
+:host.tuita-icon-rotate-270 {
+  transform: rotate(270deg);
+}
+
+/* Icon flipping */
+:host.tuita-icon-flip-horizontal {
+  transform: scaleX(-1);
+}
+
+:host.tuita-icon-flip-vertical {
+  transform: scaleY(-1);
+}
+
+/* Spacing utilities */
+:host.tuita-icon-margin-right {
+  margin-right: 0.5rem;
+}
+
+:host.tuita-icon-margin-left {
+  margin-left: 0.5rem;
+}
+
+:host.tuita-icon-margin-top {
+  margin-top: 0.25rem;
+}
+
+:host.tuita-icon-margin-bottom {
+  margin-bottom: 0.25rem;
+}
+
+/* Clickable icons */
+:host.tuita-icon-clickable {
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+:host.tuita-icon-clickable:hover {
+  opacity: 0.7;
+}
+
+:host.tuita-icon-clickable:active {
+  opacity: 0.5;
+}
+
+/* Animated icons */
+@keyframes tuita-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+:host.tuita-icon-spin {
+  animation: tuita-spin 1s linear infinite;
+}
+
+@keyframes tuita-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+:host.tuita-icon-pulse {
+  animation: tuita-pulse 2s ease-in-out infinite;
+}
+
+/* Disabled state */
+:host.tuita-icon-disabled {
+  opacity: 0.38;
+  pointer-events: none;
+}

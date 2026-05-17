@@ -1,0 +1,12 @@
+<button
+  type="button"
+  (click)="onClick($event)"
+  class="back-pill"
+  [class.back-pill--icon-only]="!label()"
+  [attr.aria-label]="label() ? ('Retour vers ' + label()) : 'Retour'"
+>
+  <mat-icon>arrow_back</mat-icon>
+  @if (label()) {
+    <span>{{ label() }}</span>
+  }
+</button>

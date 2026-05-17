@@ -1,0 +1,51 @@
+{
+  "success": true,
+  "data": [
+    {
+      "uuid": "verif-uuid-001",
+      "document_uuid": "doc-urssaf-uuid-001",
+      "document_type": "urssaf",
+      "company_name": "SIRBU LUCIAN BTP",
+      "company_siret": "12345678900012",
+      "contractor_name": "LUCIAN SIRBU",
+      "status": "pending_manual_review",
+      "method": "ocr",
+      "score": 0.58,
+      "needs_manual_review": true,
+      "file_name": "attestation_urssaf.pdf",
+      "created_at": "2026-07-15T10:00:00Z",
+      "flags": ["low_confidence", "possible_expired_date"]
+    },
+    {
+      "uuid": "verif-uuid-002",
+      "document_uuid": "doc-kbis-uuid-003",
+      "document_type": "kbis",
+      "company_name": "DUPONT ELECTRICITE SARL",
+      "company_siret": "98765432100014",
+      "contractor_name": "JEAN DUPONT",
+      "status": "pending_manual_review",
+      "method": "ocr",
+      "score": 0.62,
+      "needs_manual_review": true,
+      "file_name": "kbis_dupont.pdf",
+      "created_at": "2026-07-15T09:30:00Z",
+      "flags": ["siren_mismatch"]
+    },
+    {
+      "uuid": "verif-uuid-003",
+      "document_uuid": "doc-rc-uuid-004",
+      "document_type": "rc",
+      "company_name": "MARTIN PLOMBERIE",
+      "company_siret": "55566677700012",
+      "contractor_name": "PIERRE MARTIN",
+      "status": "pending_manual_review",
+      "method": "ocr",
+      "score": 0.45,
+      "needs_manual_review": true,
+      "file_name": "rc_pro_martin.pdf",
+      "created_at": "2026-07-14T16:00:00Z",
+      "flags": ["unreadable_document", "low_confidence"]
+    }
+  ],
+  "meta": { "current_page": 1, "total": 3, "per_page": 15, "last_page": 1 }
+}

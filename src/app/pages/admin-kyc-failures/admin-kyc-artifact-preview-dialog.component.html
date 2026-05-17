@@ -1,0 +1,9 @@
+<div class="preview-header">
+  <span class="preview-label">{{ data.label }}</span>
+  <button mat-icon-button (click)="close()" aria-label="Fermer">
+    <mat-icon>close</mat-icon>
+  </button>
+</div>
+<div class="preview-body">
+  <img [src]="data.url" [alt]="data.label" />
+</div>

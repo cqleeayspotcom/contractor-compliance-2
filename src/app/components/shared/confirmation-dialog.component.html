@@ -1,0 +1,29 @@
+<div [ngClass]="dialogClasses">
+  <h2 mat-dialog-title class="confirmation-dialog__title">
+    @if (showIcon) {
+      <mat-icon class="confirmation-dialog__icon" [attr.data-type]="type">
+        {{ displayIcon }}
+      </mat-icon>
+    }
+    <span>{{ title }}</span>
+  </h2>
+
+  <mat-dialog-content class="confirmation-dialog__content">
+    <p class="confirmation-dialog__message">{{ message }}</p>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="confirmation-dialog__actions" align="end">
+    <button mat-button type="button" (click)="onCancel()">
+      {{ cancelText }}
+    </button>
+    <button
+      mat-flat-button
+      type="button"
+      [color]="type === 'error' ? 'warn' : 'primary'"
+      (click)="onConfirm()"
+      cdkFocusInitial
+    >
+      {{ confirmText }}
+    </button>
+  </mat-dialog-actions>
+</div>

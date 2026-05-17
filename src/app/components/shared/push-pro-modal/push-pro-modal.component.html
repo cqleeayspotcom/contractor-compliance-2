@@ -1,0 +1,66 @@
+<div class="push-pro">
+
+  <!-- Bouton close discret en haut à droite -->
+  <button
+    type="button"
+    class="push-pro__close"
+    (click)="onDismiss()"
+    aria-label="Fermer"
+  >
+    <mat-icon>close</mat-icon>
+  </button>
+
+  <!-- Header avec dégradé -->
+  <div class="push-pro__header">
+    <div class="push-pro__sparkle">✨</div>
+    <h2 class="push-pro__title">Passez au Plan Pro</h2>
+    <p class="push-pro__subtitle">Débloquez le traitement premium de vos factures</p>
+  </div>
+
+  <!-- Corps du modal -->
+  <mat-dialog-content class="push-pro__body">
+
+    <!-- 3 arguments valeur -->
+    <ul class="push-pro__benefits">
+      @for (benefit of benefits; track benefit.title) {
+        <li class="push-pro__benefit">
+          <span class="push-pro__benefit-emoji" aria-hidden="true">{{ benefit.emoji }}</span>
+          <div class="push-pro__benefit-text">
+            <strong>{{ benefit.title }}</strong>
+            <span>{{ benefit.description }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+
+    <!-- Prix mis en valeur -->
+    <div class="push-pro__price">
+      <span class="push-pro__price-amount">{{ priceEur }} €</span>
+      <span class="push-pro__price-period">/ mois</span>
+    </div>
+    <p class="push-pro__price-note">Sans engagement · Résiliable à tout moment</p>
+
+  </mat-dialog-content>
+
+  <!-- Boutons d'action -->
+  <mat-dialog-actions class="push-pro__actions">
+    <button
+      mat-button
+      type="button"
+      class="push-pro__btn push-pro__btn--secondary"
+      (click)="onDismiss()"
+    >
+      Plus tard
+    </button>
+    <button
+      mat-raised-button
+      type="button"
+      class="push-pro__btn push-pro__btn--primary"
+      (click)="onUpgrade()"
+    >
+      <mat-icon>rocket_launch</mat-icon>
+      Passer au Pro
+    </button>
+  </mat-dialog-actions>
+
+</div>

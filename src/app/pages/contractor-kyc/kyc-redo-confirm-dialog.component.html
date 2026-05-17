@@ -1,0 +1,33 @@
+<h2 mat-dialog-title class="redo-dialog__title">
+  <mat-icon class="redo-dialog__icon">warning_amber</mat-icon>
+  <span>Refaire la vérification d'identité ?</span>
+</h2>
+
+<mat-dialog-content class="redo-dialog__body">
+  <p class="redo-dialog__lead">
+    Votre identité est <strong>déjà vérifiée</strong>. Refaire la vérification n'est
+    utile que si vos données d'identité ont changé (nouveau nom, nouvelle pièce
+    d'identité) ou si vous rencontrez un problème avéré.
+  </p>
+
+  <div class="redo-dialog__warning">
+    <mat-icon>info</mat-icon>
+    <div>
+      <strong>Ce que ça change tout de suite :</strong>
+      <ul>
+        <li>Votre statut « vérifié » est <strong>suspendu</strong> le temps de la nouvelle session.</li>
+        <li>Vos missions en cours ou à venir sont <strong>bloquées</strong> jusqu'à la nouvelle validation.</li>
+        <li>Si la nouvelle session échoue, vous devrez recommencer pour débloquer votre compte.</li>
+      </ul>
+    </div>
+  </div>
+
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="redo-dialog__actions">
+  <button mat-button (click)="cancel()">Annuler</button>
+  <button mat-raised-button color="warn" (click)="confirm()">
+    <mat-icon>refresh</mat-icon>
+    Je refais quand même
+  </button>
+</mat-dialog-actions>

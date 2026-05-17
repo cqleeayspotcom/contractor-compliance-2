@@ -1,0 +1,53 @@
+<div class="status-banner" [class.degraded]="isDegraded()">
+  <header class="status-banner__head">
+    <h3>Statut contractor</h3>
+    @if (phone()) {
+      <button mat-button (click)="onProfileClick()">
+        <mat-icon>open_in_new</mat-icon> Profil
+      </button>
+    }
+  </header>
+
+  <p class="identity">
+    @if (contractorName()) { <strong>{{ contractorName() }}</strong> }
+    @if (siren()) { <span> · SIREN {{ siren() }}</span> }
+    @if (phone()) { <span> · 📞 {{ phone() | phoneDisplay }}</span> }
+  </p>
+
+  @let s = status();
+  @if (s) {
+    <p class="kpis">
+      @if (s.is_compliant) {
+        <span class="ok"><mat-icon>check_circle</mat-icon> {{ s.compliance_score.toFixed(0) }}% compliant</span>
+      } @else {
+        <span class="ko"><mat-icon>error</mat-icon> Compliance {{ s.compliance_score.toFixed(0) }}%</span>
+      }
+
+      @if (s.kyc_status === 'approved') {
+        <span class="ok"><mat-icon>check_circle</mat-icon> KYC OK</span>
+      } @else if (s.kyc_status === 'expired' || s.kyc_status === 'rejected') {
+        <span class="ko"><mat-icon>error</mat-icon> KYC {{ s.kyc_status }}</span>
+      } @else {
+        <span class="muted">KYC {{ s.kyc_status }}</span>
+      }
+
+      <span class="muted">Plan {{ s.plan === 'paid' || s.plan === 'pro' ? 'Pro' : 'Free' }}</span>
+    </p>
+
+    <p class="revenue">
+      💰 CA cumulé : <strong>{{ s.revenue_total_paid_eur | currency:'EUR':'symbol':'1.0-0':'fr' }}</strong>
+      @if (s.last_invoice_at) {
+        <span class="muted"> · dernière facture {{ s.last_invoice_at | date:'dd/MM/yyyy' }}</span>
+      }
+    </p>
+
+    @if (warnings().length > 0) {
+      <p class="warnings">
+        <mat-icon>warning</mat-icon>
+        @for (w of warnings(); track w; let last = $last) {
+          <span>{{ w }}{{ !last ? ' · ' : '' }}</span>
+        }
+      </p>
+    }
+  }
+</div>

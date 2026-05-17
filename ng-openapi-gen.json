@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+  "input": "openapi/contractor-compliance.openapi.yaml",
+  "output": "src/app/api",
+  "ignoreUnusedModels": false,
+  "removeStaleFiles": true,
+  "servicePrefix": "",
+  "serviceSuffix": "ApiService",
+  "modelPrefix": "",
+  "modelSuffix": "",
+  "module": false,
+  "enumStyle": "upper",
+  "skipJsonSuffix": false,
+  "useTempDir": false,
+  "customizedResponseType": {}
+}

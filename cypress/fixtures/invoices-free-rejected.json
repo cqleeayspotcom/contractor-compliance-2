@@ -1,0 +1,82 @@
+{
+  "success": true,
+  "data": [
+    {
+      "uuid": "inv-manual-001",
+      "invoice_number": "FAC-2026-M001",
+      "status": "paid",
+      "amount_ht": 1041.67,
+      "amount_ttc": 1250.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-042",
+      "issued_at": "2026-04-02T10:00:00Z",
+      "source": "manual_upload",
+      "mission": {
+        "title": "Diagnostic amiante avant travaux",
+        "operation_type": "DAAT",
+        "city": "Paris",
+        "address": "12 rue de la Paix",
+        "visit_date": "2026-03-28T09:00:00Z",
+        "mid": "MIS-2026-042"
+      },
+      "created_at": "2026-04-01T10:00:00Z"
+    },
+    {
+      "uuid": "inv-manual-002",
+      "invoice_number": "FAC-2026-M002",
+      "status": "rejected",
+      "amount_ht": 741.67,
+      "amount_ttc": 890.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-043",
+      "issued_at": "2026-04-10T10:00:00Z",
+      "source": "manual_upload",
+      "is_rejected": true,
+      "rejection_reason": "low_confidence",
+      "rejection_details": ["OCR confidence trop basse (0.42)", "SIRET non detectable"],
+      "pages_count": 2,
+      "mission": {
+        "title": "Diagnostic plomb",
+        "operation_type": "DPB",
+        "city": "Lyon",
+        "address": "5 avenue des Champs",
+        "visit_date": "2026-04-05T14:00:00Z",
+        "mid": "MIS-2026-043"
+      },
+      "created_at": "2026-04-10T10:00:00Z"
+    },
+    {
+      "uuid": "inv-manual-003",
+      "invoice_number": "FAC-2026-M003",
+      "status": "validating",
+      "amount_ht": 583.33,
+      "amount_ttc": 700.00,
+      "currency": "EUR",
+      "mission_ref": "CASE-2026-044",
+      "issued_at": "2026-04-14T10:00:00Z",
+      "source": "manual_upload",
+      "mission": {
+        "title": "Diagnostic termites",
+        "operation_type": "DTE",
+        "city": "Marseille",
+        "address": "8 boulevard du Port",
+        "visit_date": "2026-04-11T10:00:00Z",
+        "mid": "MIS-2026-044"
+      },
+      "created_at": "2026-04-14T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "current_page": 1,
+    "total": 3,
+    "per_page": 15,
+    "last_page": 1,
+    "stats": {
+      "total_invoices": 3,
+      "total_amount_ttc": 2840.00,
+      "paid": 1,
+      "pending": 1,
+      "rejected": 1
+    }
+  }
+}

@@ -1,0 +1,22 @@
+<header class="shell__header">
+  <h2><ng-content select="[slot=title]">{{ title }}</ng-content></h2>
+  <button mat-icon-button (click)="close.emit()" aria-label="Fermer">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<div class="shell__body">
+  @if (loading) {
+    <div class="shell__loading"><mat-spinner diameter="32"></mat-spinner></div>
+  } @else if (error) {
+    <div class="shell__error">
+      <mat-icon>error</mat-icon><span>{{ error }}</span>
+    </div>
+  } @else {
+    <ng-content></ng-content>
+  }
+</div>
+
+<footer class="shell__footer">
+  <ng-content select="[slot=footer]"></ng-content>
+</footer>

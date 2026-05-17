@@ -1,0 +1,105 @@
+<app-admin-dialog-shell
+  [loading]="loading()"
+  [error]="error()"
+  (close)="close()">
+
+  <div slot="title">
+    <mat-icon>engineering</mat-icon>
+    @if (detail(); as d) {
+      <code>{{ d.mission_ref }}</code>
+      <span class="status-pill">{{ missionStatusLabel(d) }}</span>
+      @if (d.snapshot?.operation_type) {
+        <span class="op-pill">{{ d.snapshot?.operation_type }}</span>
+      }
+    }
+  </div>
+
+  @if (detail(); as d) {
+    <section class="kpi-bar">
+      <app-kpi-tile icon="euro" label="Attendu"
+        [value]="(d.kpis.expected_ttc | number:'1.2-2') + ' €'"></app-kpi-tile>
+      <app-kpi-tile icon="receipt" label="Total facturé"
+        [value]="(d.kpis.total_invoiced_ttc | number:'1.2-2') + ' €'"
+        [sub]="d.kpis.deviation_pct !== null ? 'écart ' + d.kpis.deviation_pct + '%' : null"
+        [tone]="d.kpis.deviation_pct !== null && (d.kpis.deviation_pct > 5 || d.kpis.deviation_pct < -5) ? 'warning' : 'neutral'"></app-kpi-tile>
+      <app-kpi-tile icon="restart_alt" label="Reopens"
+        [value]="d.kpis.reopens_count.toString()"
+        [tone]="d.kpis.reopens_count > 0 ? 'warning' : 'neutral'"></app-kpi-tile>
+      <app-kpi-tile icon="schedule" label="Âge mission"
+        [value]="d.kpis.age_days !== null ? (d.kpis.age_days + ' j') : '—'"
+        [tone]="d.kpis.age_days !== null && d.kpis.age_days > 30 ? 'warning' : 'neutral'"></app-kpi-tile>
+    </section>
+
+    @if (d.anomalies.length > 0) {
+      <section class="anomalies">
+        @for (a of d.anomalies; track a.code) {
+          <app-anomaly-chip [level]="a.level" [label]="a.label"></app-anomaly-chip>
+        }
+      </section>
+    }
+
+    <section class="grid">
+      <div class="col-left">
+        @if (d.snapshot; as s) {
+          <div class="card">
+            <h3><mat-icon>map</mat-icon> Snapshot tuita.fr</h3>
+            <p><strong>{{ s.mission_title || '—' }}</strong></p>
+            <p>{{ s.city || '—' }} · {{ s.operation_type || '—' }}</p>
+            <p>Montant attendu : <strong>{{ s.expected_amount_ttc | number:'1.2-2' }} €</strong></p>
+            <p>Terminée le : {{ s.completed_at ? (s.completed_at | date:'medium') : '—' }}</p>
+          </div>
+        }
+
+        @if (d.contractor; as c) {
+          <app-contractor-mini-card
+            [contractor]="c"
+            (openProfile)="onContractorClick($event)"></app-contractor-mini-card>
+        }
+      </div>
+
+      <div class="col-right">
+        <div class="card">
+          <h3><mat-icon>receipt_long</mat-icon> Factures liées ({{ d.invoices.length }})</h3>
+          @if (d.invoices.length === 0) {
+            <p class="muted">Aucune facture enregistrée pour cette mission.</p>
+          } @else {
+            <table class="invoice-table">
+              <thead>
+                <tr>
+                  <th>N°</th><th>Statut</th><th>Montant</th><th>Écart</th>
+                  <th>Validations</th><th>Webhooks</th><th>Créée le</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (inv of d.invoices; track inv.uuid) {
+                  <tr class="invoice-row" (click)="onInvoiceClick(inv.uuid)">
+                    <td><code>{{ inv.number || inv.uuid.slice(0, 8) }}</code></td>
+                    <td><app-invoice-status-chip [status]="inv.status"></app-invoice-status-chip></td>
+                    <td>{{ inv.amount_ttc | number:'1.2-2' }} €</td>
+                    <td><app-deviation-badge [deviationPct]="inv.deviation_pct"></app-deviation-badge></td>
+                    <td><app-validator-chips [validations]="inv.validations"></app-validator-chips></td>
+                    <td><app-webhook-status-dots [webhooks]="inv.webhooks"></app-webhook-status-dots></td>
+                    <td>{{ inv.created_at | date:'shortDate' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    </section>
+  }
+
+  <div slot="footer">
+    @if (detail()?.contractor; as c) {
+      <button mat-stroked-button (click)="onContractorClick(c.uuid)">
+        <mat-icon>person</mat-icon> Fiche contractor
+      </button>
+    }
+    <button mat-flat-button color="primary" disabled
+            data-test="tuita-live"
+            matTooltip="Bientôt — endpoint live tuita.fr en cours de spécification">
+      <mat-icon>open_in_new</mat-icon> Détails côté tuita.fr
+    </button>
+  </div>
+</app-admin-dialog-shell>

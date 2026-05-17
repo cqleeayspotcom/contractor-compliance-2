@@ -1,0 +1,94 @@
+<div
+  *ngIf="isVisible"
+  [class]="alertClasses"
+  [attr.role]="ariaRole"
+  [attr.aria-live]="ariaLive"
+>
+  <!-- Alert Icon -->
+  <div class="smart-alert-icon">
+    <tuita-icon [icon]="iconName" size="lg"></tuita-icon>
+  </div>
+
+  <!-- Alert Content -->
+  <div class="smart-alert-content">
+    <!-- Title -->
+    <h4 *ngIf="title" class="smart-alert-title">
+      {{ title }}
+    </h4>
+
+    <!-- Message -->
+    <p class="smart-alert-message">
+      {{ message }}
+    </p>
+
+    <!-- Days Remaining Countdown -->
+    <div *ngIf="daysRemaining !== null" class="smart-alert-countdown">
+      <div class="countdown-header">
+        <tuita-icon icon="schedule" size="sm" class="countdown-icon"></tuita-icon>
+        <span class="countdown-text">
+          {{ daysRemaining === 0 ? 'Expires today' : daysRemaining === 1 ? '1 day remaining' : daysRemaining + ' days remaining' }}
+        </span>
+      </div>
+      <div class="countdown-progress">
+        <div
+          class="progress-bar"
+          [ngClass]="progressColor"
+          [style.width.%]="progressPercentage"
+        ></div>
+      </div>
+    </div>
+
+    <!-- Details Section -->
+    <div *ngIf="details" class="smart-alert-details">
+      <button
+        (click)="toggleDetails()"
+        class="details-toggle"
+        type="button"
+      >
+        <tuita-icon
+          [icon]="isDetailsExpanded ? 'expand-less' : 'expand-more'"
+          size="sm"
+        ></tuita-icon>
+        <span>{{ isDetailsExpanded ? 'Hide details' : 'Show details' }}</span>
+      </button>
+      <div *ngIf="isDetailsExpanded" class="details-content">
+        {{ details }}
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div *ngIf="actions.length > 0" class="smart-alert-actions">
+      <button
+        *ngFor="let action of actions"
+        (click)="onActionClick(action)"
+        [class.primary-action]="action.primary"
+        [class.secondary-action]="!action.primary"
+        class="action-button"
+        type="button"
+      >
+        {{ action.label }}
+      </button>
+    </div>
+
+    <!-- Don't Show Again Checkbox -->
+    <label *ngIf="showDonotShowAgain && !persistent" class="dont-show-again">
+      <input
+        type="checkbox"
+        [(ngModel)]="dontShowAgain"
+        [disabled]="persistent"
+      />
+      <span>Don't show this again</span>
+    </label>
+  </div>
+
+  <!-- Dismiss Button -->
+  <button
+    *ngIf="dismissible && !persistent"
+    (click)="dismiss()"
+    class="smart-alert-dismiss"
+    type="button"
+    [attr.aria-label]="'Dismiss ' + (title || 'alert')"
+  >
+    <tuita-icon icon="close" size="md"></tuita-icon>
+  </button>
+</div>

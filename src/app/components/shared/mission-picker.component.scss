@@ -1,0 +1,46 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+.mission-picker__field {
+  width: 100%;
+}
+
+.mission-picker__locked {
+  display: flex;
+  gap: 16px;
+
+  mat-form-field {
+    flex: 1;
+  }
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
+}
+
+.mission-option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+
+  &__line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+  }
+
+  &__price {
+    color: #1976d2;
+    font-weight: 600;
+  }
+
+  &__sub {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+  }
+}

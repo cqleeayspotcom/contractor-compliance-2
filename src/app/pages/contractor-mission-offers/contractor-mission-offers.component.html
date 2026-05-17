@@ -1,0 +1,91 @@
+<section class="offers">
+  <header class="offers__header">
+    <div class="offers__title-row">
+      <app-back-button />
+      <h1 class="offers__title">
+        <mat-icon aria-hidden="true">assignment</mat-icon>
+        Offres disponibles
+      </h1>
+    </div>
+    <p class="offers__lede">Choisis tes prochains chantiers.</p>
+  </header>
+
+  <!-- FIX-042 — Bandeau « Voici des chantiers... » retiré (doublon avec
+       le sous-titre "Choisis tes prochains chantiers" + la tuile dashboard
+       de l'étape compliance). On garde uniquement le bouton "Continuer mon
+       dossier" pour les contractors pas encore fully_verified, en chip
+       discret en haut. -->
+  @if (showVerificationAlert()) {
+    <a mat-stroked-button color="primary" routerLink="/documents/upload"
+       class="offers__verify-cta-pill" data-testid="verify-alert">
+      <mat-icon>arrow_forward</mat-icon>
+      Finis ton dossier pour postuler
+    </a>
+  }
+
+  @if (isLoading()) {
+    <div class="offers__skeleton" aria-busy="true">
+      <div class="offers__skeleton-card"></div>
+      <div class="offers__skeleton-card"></div>
+      <div class="offers__skeleton-card"></div>
+    </div>
+  } @else if (errorMessage()) {
+    <div class="offers__empty-state offers__empty-state--error">
+      <div class="offers__empty-icon offers__empty-icon--error">
+        <mat-icon aria-hidden="true">cloud_off</mat-icon>
+      </div>
+      <h2 class="offers__empty-title">Connexion impossible</h2>
+      <p class="offers__empty-text">{{ errorMessage() }}</p>
+      <button mat-flat-button color="primary" data-testid="retry" (click)="retry()" class="offers__empty-cta">
+        Réessayer
+      </button>
+    </div>
+  } @else if (isEmpty()) {
+    <div class="offers__empty-state">
+      <div class="offers__empty-icon">
+        <mat-icon aria-hidden="true">inbox</mat-icon>
+      </div>
+      <h2 class="offers__empty-title">Aucune offre pour le moment</h2>
+      <p class="offers__empty-text">Reviens dans quelques heures, de nouveaux chantiers arrivent souvent.</p>
+    </div>
+  } @else {
+    <ul class="offers__list">
+      @for (offer of offers(); track trackByRef($index, offer)) {
+        <li>
+          <a class="offers__card" [routerLink]="['/missions', offer.mission_ref]">
+            <div class="offers__card-head">
+              <span class="offers__badge offers__badge--{{ offer.category }}">{{ offer.category }}</span>
+              @if (expiresSoon(offer)) {
+                <span class="offers__expires">Expire bientôt</span>
+              }
+            </div>
+            <h2 class="offers__card-title">{{ offer.title }}</h2>
+            <p class="offers__card-ref">{{ offer.mission_ref }}</p>
+            <p class="offers__card-line">
+              <mat-icon>place</mat-icon>
+              {{ offer.address.city }} - {{ offer.address.street }}, {{ offer.address.postal_code }}
+            </p>
+            <p class="offers__card-line">
+              <mat-icon>event</mat-icon>
+              {{ formatDate(offer.scheduled_at) }}
+            </p>
+            @if (offer.expected_amount_ttc) {
+              <p class="offers__card-line offers__card-amount">
+                <mat-icon>euro</mat-icon>
+                {{ offer.expected_amount_ttc | number:'1.2-2' }} €
+              </p>
+            }
+            <!-- FIX-043 — Footer CTA explicite "Voir détails →" pour signaler
+                 que la card est cliquable. Sans cet indicateur, l'artisan ne
+                 savait pas qu'il pouvait toucher la card pour ouvrir le détail
+                 + bouton accepter/refuser. -->
+            <span class="offers__card-cta" aria-hidden="true">
+              Voir détails
+              <mat-icon>arrow_forward</mat-icon>
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  }
+</section>

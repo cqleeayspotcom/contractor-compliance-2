@@ -1,0 +1,409 @@
+@if (isLoading()) {
+  <div class="page-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+} @else {
+  <div class="page">
+
+    <!-- Bascule onglets factures mission / factures libres -->
+    <nav class="invoice-tabs">
+      <a routerLink="/invoices" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Mes factures mission</a>
+      <a routerLink="/invoices/free" routerLinkActive="active">Mes factures libres</a>
+    </nav>
+
+    <!-- Header — FIX-047 : bouton "Ajouter une facture" déplacé à droite du
+         titre pour cohérence avec /invoices/free + plus d'espace utile sous
+         les chips filter. Sur mobile, devient un FAB icône-seule (+). -->
+    <div class="page__header">
+      <div class="page__header-row">
+        <div class="page__title-row">
+          <app-back-button />
+          <h1>Mes factures</h1>
+        </div>
+        @if (!isPaidPlan && !showUploadForm()) {
+          <button mat-flat-button color="primary"
+                  class="page__header-add-cta"
+                  (click)="toggleUploadForm()"
+                  aria-label="Ajouter une facture">
+            <mat-icon>add</mat-icon>
+            <span class="page__header-add-cta-label">Ajouter une facture</span>
+          </button>
+        }
+      </div>
+      <p class="page__subtitle">
+        @if (isPaidPlan) {
+          Tes factures sont générées automatiquement après chaque mission.
+        } @else {
+          Gère tes factures pour chaque mission terminée.
+        }
+      </p>
+    </div>
+
+    <!-- Filter chips — cycle de vie Invoice (cf. CLAUDE.md) -->
+    <div class="filter-chips" role="tablist" aria-label="Filtrer les factures">
+      <button type="button" class="chip" (click)="setFilter('all')" [class.chip--active]="activeFilter() === 'all'">
+        Toutes <span class="chip__count">{{ stats().total_invoices }}</span>
+      </button>
+      <button type="button" class="chip chip--warn" (click)="setFilter('pending_payment_validation')" [class.chip--active]="activeFilter() === 'pending_payment_validation'">
+        Validation <span class="chip__count">{{ stats().pending_payment_validation }}</span>
+      </button>
+      <button type="button" class="chip chip--progress" (click)="setFilter('ready_to_pay')" [class.chip--active]="activeFilter() === 'ready_to_pay'">
+        Bon pour paiement <span class="chip__count">{{ stats().ready_to_pay }}</span>
+      </button>
+      <button type="button" class="chip chip--progress" (click)="setFilter('payment_in_progress')" [class.chip--active]="activeFilter() === 'payment_in_progress'">
+        Virement <span class="chip__count">{{ stats().payment_in_progress }}</span>
+      </button>
+      <button type="button" class="chip chip--ok" (click)="setFilter('paid')" [class.chip--active]="activeFilter() === 'paid'">
+        Payées <span class="chip__count">{{ stats().paid }}</span>
+      </button>
+      @if (stats().rejected > 0) {
+        <button type="button" class="chip chip--danger" (click)="setFilter('rejected')" [class.chip--active]="activeFilter() === 'rejected'">
+          Rejetées <span class="chip__count">{{ stats().rejected }}</span>
+        </button>
+      }
+    </div>
+
+    <!-- Upload form (plan gratuit) ou reupload -->
+    @if (showUploadForm()) {
+      <div class="upload-section">
+        <div class="upload-section__header">
+          <h2>
+            @if (reuploadingInvoice()) {
+              Corriger la facture
+            } @else {
+              Envoyer une facture
+            }
+          </h2>
+          <button mat-icon-button (click)="toggleUploadForm()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        @if (reuploadingInvoice()) {
+          <div class="guide-banner">
+            <mat-icon>info</mat-icon>
+            <div>
+              <strong>Votre facture n'a pas passé la vérification.</strong>
+              Assurez-vous que le PDF est lisible, que le SIRET, les montants (HT + TVA 20% = TTC) et le numéro de facture sont bien présents.
+            </div>
+          </div>
+        }
+
+        <div class="upload-form">
+          @if (uploadFile()) {
+            <div class="upload-form__file-preview">
+              <mat-icon>insert_drive_file</mat-icon>
+              <span>{{ uploadFile()!.name }}</span>
+              <button mat-icon-button (click)="uploadFile.set(null)">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          } @else {
+            <div class="drop-zone"
+                 (dragover)="$event.preventDefault()"
+                 (drop)="onDrop($event)"
+                 (click)="fileInput.click()">
+              <mat-icon>cloud_upload</mat-icon>
+              <p>Glissez votre facture PDF ici</p>
+              <span>ou cliquez pour parcourir</span>
+            </div>
+            <input #fileInput type="file" accept=".pdf" hidden (change)="onFileSelected($event)">
+          }
+
+          @if (showUploadForm()) {
+            <app-mission-picker
+              [initialRef]="hasQueryParams || reuploadingInvoice() ? missionRef : null"
+              [initialAmount]="hasQueryParams || reuploadingInvoice() ? (amountTtc ? +amountTtc : null) : null"
+              [locked]="!!reuploadingInvoice()"
+              [allowClear]="!hasQueryParams && !reuploadingInvoice()"
+              (selectionChange)="onMissionPicked($event)">
+            </app-mission-picker>
+          }
+
+          @if (errorMessage()) {
+            <div class="error-msg">
+              <mat-icon>error_outline</mat-icon>
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <button mat-raised-button color="primary" class="upload-form__btn"
+                  [disabled]="!uploadFile() || !missionRef || !amountTtc || isUploading()"
+                  (click)="uploadInvoice()">
+            @if (isUploading()) {
+              <mat-spinner diameter="20"></mat-spinner> Envoi...
+            } @else {
+              <mat-icon>cloud_upload</mat-icon>
+              {{ reuploadingInvoice() ? 'Soumettre la correction' : 'Envoyer' }}
+            }
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- FIX-047 — Bouton "Ajouter une facture" déplacé dans le header
+         (cf. plus haut). Section ici intentionnellement vide. -->
+
+
+    <!-- VERDICT — gros bloc clair affiché juste après l'envoi.
+         Pensé pour artisan BTP : gros pictogramme, langage simple, gros bouton. -->
+    @if (lastResponseUuid(); as respUuid) {
+      @for (inv of invoices(); track inv.uuid) {
+        @if (inv.uuid === respUuid) {
+          <div class="verdict-card"
+               [class.verdict-card--ko]="lastResponseStatus() === 'rejected'"
+               [class.verdict-card--ok]="lastResponseStatus() === 'accepted'"
+               role="status"
+               aria-live="polite">
+            <div class="verdict-card__icon" aria-hidden="true">
+              <mat-icon>{{ lastResponseStatus() === 'rejected' ? 'cancel' : 'check_circle' }}</mat-icon>
+            </div>
+            <div class="verdict-card__body">
+              @if (lastResponseStatus() === 'rejected') {
+                <h2 class="verdict-card__title">Votre facture n'a pas été acceptée</h2>
+                <p class="verdict-card__lead">{{ rejectionCopy(inv.rejection_reason).title }}</p>
+                <p class="verdict-card__desc">{{ rejectionCopy(inv.rejection_reason).description }}</p>
+                @if (rejectionDetailsList(inv.rejection_details); as details) {
+                  @if (details.length) {
+                    <ul class="verdict-card__details">
+                      @for (detail of details; track detail) {
+                        <li>{{ detail }}</li>
+                      }
+                    </ul>
+                  }
+                }
+                <div class="verdict-card__actions">
+                  <button mat-flat-button color="warn" class="verdict-card__cta"
+                          (click)="startReupload(inv); dismissLastResponseHighlight()">
+                    <mat-icon>refresh</mat-icon>
+                    Corriger et renvoyer
+                  </button>
+                  <button mat-button (click)="dismissLastResponseHighlight()">
+                    Fermer
+                  </button>
+                </div>
+              } @else {
+                <h2 class="verdict-card__title">Facture envoyée à Tuita</h2>
+                <p class="verdict-card__lead">Tout est bon, on s'occupe du reste.</p>
+                <p class="verdict-card__desc">
+                  Tuita vérifie votre facture et lance le virement dès validation.
+                  Vous serez prévenu à chaque étape.
+                </p>
+                <div class="verdict-card__actions">
+                  <button mat-button (click)="dismissLastResponseHighlight()">
+                    OK, fermer
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      }
+    }
+
+    <!-- Liste des factures -->
+    @if (filteredInvoices().length === 0) {
+      <div class="empty-state">
+        <mat-icon aria-hidden="true">receipt_long</mat-icon>
+        @if (activeFilter() === 'all') {
+          <p>Aucune facture pour le moment</p>
+          <span>Vos factures apparaîtront ici après vos missions.</span>
+        } @else {
+          <p>Aucune facture dans cette catégorie</p>
+        }
+      </div>
+    } @else {
+      <div class="invoice-list">
+        @for (inv of filteredInvoices(); track trackByUuid($index, inv)) {
+          <div class="invoice-card invoice-card--clickable"
+               [attr.data-invoice-uuid]="inv.uuid"
+               [class.invoice-card--rejected]="inv.status === 'rejected'"
+               [class.invoice-card--validating]="inv.status === 'validating'"
+               [class.invoice-card--just-responded]="lastResponseUuid() === inv.uuid"
+               (click)="openInvoice(inv)"
+               role="button"
+               tabindex="0"
+               [attr.aria-label]="'Facture ' + inv.invoice_number + ' - ' + validatingPhaseLabel(inv)">
+
+            <!-- Top row: status + download -->
+            <div class="invoice-card__top">
+              <div class="invoice-card__status">
+                @if (inv.status === 'validating') {
+                  <mat-spinner diameter="20" strokeWidth="3" aria-label="Analyse en cours"></mat-spinner>
+                } @else {
+                  <mat-icon [class]="'status-icon ' + statusClass(inv.status)" aria-hidden="true">{{ statusIcon(inv.status) }}</mat-icon>
+                }
+                <span class="badge" [class]="statusClass(inv.status)">{{ validatingPhaseLabel(inv) }}</span>
+              </div>
+              <div class="invoice-card__actions">
+                @if (inv.source === 'auto_generated') {
+                  <span class="source-tag">Auto</span>
+                }
+                @if (inv.status !== 'rejected' && inv.status !== 'validating') {
+                  <button mat-icon-button class="download-btn"
+                          (click)="downloadPdf(inv); $event.stopPropagation()"
+                          aria-label="Télécharger le PDF">
+                    <mat-icon>download</mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+
+            <!-- Invoice info -->
+            <div class="invoice-card__main">
+              <span class="invoice-card__number">{{ inv.invoice_number }}</span>
+              <span class="invoice-card__amount">{{ formatAmount(inv.amount_ttc) }}</span>
+            </div>
+
+            <!-- Détail des montants (HT / TVA) -->
+            @if (inv.amount_ht || inv.amount_tva) {
+              <div class="invoice-card__amounts">
+                <span>HT : {{ formatAmount(inv.amount_ht) }}</span>
+                @if (inv.amount_tva) {
+                  <span>TVA : {{ formatAmount(inv.amount_tva) }}</span>
+                }
+                @if (inv.pages_count) {
+                  <span>{{ inv.pages_count }} page{{ inv.pages_count > 1 ? 's' : '' }}</span>
+                }
+              </div>
+            }
+
+            <!-- Mission context -->
+            @if (inv.mission) {
+              <div class="invoice-card__mission">
+                <mat-icon aria-hidden="true">{{ operationIcon(inv.mission.operation_type) }}</mat-icon>
+                <div class="invoice-card__mission-info">
+                  <span class="invoice-card__mission-title">{{ inv.mission.title }}</span>
+                  <span class="invoice-card__mission-detail">{{ inv.mission.city }} - {{ formatDate(inv.mission.visit_date) }}</span>
+                </div>
+              </div>
+            } @else if (inv.mission_ref) {
+              <div class="invoice-card__mission invoice-card__mission--simple">
+                <mat-icon aria-hidden="true">work</mat-icon>
+                <span>Mission {{ inv.mission_ref }}</span>
+              </div>
+            }
+
+            <!-- Date -->
+            <div class="invoice-card__date">
+              <mat-icon aria-hidden="true">event</mat-icon>
+              <span>{{ formatDate(inv.issued_at) }}</span>
+            </div>
+
+            <!-- Validation Tuita en cours (pas de détail par validateur — le contractor n'a pas à connaître le pipeline interne) -->
+            @if (inv.status === 'pending_payment_validation') {
+              <div class="invoice-card__validation-progress" role="status" aria-label="Validation Tuita en cours">
+                <mat-icon aria-hidden="true">verified</mat-icon>
+                <span>Validation Tuita en cours</span>
+              </div>
+            }
+
+            <!-- Verdict REJECTED : copy user-friendly + détails machine -->
+            @if (inv.status === 'rejected') {
+              <div class="invoice-card__rejection" role="status">
+                <div class="invoice-card__rejection-head">
+                  <mat-icon aria-hidden="true">error_outline</mat-icon>
+                  <strong>{{ rejectionCopy(inv.rejection_reason).title }}</strong>
+                </div>
+                <p class="invoice-card__rejection-desc">{{ rejectionCopy(inv.rejection_reason).description }}</p>
+                @if (rejectionDetailsList(inv.rejection_details); as details) {
+                  @if (details.length) {
+                    <ul class="invoice-card__rejection-details">
+                      @for (detail of details; track detail) {
+                        <li>{{ detail }}</li>
+                      }
+                    </ul>
+                  }
+                }
+                <button mat-raised-button color="warn"
+                        class="invoice-card__rejection-btn"
+                        (click)="startReupload(inv); $event.stopPropagation()">
+                  <mat-icon>refresh</mat-icon>
+                  {{ rejectionCopy(inv.rejection_reason).actionLabel }}
+                </button>
+              </div>
+            }
+
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (totalItems() > perPage()) {
+        <mat-paginator
+          [length]="totalItems()"
+          [pageSize]="perPage()"
+          [pageIndex]="currentPage() - 1"
+          [pageSizeOptions]="[10, 15, 25, 50]"
+          (page)="onPageChange($event)"
+          showFirstLastButtons>
+        </mat-paginator>
+      }
+    }
+
+    <!-- Overlay plein ecran pendant l'upload synchrone (pipeline OCR ~30-90s).
+         Le backend ne renvoie qu'a la fin, donc les etapes sont temporisees
+         cote front pour rassurer l'utilisateur (cf. CLAUDE.md "Upload synchrone"). -->
+    @if (isUploading()) {
+      <div class="upload-overlay" role="dialog" aria-modal="true" aria-live="polite" aria-label="Vérification en cours">
+        <div class="upload-overlay__card">
+          <div class="upload-overlay__icon">
+            <mat-spinner diameter="56" strokeWidth="4"></mat-spinner>
+            <mat-icon class="upload-overlay__icon-glyph">{{ uploadSteps[uploadStep()].icon }}</mat-icon>
+          </div>
+
+          <h2 class="upload-overlay__title">
+            {{ reuploadingInvoice() ? 'Vérification de la correction' : 'Vérification de votre facture' }}
+          </h2>
+          <p class="upload-overlay__subtitle">
+            On lit automatiquement votre facture et on vérifie la cohérence avec votre mission.
+            <strong>Ne fermez pas cette page</strong> - l'analyse prend en général 30 à 90 secondes.
+          </p>
+
+          <ol class="upload-steps" role="list">
+            @for (step of uploadSteps; track $index) {
+              <li class="upload-step"
+                  [class.upload-step--done]="$index < uploadStep()"
+                  [class.upload-step--active]="$index === uploadStep()"
+                  [class.upload-step--pending]="$index > uploadStep()">
+                <div class="upload-step__marker" aria-hidden="true">
+                  @if ($index < uploadStep()) {
+                    <mat-icon>check</mat-icon>
+                  } @else if ($index === uploadStep()) {
+                    <mat-spinner diameter="18" strokeWidth="2"></mat-spinner>
+                  } @else {
+                    <span class="upload-step__dot"></span>
+                  }
+                </div>
+                <span class="upload-step__label">{{ step.label }}</span>
+              </li>
+            }
+          </ol>
+
+          <div class="upload-overlay__elapsed" aria-live="polite">
+            <mat-icon>schedule</mat-icon>
+            <span>{{ formatElapsed(uploadElapsed()) }}</span>
+          </div>
+
+          <p class="upload-overlay__hint">
+            Vous recevrez le verdict directement sur cet écran (acceptée ou raison du rejet).
+          </p>
+        </div>
+      </div>
+    }
+
+    <!-- Push plan pro (plan gratuit uniquement) -->
+    @if (!isPaidPlan) {
+      <div class="pro-banner">
+        <mat-icon>auto_awesome</mat-icon>
+        <div class="pro-banner__content">
+          <strong>Passez au plan Pro</strong>
+          <span>Vos factures sont générées et envoyées automatiquement. Plus besoin d'uploader.</span>
+        </div>
+        <button mat-raised-button color="primary" routerLink="/billing">99 EUR/mois</button>
+      </div>
+    }
+
+  </div>
+}

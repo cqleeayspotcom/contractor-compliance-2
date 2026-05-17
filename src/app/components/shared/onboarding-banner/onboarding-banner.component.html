@@ -1,0 +1,93 @@
+@if (step(); as s) {
+  <section class="onboarding-banner"
+           [class.onboarding-banner--maintenance]="s.kind === 'maintenance'"
+           [class.onboarding-banner--with-video]="hasVideo()"
+           [attr.aria-label]="s.kind === 'onboarding'
+              ? 'Étape ' + s.index + ' sur ' + s.total + ' : ' + s.title
+              : s.title">
+
+    @if (s.video) {
+      <!-- FIX-035 (mobile UX) : on retire `controls` pour ne pas afficher la
+           barre native Chrome (play / 0:00 / volume / fullscreen / 3-dots)
+           qui pollue le rendu mobile. La vidéo joue en autoplay muet, en
+           loop, full-bleed, comme un visuel d'illustration. L'utilisateur
+           peut la mettre en pause / relancer via tap (handler ci-dessous).
+           Le bouton « Revoir la vidéo » dédié reste affiché en fin de
+           lecture pour l'option explicite. -->
+      <div class="onboarding-banner__video-wrap">
+        <video #bannerVideo
+               class="onboarding-banner__video"
+               [src]="s.video"
+               autoplay
+               muted
+               playsinline
+               loop
+               disablePictureInPicture
+               disableRemotePlayback
+               preload="metadata"
+               (play)="videoEnded.set(false)"
+               (ended)="videoEnded.set(true)"
+               (click)="toggleVideoPlayback(bannerVideo)"
+               aria-label="Présentation Tuita"></video>
+
+        @if (videoEnded()) {
+          <button type="button"
+                  class="onboarding-banner__video-replay"
+                  aria-label="Revoir la vidéo"
+                  (click)="replayVideo(bannerVideo)">
+            <mat-icon aria-hidden="true">replay</mat-icon>
+            <span>Revoir la vidéo</span>
+          </button>
+        }
+      </div>
+    }
+
+    <div class="onboarding-banner__content">
+      <div class="onboarding-banner__icon" aria-hidden="true">
+        <mat-icon>{{ s.icon }}</mat-icon>
+      </div>
+
+      <div class="onboarding-banner__body">
+        <p class="onboarding-banner__step">
+          @if (s.kind === 'onboarding') {
+            @if (firstName()) {
+              Bienvenue {{ firstName() }} -
+            }
+            Étape {{ s.index }} sur {{ s.total }}
+          } @else {
+            @if (firstName()) {
+              {{ firstName() }} -
+            }
+            Action requise
+          }
+        </p>
+
+        <!-- Dots intégrés directement sous le label d'étape (pattern Stripe /
+             Linear / Qonto) — l'indicateur de progression vit avec l'info qu'il
+             décrit, pas en orphelin en bas de card. -->
+        @if (s.kind === 'onboarding') {
+          <div class="onboarding-banner__progress" aria-hidden="true">
+            @for (n of [].constructor(s.total); track $index; let i = $index) {
+              @let pos = i + 1;
+              <span class="onboarding-banner__dot"
+                    [class.onboarding-banner__dot--done]="pos < s.index"
+                    [class.onboarding-banner__dot--active]="pos === s.index"></span>
+            }
+          </div>
+        }
+
+        <h2 class="onboarding-banner__title">{{ s.title }}</h2>
+        <p class="onboarding-banner__subtitle">{{ s.subtitle }}</p>
+      </div>
+
+      <a mat-flat-button
+         color="primary"
+         [routerLink]="s.route"
+         class="onboarding-banner__cta">
+        {{ s.cta }}
+        <mat-icon iconPositionEnd>arrow_forward</mat-icon>
+      </a>
+    </div>
+
+  </section>
+}

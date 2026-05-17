@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "data": [
+    {
+      "mid": "MIS-2026-042",
+      "caseNumber": "CASE-2026-042",
+      "missionTitle": "Diagnostic amiante avant travaux",
+      "operationType": "DAAT",
+      "operationTypeLabel": "Diagnostic Amiante Avant Travaux",
+      "price": 1250.00,
+      "targetAddress": "12 rue de la Paix",
+      "city": "Paris",
+      "visitDateConfirmed": "2026-03-28T09:00:00Z",
+      "signedAt": "2026-03-28T17:00:00Z",
+      "canRun": true,
+      "invoice_status": "uploaded"
+    },
+    {
+      "mid": "MIS-2026-043",
+      "caseNumber": "CASE-2026-043",
+      "missionTitle": "Diagnostic plomb",
+      "operationType": "DPB",
+      "operationTypeLabel": "Diagnostic Plomb",
+      "price": 890.00,
+      "targetAddress": "5 avenue des Champs",
+      "city": "Lyon",
+      "visitDateConfirmed": "2026-04-05T14:00:00Z",
+      "signedAt": "2026-04-05T18:00:00Z",
+      "canRun": true,
+      "invoice_status": "uploaded"
+    },
+    {
+      "mid": "MIS-2026-044",
+      "caseNumber": "CASE-2026-044",
+      "missionTitle": "Diagnostic termites",
+      "operationType": "DTE",
+      "operationTypeLabel": "Diagnostic Termites",
+      "price": 700.00,
+      "targetAddress": "8 boulevard du Port",
+      "city": "Marseille",
+      "visitDateConfirmed": "2026-04-11T10:00:00Z",
+      "signedAt": "2026-04-11T17:00:00Z",
+      "canRun": true,
+      "invoice_status": "auto_generated"
+    },
+    {
+      "mid": "MIS-2026-045",
+      "caseNumber": "CASE-2026-045",
+      "missionTitle": "DPE appartement T3",
+      "operationType": "DPE",
+      "operationTypeLabel": "Diagnostic Performance Energetique",
+      "price": 500.00,
+      "targetAddress": "15 rue des Carmes",
+      "city": "Toulouse",
+      "visitDateConfirmed": "2026-04-14T14:00:00Z",
+      "signedAt": "2026-04-14T19:00:00Z",
+      "canRun": true,
+      "invoice_status": "auto_generated"
+    },
+    {
+      "mid": "MIS-2026-046",
+      "caseNumber": "CASE-2026-046",
+      "missionTitle": "Mesurage loi Carrez",
+      "operationType": "CARREZ",
+      "operationTypeLabel": "Mesurage Loi Carrez",
+      "price": 400.00,
+      "targetAddress": "22 cours de l'Intendance",
+      "city": "Bordeaux",
+      "visitDateConfirmed": "2026-04-15T16:00:00Z",
+      "signedAt": "2026-04-15T19:00:00Z",
+      "canRun": true,
+      "invoice_status": "auto_generated"
+    }
+  ],
+  "meta": { "total": 5, "completed": 5, "invoiceable": 0, "invoiced": 5 }
+}

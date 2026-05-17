@@ -1,0 +1,57 @@
+@use '../../../styles/variables' as *;
+
+.tuita-footer {
+  background-color: #ffffff;
+  border-top: 1px solid $t-outline-color;
+  padding: $t-gap-16 0;
+  margin-top: auto;
+
+  &__inner {
+    width: 100%;
+    padding: 0 $t-gap-32;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: $t-gap-12;
+  }
+
+  &__copyright {
+    font-size: $t-body-3;
+    color: $t-color-extra-light;
+  }
+
+  &__links {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-24;
+    flex-wrap: wrap;
+  }
+
+  &__link {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $base-green-600;
+      text-decoration: underline;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .tuita-footer {
+    &__inner {
+      flex-direction: column;
+      text-align: center;
+      padding: 0 $t-gap-16;
+    }
+
+    &__links {
+      justify-content: center;
+      gap: $t-gap-16;
+    }
+  }
+}

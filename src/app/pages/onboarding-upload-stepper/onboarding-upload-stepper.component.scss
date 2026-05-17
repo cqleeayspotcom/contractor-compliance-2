@@ -1,0 +1,1563 @@
+@use '../../../styles/variables' as *;
+
+// ── Animations de guidage (low-literacy : "regarde ici, clique là") ──────
+// #1 Halo pulsant sur la zone à toucher (dropzone, slot vide).
+// #4 Pulse vert sur le bouton submit dès qu'il devient cliquable.
+// #7 Dot actif du stepper qui respire pour ancrer "tu es là".
+@keyframes stepper-dot-breathe {
+  0%, 100% {
+    transform: scale(1.12);
+    box-shadow: 0 4px 14px rgba($t-logo-blue, 0.32),
+                0 0 0 0 rgba($t-logo-blue, 0.35);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow: 0 6px 18px rgba($t-logo-blue, 0.45),
+                0 0 0 8px rgba($t-logo-blue, 0);
+  }
+}
+
+@keyframes stepper-zone-attract {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($t-base-green, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba($t-base-green, 0);
+  }
+}
+
+@keyframes stepper-submit-attract {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba($t-base-green, 0.35),
+                0 0 0 0 rgba($t-base-green, 0.55);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 6px 18px rgba($t-base-green, 0.5),
+                0 0 0 10px rgba($t-base-green, 0);
+  }
+}
+
+@keyframes stepper-submit-arrow {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
+}
+
+// Halo pulsant orange pour les dots du stepper dont le doc expire bientôt
+// ou est déjà expiré — capte l'œil au premier coup d'œil pour qu'un artisan
+// arrivant sur le stepper voie immédiatement quelle pièce renouveler.
+@keyframes stepper-dot-attention {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba($t-base-orange, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba($t-base-orange, 0);
+  }
+}
+
+:host {
+  display: block;
+  background: $t-back-grey-medium;
+  min-height: 100vh;
+}
+
+.stepper {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 16px 48px;
+  font-family: $t-default-font;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  @media (min-width: 768px) {
+    padding: 32px 24px 64px;
+    gap: 24px;
+  }
+
+  // ── Bouton « Revoir la vidéo » ──────────────────────────────────────────
+  // Bouton secondaire placé sous le contenu du step, au-dessus du footer
+  // de navigation. La vidéo elle-même s'affiche en dialog plein-largeur
+  // (OnboardingVideoDialogComponent) — ce bouton sert à la ré-ouvrir.
+  &__replay-video {
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    background: #fff;
+    color: $t-logo-blue;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 120ms ease, border-color 120ms ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      color: $t-logo-blue;
+    }
+
+    &:hover {
+      background: #f9fafb;
+      border-color: $t-logo-blue;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $t-logo-blue;
+      outline-offset: 2px;
+    }
+
+    // Variant épinglée dans le header du step (haut à droite) — supprime le
+    // align-self: center hérité du placement historique et garde le look chip.
+    &--inline {
+      align-self: start;
+      justify-self: end;
+      padding: 8px 14px;
+      font-size: 0.8125rem;
+      background: rgba($t-logo-blue, 0.08);
+      border-color: rgba($t-logo-blue, 0.18);
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        line-height: 18px;
+      }
+
+      &:hover {
+        background: rgba($t-logo-blue, 0.14);
+        border-color: $t-logo-blue;
+      }
+    }
+  }
+
+  // ── Progression (dots cliquables) ────────────────────────────────────────
+  // FIX-034 (mobile) : sur petits écrans, la flexbox wrappait les 5 dots sur
+  // 2 lignes — on force `nowrap` + on réduit la taille des dots + on diminue
+  // l'espacement pour que tout tienne sur une seule ligne propre.
+  &__progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    padding: 14px 18px;
+    background: rgba($t-logo-blue, 0.04);
+    border-radius: 999px;
+
+    @media (max-width: 600px) {
+      flex-wrap: nowrap;
+      gap: 6px;
+      padding: 10px 12px;
+      overflow-x: visible;
+    }
+  }
+
+  // Label "Progression →" avant les pastilles, pour que l'artisan
+  // comprenne au premier coup d'œil que c'est un stepper et pas une
+  // décoration. Sur mobile, on masque le label texte + flèche (les dots
+  // suffisent à comprendre la progression) pour laisser tous les dots
+  // tenir sur 1 seule ligne.
+  &__progress-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 6px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: $t-logo-blue;
+
+    @media (max-width: 600px) {
+      display: none;
+    }
+  }
+
+  &__progress-arrow {
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    color: $t-logo-blue;
+
+    @media (max-width: 600px) {
+      display: none;
+    }
+  }
+
+  &__dot {
+    --dot-bg: rgba($t-logo-blue, 0.08);
+    --dot-color: rgba($t-logo-blue, 0.55);
+    --dot-border: rgba($t-logo-blue, 0.12);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid var(--dot-border);
+    background: var(--dot-bg);
+    color: var(--dot-color);
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease;
+    flex: 0 0 auto;
+
+    @media (max-width: 600px) {
+      width: 38px;
+      height: 38px;
+      font-size: 0.875rem;
+
+      mat-icon {
+        font-size: 20px !important;
+        width: 20px !important;
+        height: 20px !important;
+      }
+    }
+
+    mat-icon {
+      font-size: 26px;
+      width: 26px;
+      height: 26px;
+    }
+
+    &:hover:not(:disabled) {
+      transform: scale(1.08);
+    }
+
+    &--done {
+      --dot-bg: rgba($t-base-green, 0.18);
+      --dot-color: #{darken($t-base-green, 6%)};
+      --dot-border: rgba($t-base-green, 0.55);
+    }
+
+    &--active {
+      --dot-bg: #{$t-logo-blue};
+      --dot-color: #ffffff;
+      --dot-border: #{$t-logo-blue};
+      animation: stepper-dot-breathe 2.4s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        transform: scale(1.12);
+        box-shadow: 0 4px 14px rgba($t-logo-blue, 0.32);
+      }
+    }
+
+    &--rejected {
+      --dot-bg: rgba($t-base-orange, 0.18);
+      --dot-color: #{$t-base-orange};
+      --dot-border: rgba($t-base-orange, 0.55);
+    }
+
+    // Doc verified mais qui expire dans ≤ 30 j. L'icône horloge prime sur
+    // le ✓ (cf. template) — bordure et fond saturés en orange + halo
+    // pulsant pour attirer l'œil au premier scan visuel. L'artisan voit
+    // immédiatement quelle pièce renouveler sans lire les libellés.
+    &--expiring {
+      --dot-bg: rgba($t-base-orange, 0.22);
+      --dot-color: #{darken($t-base-orange, 8%)};
+      --dot-border: #{$t-base-orange};
+      animation: stepper-dot-attention 1.8s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        box-shadow: 0 0 0 4px rgba($t-base-orange, 0.25);
+      }
+    }
+
+    // Doc déjà expiré (status='expired'). Variante plus saturée que
+    // `--expiring` : fond orange plus dense, halo plus appuyé — c'est
+    // bloquant côté tuita.fr (missions coupées), donc on monte d'un cran
+    // l'intensité visuelle pour traduire l'urgence.
+    &--expired {
+      --dot-bg: rgba($t-base-orange, 0.32);
+      --dot-color: #{darken($t-base-orange, 12%)};
+      --dot-border: #{darken($t-base-orange, 6%)};
+      animation: stepper-dot-attention 1.4s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+        box-shadow: 0 0 0 5px rgba($t-base-orange, 0.35);
+      }
+    }
+
+    &--skipped {
+      // Skippé mais pas encore fait — petit pointillé pour distinguer
+      // visuellement de "fait" et de "à faire".
+      border-style: dashed;
+    }
+
+    &--locked {
+      // Étape inaccessible tant que les étapes précédentes ne sont pas
+      // validées (done) OU skippées explicitement (« Je le ferai plus tard »).
+      // Visuel grisé + cadenas pour signaler l'ordre incrémental sans
+      // friction de clic infructueux. Reculer reste toujours autorisé.
+      // Cf. BUG-013 / FIX-009 + commentaire user 2026-05-13.
+      --dot-bg: #f1f4f8;
+      --dot-color: #{rgba($t-logo-blue, 0.32)};
+      --dot-border: #{rgba($t-logo-blue, 0.18)};
+      cursor: not-allowed;
+      opacity: 0.7;
+
+      &:hover {
+        // Pas de feedback hover sur étape verrouillée (cohérence "non
+        // cliquable"). Le tooltip natif (title) reste lui actif et explique
+        // le mécanisme.
+        --dot-bg: #f1f4f8;
+        --dot-color: #{rgba($t-logo-blue, 0.32)};
+        --dot-border: #{rgba($t-logo-blue, 0.18)};
+      }
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+        line-height: 14px;
+      }
+    }
+  }
+
+  // ── Bloc principal de l'étape ────────────────────────────────────────────
+  &__step {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px 20px;
+    box-shadow: 0 1px 2px rgba($t-logo-blue, 0.04), 0 6px 18px rgba($t-logo-blue, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    @media (min-width: 768px) {
+      padding: 32px 28px;
+    }
+  }
+
+  &__step-header {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
+
+    // FIX-033 (mobile) : sur mobile l'utilisateur veut le même placement que
+    // sur PC — bouton « Revoir la vidéo » épinglé en haut à droite. On garde
+    // le grid 3 colonnes (emoji + titres + bouton) mais on compacte le bouton
+    // en chip icône-seule pour qu'il ne squeeze pas le titre. Le label texte
+    // est masqué via .sr-only style (gardé pour a11y / screen readers).
+    @media (max-width: 600px) {
+      gap: 10px;
+      position: relative;
+
+      .stepper__replay-video--inline {
+        padding: 0;
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        justify-content: center;
+        align-self: start;
+        border-radius: 50%;
+
+        span {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border: 0;
+        }
+
+        mat-icon {
+          font-size: 22px;
+          width: 22px;
+          height: 22px;
+          line-height: 22px;
+        }
+      }
+    }
+  }
+
+  // FIX-048 — Tailles compactées sur mobile pour que le header step
+  // (emoji + titre + sous-titre + bouton vidéo top-right) tienne sans
+  // que le titre ("Tes assurances pro", "Ta pièce d'identité", etc.)
+  // ne s'écrase sur 2 lignes inutilement.
+  &__step-emoji {
+    font-size: 56px;
+    line-height: 1;
+
+    @media (max-width: 600px) {
+      font-size: 36px;
+    }
+
+    @media (min-width: 768px) {
+      font-size: 72px;
+    }
+  }
+
+  &__step-counter {
+    margin: 0 0 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: rgba($t-logo-blue, 0.6);
+
+    @media (max-width: 600px) {
+      font-size: 0.6875rem;
+    }
+  }
+
+  &__step-title {
+    margin: 0 0 6px;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: $t-logo-blue;
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+
+    @media (max-width: 600px) {
+      font-size: 1.125rem;
+      line-height: 1.25;
+    }
+
+    @media (min-width: 768px) {
+      font-size: 1.75rem;
+    }
+  }
+
+  &__step-hint {
+    margin: 0;
+    font-size: 0.95rem;
+    color: rgba($t-logo-blue, 0.7);
+    line-height: 1.45;
+
+    @media (max-width: 600px) {
+      font-size: 0.8125rem;
+      line-height: 1.4;
+    }
+  }
+
+  // ── Verdict (succès / refus du dernier upload) ───────────────────────────
+  &__verdict {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: start;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: $t-back-grey-medium;
+    border: 1px solid rgba($t-logo-blue, 0.08);
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+
+    strong {
+      display: block;
+      font-size: 0.95rem;
+      margin-bottom: 2px;
+      color: $t-logo-blue;
+    }
+
+    span {
+      font-size: 0.875rem;
+      color: rgba($t-logo-blue, 0.75);
+      line-height: 1.4;
+    }
+
+    &--ok {
+      background: rgba($t-base-green, 0.08);
+      border-color: rgba($t-base-green, 0.3);
+      mat-icon { color: darken($t-base-green, 4%); }
+    }
+
+    &--ko {
+      background: rgba($t-base-orange, 0.08);
+      border-color: rgba($t-base-orange, 0.3);
+      mat-icon { color: $t-base-orange; }
+    }
+
+    // Variante « expire bientôt » : doc encore valide mais à renouveler
+    // dans la fenêtre de 30 j. Ton orange comme `--ko` mais sans le côté
+    // « refusé » — l'icône schedule signale l'urgence sans dramatiser.
+    &--warn {
+      background: rgba($t-base-orange, 0.08);
+      border-color: rgba($t-base-orange, 0.35);
+      mat-icon { color: $t-base-orange; }
+    }
+
+    // Variante « info » : neutre/bleu, utilisée quand l'artisan remplace
+    // volontairement un doc déjà valide (changement de RIB, nouveau KBIS).
+    &--info {
+      background: rgba($t-logo-blue, 0.05);
+      border-color: rgba($t-logo-blue, 0.18);
+      mat-icon { color: $t-logo-blue; }
+
+      a {
+        color: $t-logo-blue;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+    }
+  }
+
+  // Bouton discret « Remplacer ce document » sous le verdict OK.
+  &__replace-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    padding: 8px 14px;
+    border: 1px solid rgba($t-logo-blue, 0.18);
+    border-radius: 999px;
+    background: transparent;
+    color: rgba($t-logo-blue, 0.75);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      border-color: rgba($t-logo-blue, 0.4);
+      color: $t-logo-blue;
+      background: rgba($t-logo-blue, 0.04);
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  // ── Drop zone (clic ou drag/drop) ────────────────────────────────────────
+  &__dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 28px 20px;
+    border: 2px dashed rgba($t-logo-blue, 0.25);
+    border-radius: 16px;
+    background:
+      radial-gradient(circle at center, rgba($t-base-green, 0.04) 0%, transparent 60%),
+      $t-back-grey-medium;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
+    text-align: center;
+    min-height: 180px;
+    // Halo pulsant tant que la zone est vide (= action attendue ici).
+    // Désactivé pendant l'upload et si l'OS demande prefers-reduced-motion.
+    animation: stepper-zone-attract 2.6s ease-in-out infinite;
+
+    &[aria-busy='true'] {
+      animation: none;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+
+    &:hover:not([aria-busy='true']) {
+      border-color: $t-base-green;
+      background:
+        radial-gradient(circle at center, rgba($t-base-green, 0.1) 0%, transparent 60%),
+        $t-back-grey-medium;
+      transform: translateY(-1px);
+    }
+
+    &--uploading {
+      cursor: wait;
+      border-color: $t-logo-blue;
+    }
+
+    // Spinner visible pendant l'upload — force la couleur logo-blue
+    // (sinon Material applique currentColor qui est blanchâtre sur le fond
+    // radial-gradient et le spinner devient quasi invisible).
+    mat-spinner {
+      margin-bottom: 6px;
+      ::ng-deep circle { stroke: $t-logo-blue; }
+    }
+  }
+
+  &__dropzone-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba($t-base-green, 0.12);
+    color: darken($t-base-green, 4%);
+    margin-bottom: 6px;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  &__dropzone-title {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+  }
+
+  &__dropzone-hint {
+    margin: 0;
+    font-size: 0.875rem;
+    color: rgba($t-logo-blue, 0.65);
+  }
+
+  // ── Recto / verso (pièce d'identité uniquement) ──────────────────────────
+  // Deux slots photos prises au téléphone, fusionnées côté client en un PDF.
+  // Layout : 2 colonnes desktop, stack mobile, bouton d'envoi en bas.
+  &__sides {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 540px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  // Bouton « Prendre mes 2 photos » : occupe toute la largeur en haut de la
+  // grille (au-dessus des deux slots). Sur mobile = 1 tap pour enchaîner les
+  // deux captures caméra. FIX-032 : `white-space: nowrap` + font-size légère-
+  // ment réduite sous 540 px pour ne pas découper le label sur 2 lignes.
+  &__sides-guided {
+    grid-column: 1 / -1;
+    height: 52px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+
+    @media (max-width: 540px) {
+      font-size: 0.9375rem;
+      letter-spacing: 0;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  &__sides-or {
+    grid-column: 1 / -1;
+    margin: 4px 0 0;
+    text-align: center;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  &__side {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 22px 16px;
+    min-height: 150px;
+    border: 2px dashed rgba($t-logo-blue, 0.25);
+    border-radius: 14px;
+    background:
+      radial-gradient(circle at center, rgba($t-base-green, 0.04) 0%, transparent 60%),
+      $t-back-grey-medium;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.12s ease;
+    // Halo pulsant tant que le slot est vide — coupé dès qu'il est rempli.
+    animation: stepper-zone-attract 2.6s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+
+    &:hover:not(:has(:disabled)) {
+      border-color: $t-base-green;
+      transform: translateY(-1px);
+    }
+
+    &--filled {
+      border-style: solid;
+      border-color: $t-base-green;
+      background: linear-gradient(
+        135deg,
+        rgba($t-base-green, 0.08) 0%,
+        rgba($t-base-green, 0.14) 100%
+      );
+      animation: none;
+    }
+  }
+
+  &__side-thumb {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba($t-base-green, 0.12);
+    color: $t-base-green;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  &__side-label {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+  }
+
+  &__side-hint {
+    font-size: 0.8125rem;
+    color: rgba($t-logo-blue, 0.65);
+  }
+
+  &__side-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    color: rgba($t-logo-blue, 0.55);
+  }
+
+  &__side-clear {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
+
+  &__sides-submit {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    padding: 12px 18px;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 12px;
+    white-space: nowrap;
+
+    @media (max-width: 540px) {
+      font-size: 0.9375rem;
+      padding: 12px 14px;
+      letter-spacing: 0;
+    }
+    // Pulse vert dès que le bouton devient cliquable (les 2 slots remplis).
+    // mat-flat-button met l'attribut [disabled] sur le host, donc :not(:disabled)
+    // matche bien la transition « prêt à cliquer ».
+    &:not(:disabled) {
+      animation: stepper-submit-attract 2.4s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+
+      mat-icon {
+        animation: stepper-submit-arrow 1.6s ease-in-out infinite;
+        @media (prefers-reduced-motion: reduce) {
+          animation: none;
+        }
+      }
+    }
+
+    // mat-flat-button enveloppe le contenu dans .mdc-button__label.
+    // On force le flex sur ce wrapper interne pour aligner spinner + texte
+    // côte-à-côte (sinon le spinner casse en bloc et le texte passe dessous).
+    ::ng-deep .mdc-button__label {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      line-height: 1;
+    }
+
+    mat-spinner {
+      flex: 0 0 auto;
+      // Spinner inline blanc — `currentColor` adopte la couleur du bouton
+      // primary qui est blanc sur fond plein.
+      ::ng-deep circle { stroke: currentColor; }
+    }
+  }
+
+  // Lien alternatif "j'ai déjà un fichier complet" — discret, sous le bouton
+  // submit principal. Style "secondary action" : fond doux, pas de couleur
+  // primaire, pour ne pas concurrencer le CTA recto/verso (90 % des cas).
+  &__sides-direct {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba($t-logo-blue, 0.15);
+    border-radius: 12px;
+    background: rgba($t-logo-blue, 0.03);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+    text-align: left;
+
+    &:hover:not(.stepper__sides-direct--disabled) {
+      background: rgba($t-logo-blue, 0.06);
+      border-color: rgba($t-logo-blue, 0.3);
+    }
+
+    &--disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+
+  &__sides-direct-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: $t-logo-blue;
+    }
+
+    span {
+      font-size: 0.8125rem;
+      color: rgba($t-logo-blue, 0.6);
+    }
+  }
+
+  &__sides-direct-chevron {
+    color: rgba($t-logo-blue, 0.4);
+  }
+
+  // ── Sélecteur de variante pièce d'identité ────────────────────────────────
+  // Affiché sur le step CNI tant que l'artisan n'a pas choisi entre CNI et
+  // passeport. UX low-literacy : grosses cartes tactiles (cible 44+ px),
+  // icône Material géante, texte court, contraste élevé. Cf. mémoire
+  // `feedback_ux_low_literacy_artisans.md`.
+  &__id-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 0 4px;
+  }
+
+  &__id-picker-question {
+    margin: 0;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 600;
+    color: $t-logo-blue;
+  }
+
+  &__id-picker-tip {
+    margin: -4px 0 0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(0, 0, 0, 0.6);
+    line-height: 1.35;
+  }
+
+  &__id-picker-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+
+  &__id-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 140px;
+    padding: 20px 12px;
+    border: 2px solid rgba($t-logo-blue, 0.15);
+    border-radius: 16px;
+    background: #fff;
+    cursor: pointer;
+    text-align: center;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+
+    &:hover {
+      border-color: $t-logo-blue;
+      background: rgba($t-logo-blue, 0.04);
+    }
+
+    &:active {
+      transform: scale(0.98);
+    }
+
+    &:focus-visible {
+      outline: 3px solid rgba($t-logo-blue, 0.35);
+      outline-offset: 2px;
+    }
+  }
+
+  &__id-card-icon {
+    // mat-icon agrandi pour reconnaissance visuelle immédiate (UX low-literacy).
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: $t-logo-blue;
+  }
+
+  &__id-card-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+    line-height: 1.2;
+  }
+
+  &__id-card-hint {
+    font-size: 0.8125rem;
+    color: rgba($t-logo-blue, 0.65);
+    line-height: 1.3;
+  }
+
+  // Bandeau « tu as choisi X » au-dessus de la zone d'upload — permet à
+  // l'artisan de revenir au sélecteur s'il s'est trompé.
+  &__id-chosen {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    border: 1px solid rgba($t-logo-blue, 0.2);
+    border-radius: 12px;
+    background: rgba($t-logo-blue, 0.04);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: rgba($t-logo-blue, 0.08);
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    mat-icon {
+      color: $t-logo-blue;
+    }
+  }
+
+  &__id-chosen-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: $t-logo-blue;
+    }
+
+    span {
+      font-size: 0.75rem;
+      color: rgba($t-logo-blue, 0.6);
+    }
+  }
+
+  &__id-chosen-chevron {
+    color: rgba($t-logo-blue, 0.4);
+  }
+
+  // ── Alternative achat (étape immatriculation) ────────────────────────────
+  &__alt {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  &__alt-or {
+    align-self: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba($t-logo-blue, 0.5);
+    padding: 0 12px;
+    position: relative;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 60px;
+      height: 1px;
+      background: rgba($t-logo-blue, 0.15);
+    }
+
+    &::before { right: 100%; }
+    &::after { left: 100%; }
+  }
+
+  &__buy {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    border-radius: 14px;
+    border: 2px solid $t-base-green;
+    background: linear-gradient(135deg, rgba($t-base-green, 0.06) 0%, rgba($t-base-green, 0.12) 100%);
+    color: $t-logo-blue;
+    cursor: pointer;
+    text-align: left;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    width: 100%;
+    font: inherit;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 20px rgba($t-base-green, 0.25);
+      background: linear-gradient(135deg, rgba($t-base-green, 0.1) 0%, rgba($t-base-green, 0.18) 100%);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    > mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: darken($t-base-green, 4%);
+    }
+  }
+
+  &__buy-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: 0.9375rem;
+      font-weight: 700;
+      color: $t-logo-blue;
+    }
+
+    span {
+      font-size: 0.8125rem;
+      color: rgba($t-logo-blue, 0.7);
+      line-height: 1.35;
+    }
+  }
+
+  &__buy-price {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: darken($t-base-green, 4%);
+    white-space: nowrap;
+  }
+
+  // ── Footer navigation ────────────────────────────────────────────────────
+  // FIX-031 (mobile) : sous 600 px, on stack vertical les 3 actions pour
+  // éviter que "Je le ferai plus tard" se découpe en 4 lignes verticales
+  // (« Je le / ferai / plus / tard »). Skip en haut (action douce, visible),
+  // Précédent et Suivant côte à côte en dessous (actions principales).
+  &__nav {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 10px;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      row-gap: 12px;
+
+      .stepper__nav-btn--later {
+        grid-column: 1 / -1;
+        grid-row: 1;
+        white-space: nowrap;
+      }
+      .stepper__nav-btn--back  { grid-row: 2; justify-self: start; }
+      .stepper__nav-btn--next  { grid-row: 2; justify-self: end; }
+    }
+  }
+
+  &__nav-btn {
+    &--later {
+      justify-self: center;
+      // Avant : 0.8125rem (13px) + opacité 0.6 → trop discret, l'artisan ne
+      // le voyait pas et ne savait pas qu'il pouvait revenir plus tard.
+      // L'option de skip volontaire doit être VISIBLE pour ne pas pousser
+      // l'artisan à abandonner le tab quand il n'a pas tous ses docs.
+      color: rgba($t-logo-blue, 0.78) !important;
+      font-size: 0.9375rem !important;
+      font-weight: 600 !important;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 8px 14px !important;
+      letter-spacing: 0.01em;
+
+      &:hover {
+        color: $t-logo-blue !important;
+        background: rgba($t-logo-blue, 0.04) !important;
+      }
+    }
+
+    &--next {
+      justify-self: end;
+      min-width: 140px;
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Bloc secondaire optionnel (ex: décennale dans le step assurances).
+  // Visuellement séparé du bloc principal pour ne JAMAIS confondre les
+  // deux types de docs (RC Pro ≠ décennale).
+  // ──────────────────────────────────────────────────────────────────────
+  &__secondary {
+    margin-top: 24px;
+    padding: 20px 18px;
+    background: rgba($t-logo-blue, 0.04);
+    border: 1px dashed rgba($t-logo-blue, 0.25);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+
+    &--done {
+      background: rgba(46, 125, 50, 0.06);
+      border-style: solid;
+      border-color: rgba(46, 125, 50, 0.3);
+    }
+
+    &-divider {
+      display: none; // réservé pour évolution future
+    }
+
+    &-header {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    &-emoji {
+      font-size: 2rem;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    &-titles {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    &-badge {
+      align-self: flex-start;
+      padding: 3px 10px;
+      background: $t-logo-blue;
+      color: white;
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      border-radius: 999px;
+    }
+
+    &-title {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: $t-logo-blue;
+    }
+
+    &-hint {
+      margin: 0;
+      font-size: 0.875rem;
+      color: rgba($t-logo-blue, 0.78);
+      line-height: 1.4;
+    }
+
+    &-badge-hint {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: rgba($t-logo-blue, 0.65);
+      font-style: italic;
+    }
+  }
+}
+
+// P1-5 — Bannière "CNI nue obligatoire" sur le step CNI.
+// Visuel doux : fond ambre clair pour signaler une info importante sans
+// passer pour une erreur (la carte n'est pas refusée, c'est juste un guide).
+.stepper__cni-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.5rem 0 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+
+  &-icon {
+    color: #f57c00;
+    flex: 0 0 auto;
+    margin-top: 2px;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+  }
+
+  &-body {
+    flex: 1 1 auto;
+
+    > strong {
+      display: inline;
+      margin-right: 0.25rem;
+      color: #5d4037;
+    }
+
+    > span {
+      color: #6d4c41;
+    }
+  }
+}
+
+
+// ── Étape RIB (saisie manuelle) ─────────────────────────────────────────
+// 3 champs gros, hint sous chaque, bouton submit pleine largeur. Tonalité
+// rassurante (verified_user icône bleue) — pas d'erreur ni d'avertissement.
+
+.stepper__bank-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1.25rem;
+  padding: 0.875rem 1rem;
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+
+  mat-icon {
+    color: $t-logo-blue;
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  strong {
+    display: block;
+    margin-bottom: 0.25rem;
+    color: $t-logo-blue;
+  }
+
+  span {
+    display: block;
+    color: rgba($t-logo-blue, 0.85);
+  }
+}
+
+.stepper__bank-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.stepper__bank-field {
+  width: 100%;
+
+  // FIX-050 — Mat-hint qui wrapaient sur 2 lignes mal indentées
+  // ("Ex : Jean Dupont (recopie exactement le / nom du RIB)"). On force
+  // l'alignement gauche du texte, line-height correct et taille adaptée
+  // mobile. La hint Material par défaut hérite parfois d'un padding-left
+  // bizarre qui décale la 2e ligne — on le neutralise.
+  ::ng-deep .mat-mdc-form-field-hint {
+    display: block;
+    text-align: left;
+    line-height: 1.4;
+    padding-left: 0;
+    margin-left: 0;
+
+    @media (max-width: 600px) {
+      font-size: 0.75rem;
+    }
+  }
+}
+
+// Bouton primaire « Enregistrer mes coordonnées » — version forte (Tuita blue
+// plein, ombre, hauteur 56px) pour qu'on le voie comme l'action principale
+// du step et pas comme un lien discret. On force le background/color sur le
+// host mat-flat-button parce que les variables Material 17 n'apparaissent
+// pas toujours correctement (host theming non chargé sur ce scope).
+.stepper__bank-submit {
+  align-self: stretch;
+  margin-top: 0.75rem;
+  height: 56px;
+  width: 100%;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  border-radius: 14px !important;
+  background: $t-logo-blue !important;
+  color: #fff !important;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba($t-logo-blue, 0.28),
+              0 2px 4px rgba($t-logo-blue, 0.18);
+  transition: transform 120ms ease, box-shadow 160ms ease, background 160ms ease;
+
+  // FIX-051 — Bouton "Enregistrer mes coordonnées" wrapait sur 2 lignes
+  // mal alignées en mobile. On réduit la font + letter-spacing, on
+  // empêche le wrap (`white-space: nowrap`), et on shrink la taille
+  // d'icône pour laisser plus de place au texte.
+  @media (max-width: 600px) {
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+    padding: 0 12px;
+    height: 52px;
+  }
+
+  mat-icon {
+    color: #fff;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+
+    @media (max-width: 600px) {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      line-height: 18px;
+    }
+  }
+
+  &:not([disabled]):hover {
+    background: darken($t-logo-blue, 6%) !important;
+    box-shadow: 0 10px 24px rgba($t-logo-blue, 0.36),
+                0 3px 6px rgba($t-logo-blue, 0.22);
+    transform: translateY(-1px);
+  }
+
+  &:not([disabled]):active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba($t-logo-blue, 0.28);
+  }
+
+  &[disabled] {
+    background: #cbd5e1 !important;
+    color: #f8fafc !important;
+    box-shadow: none;
+    cursor: not-allowed;
+
+    mat-icon {
+      color: #f8fafc;
+    }
+  }
+}
+
+// Disclaimer fort sous le bandeau "titulaire" — tonalité ambre pour
+// signaler la responsabilité sans verser dans le rouge "erreur".
+.stepper__bank-disclaimer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 12px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+
+  mat-icon {
+    color: #f57c00;
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  strong {
+    color: #5d4037;
+  }
+
+  span {
+    display: block;
+    margin-top: 0.25rem;
+    color: #6d4c41;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Aide URSSAF — 3 cartes "Comment récupérer mon attestation"
+// Visible uniquement sur le step urssaf. Low-literacy : tout visible,
+// pas de toggle, langage parlé, gros emojis, étapes numérotées courtes.
+// ─────────────────────────────────────────────────────────────────────────
+.stepper__urssaf-help {
+  margin: 0.5rem 0 1.25rem;
+  padding: 1rem 1.125rem 1.125rem;
+  background: #eef5ff;
+  border: 1px solid #c5dafc;
+  border-radius: 14px;
+}
+
+.stepper__urssaf-help-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+
+  mat-icon {
+    color: $t-logo-blue;
+    flex: 0 0 auto;
+    margin-top: 2px;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: $t-logo-blue;
+  }
+
+  p {
+    margin: 0.125rem 0 0;
+    font-size: 0.9375rem;
+    color: rgba($t-logo-blue, 0.85);
+  }
+}
+
+.stepper__urssaf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem 1rem;
+  background: #ffffff;
+  border: 1px solid #d6e4fb;
+  border-radius: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-1px);
+    border-color: $t-logo-blue;
+    box-shadow: 0 4px 14px rgba(13, 71, 161, 0.12);
+    outline: none;
+  }
+}
+
+.stepper__urssaf-card-emoji {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.stepper__urssaf-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a237e;
+}
+
+.stepper__urssaf-card ol {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #37474f;
+
+  li {
+    margin-bottom: 0.2rem;
+
+    strong {
+      color: #102a43;
+      font-weight: 600;
+    }
+  }
+}
+
+.stepper__urssaf-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: $t-logo-blue;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  align-self: flex-start;
+
+  mat-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+.stepper__urssaf-help-foot {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.875rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba($t-logo-blue, 0.85);
+
+  mat-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    margin-top: 2px;
+    color: $t-logo-blue;
+    flex: 0 0 auto;
+  }
+}

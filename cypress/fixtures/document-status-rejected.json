@@ -1,0 +1,18 @@
+{
+  "data": {
+    "uuid": "doc-rc-uuid-004",
+    "type": "rc",
+    "status": "rejected",
+    "file_name": "rc_pro_martin.pdf",
+    "file_size": 95000,
+    "mime_type": "application/pdf",
+    "detected_type": "rc",
+    "detection_confidence": 0.45,
+    "uploaded_at": "2026-07-14T16:00:00Z",
+    "expires_at": null,
+    "failure_reason": "manual_review_rejected",
+    "failure_detail": "Document illisible - scan de mauvaise qualite, veuillez renvoyer un PDF net et lisible avec toutes les pages visibles.",
+    "verified_at": null,
+    "verification_result": null
+  }
+}

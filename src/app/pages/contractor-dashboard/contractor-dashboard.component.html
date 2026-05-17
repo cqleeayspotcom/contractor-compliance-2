@@ -1,0 +1,283 @@
+@if (isLoading$ | async) {
+  <div class="cdash__loading">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+} @else if (error$ | async; as error) {
+  <div class="cdash__error">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ error }}</p>
+    <button mat-flat-button color="primary" (click)="retry()">Réessayer</button>
+  </div>
+} @else if (dashboard$ | async; as d) {
+
+  <section class="cdash">
+
+    <!-- Header : bonjour + plan chip + aide -->
+    <header class="cdash__header">
+      <div class="cdash__greeting">
+        <h1>Bonjour{{ firstName() ? ' ' + firstName() : '' }}</h1>
+        <a routerLink="/billing"
+           class="cdash__plan"
+           [class.cdash__plan--pro]="currentPlan() === 'paid'"
+           [attr.aria-label]="currentPlan() === 'paid'
+              ? 'Gérer mon abonnement Tuita Pro et mes factures'
+              : 'Voir les plans et passer au plan Pro'"
+           [matTooltip]="currentPlan() === 'paid'
+              ? 'Gérer mon abonnement et télécharger mes factures'
+              : 'Découvrir le plan Pro (99 euros/mois)'">
+          <mat-icon class="cdash__plan-icon">
+            {{ currentPlan() === 'paid' ? 'workspace_premium' : 'person' }}
+          </mat-icon>
+          <span class="cdash__plan-label">
+            {{ currentPlan() === 'paid' ? 'Plan Pro' : 'Plan gratuit' }}
+          </span>
+          <mat-icon class="cdash__plan-chevron">chevron_right</mat-icon>
+        </a>
+      </div>
+
+      <!-- Bouton aide global : ouvre HelpDialogComponent. Très visible pour
+           les artisans qui ne maîtrisent pas le vocabulaire (KBIS, URSSAF,
+           etc.) — version épurée du « ? » Stripe / Qonto. -->
+      <button type="button"
+              class="cdash__help"
+              (click)="openHelp()"
+              matTooltip="Comment ça marche ?"
+              aria-label="Aide - comment ça marche">
+        <mat-icon>help_outline</mat-icon>
+        <span class="cdash__help-label">Aide</span>
+      </button>
+    </header>
+
+    <!-- Bandeau onboarding (étape suivante du parcours, plein largeur) -->
+    <app-onboarding-banner
+      [nextAction]="d.next_action"
+      [firstName]="firstName()" />
+
+    <!-- FIX-045 — Bandeaux alerte expiration sur la home compliance.
+         Visibles UNIQUEMENT si docs expired (rouge) ou expiring soon (orange).
+         Sans ces signaux, l'artisan ne voyait son doc expiré qu'en naviguant
+         dans /documents, alors que ses missions sont déjà bloquées côté
+         tuita.fr (webhook compliance.invalidated parti à l'instant T).
+         CTA direct vers le stepper guidé /documents/upload : il sait
+         se positionner sur l'étape qui expire (cf. firstExpiring dans
+         OnboardingUploadStepperComponent) et marque visuellement les
+         dots concernés (icône horloge orange). -->
+    @if (expiredCount() > 0) {
+      <a routerLink="/documents/upload" class="cdash__alert cdash__alert--danger" role="alert">
+        <mat-icon class="cdash__alert-icon">error_outline</mat-icon>
+        <div class="cdash__alert-body">
+          <strong>
+            @if (expiredCount() === 1) {
+              {{ firstExpiredLabel() ?? 'Un document' }} a expiré
+            } @else {
+              {{ expiredCount() }} documents ont expiré
+            }
+          </strong>
+          <span>Tes missions sont bloquées tant que tu ne le remplaces pas. Clique pour réuploader ou racheter en 1 clic.</span>
+        </div>
+        <mat-icon class="cdash__alert-chevron" aria-hidden="true">arrow_forward</mat-icon>
+      </a>
+    } @else if (expiringSoonCount() > 0) {
+      <a routerLink="/documents/upload" class="cdash__alert cdash__alert--warn" role="status">
+        <mat-icon class="cdash__alert-icon">schedule</mat-icon>
+        <div class="cdash__alert-body">
+          <strong>
+            @if (expiringSoonCount() === 1 && expiringSoonMinDays() !== null) {
+              Un document expire dans {{ expiringSoonMinDays() }} jour{{ (expiringSoonMinDays() ?? 0) > 1 ? 's' : '' }}
+            } @else {
+              {{ expiringSoonCount() }} documents expirent bientôt
+            }
+          </strong>
+          <span>Anticipe le renouvellement pour ne pas bloquer tes missions. C'est rapide.</span>
+        </div>
+        <mat-icon class="cdash__alert-chevron" aria-hidden="true">arrow_forward</mat-icon>
+      </a>
+    }
+
+    <!-- Grille 1 col mobile / 2 col tablette / 3 col desktop -->
+    <div class="cdash__grid">
+
+      <!-- Tuiles « Mes documents » et « Mon identité » masquées pendant
+           l'onboarding : le bandeau Bienvenu route déjà vers le stepper
+           `/documents/upload` qui couvre CNI + KYC + dossier administratif.
+           Doubler le CTA avec une tuile « verrouillé » sur la home contredit
+           la règle low-literacy (une seule décision visible à la fois). -->
+        <!-- 1. Documents — route adaptative (cf. `documentsRoute()`) :
+             - status `ok` → `/documents` (liste consultable + télécharger
+               + bouton « remplacer » si l'artisan veut MAJ proactivement).
+             - status `warn`/`bad` → `/documents/upload` (stepper assisté
+               qui se positionne sur la pièce à traiter). -->
+        @if (showDocumentsTile()) {
+        <a [routerLink]="documentsRoute()"
+           [attr.aria-label]="'Mes documents administratifs - ' + statusLabel(documentsStatus())"
+           class="tile"
+           [attr.data-status]="documentsStatus()">
+          <span class="tile__badge"
+                [class.tile__badge--pulse]="documentsStatus() !== 'ok'"
+                [attr.data-status]="documentsStatus()">
+            <mat-icon>{{ statusIcon(documentsStatus()) }}</mat-icon>
+            {{ statusLabel(documentsStatus()) }}
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>folder_shared</mat-icon>
+          </span>
+          <h3 class="tile__title">Mes documents</h3>
+          <p class="tile__sub">{{ documentsSubtitle() }}</p>
+          <span class="tile__cta">Gérer <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+        }
+
+        <!-- 2. Identité (KYC) — toujours visible tant qu'il y a une action
+             à mener (verrouillée pour pousser l'upload CNI, ou KYC pas
+             approved). Cachée uniquement quand tout est OK pour éviter une
+             tuile passive « Identité vérifiée ». -->
+        @if (showIdentityTile()) {
+        @if (identityLocked()) {
+          <!-- Verrouillée tant que la CNI/passeport n'est pas vérifiée — on
+               redirige vers le stepper d'onboarding (`/documents/upload`)
+               au lieu d'afficher un état purement passif : l'artisan qui
+               clique veut débloquer, le stepper le guide étape par étape. -->
+          <a routerLink="/documents/upload"
+             [attr.aria-label]="'Mon identité - ' + identitySubtitle() + ' - déposer ma pièce d’identité'"
+             class="tile tile--locked tile--locked-actionable"
+             [attr.data-status]="identityStatus()">
+            <span class="tile__badge" [attr.data-status]="'warn'">
+              <mat-icon>lock</mat-icon>
+              Verrouillé
+            </span>
+            <span class="tile__ico" aria-hidden="true">
+              <mat-icon>badge</mat-icon>
+            </span>
+            <h3 class="tile__title">Mon identité</h3>
+            <p class="tile__sub">{{ identitySubtitle() }}</p>
+            <span class="tile__cta">Déposer ma pièce d'identité <mat-icon>arrow_forward</mat-icon></span>
+          </a>
+        } @else {
+          <a [routerLink]="identityRoute()"
+             [attr.aria-label]="'Mon identité - ' + statusLabel(identityStatus())"
+             class="tile"
+             [attr.data-status]="identityStatus()">
+            <span class="tile__badge"
+                  [class.tile__badge--pulse]="identityStatus() !== 'ok'"
+                  [attr.data-status]="identityStatus()">
+              <mat-icon>{{ statusIcon(identityStatus()) }}</mat-icon>
+              {{ statusLabel(identityStatus()) }}
+            </span>
+            <span class="tile__ico" aria-hidden="true">
+              <mat-icon>badge</mat-icon>
+            </span>
+            <h3 class="tile__title">Mon identité</h3>
+            <p class="tile__sub">{{ identitySubtitle() }}</p>
+            <span class="tile__cta">Gérer <mat-icon>arrow_forward</mat-icon></span>
+          </a>
+        }
+        }
+
+      <!-- 3. Mes chantiers — cachée quand fully verified avec 0 mission
+           et 0 facture (état d'attente passif). Visible si verrouillée
+           ou s'il y a déjà du contenu à consulter ou une action à faire. -->
+      @if (showChantiersTile()) {
+      @if (chantiersLocked()) {
+        <div class="tile tile--locked"
+             role="button"
+             aria-disabled="true"
+             [attr.aria-label]="'Mes chantiers - ' + chantiersSubtitle()"
+             matTooltip="Termine ton compte pour accéder à tes chantiers"
+             [style.order]="chantiersFirst() ? -1 : null"
+             [attr.data-status]="chantiersStatus()">
+          <span class="tile__badge" [attr.data-status]="'warn'">
+            <mat-icon>lock</mat-icon>
+            Verrouillé
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>construction</mat-icon>
+          </span>
+          <h3 class="tile__title">Mes chantiers</h3>
+          <p class="tile__sub">{{ chantiersSubtitle() }}</p>
+          <span class="tile__cta">Indisponible <mat-icon>lock</mat-icon></span>
+        </div>
+      } @else {
+        <a routerLink="/chantiers"
+           [attr.aria-label]="'Mes chantiers - ' + statusLabel(chantiersStatus())"
+           class="tile"
+           [style.order]="chantiersFirst() ? -1 : null"
+           [attr.data-status]="chantiersStatus()">
+          <span class="tile__badge"
+                [class.tile__badge--pulse]="chantiersStatus() !== 'ok'"
+                [attr.data-status]="chantiersStatus()">
+            <mat-icon>{{ statusIcon(chantiersStatus()) }}</mat-icon>
+            {{ statusLabel(chantiersStatus()) }}
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>construction</mat-icon>
+          </span>
+          <h3 class="tile__title">Mes chantiers</h3>
+          <p class="tile__sub">{{ chantiersSubtitle() }}</p>
+          <span class="tile__cta">Voir <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+      }
+
+      <!-- 4. Certification Tuita — uniquement quand complétée
+           (mémo / rappel des consignes Tuita). Pendant l'onboarding, le
+           bandeau Bienvenu pilote l'étape certif → la tuile verrouillée
+           serait redondante. -->
+      @if (showCertificationTile()) {
+        <a [routerLink]="certificationRoute()"
+           aria-label="Ma certification Tuita - revoir les consignes"
+           class="tile">
+          <span class="tile__badge" [attr.data-status]="'ok'">
+            <mat-icon>check</mat-icon>
+            Certifié
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>school</mat-icon>
+          </span>
+          <h3 class="tile__title">Ma certification Tuita</h3>
+          <p class="tile__sub">Revoir les consignes et modalités à tout moment.</p>
+          <span class="tile__cta">Revoir <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+
+      <!-- 5. Pro upsell — user sur plan Gratuit uniquement -->
+      @if (showProUpsell()) {
+        <a routerLink="/billing"
+           aria-label="Passer au plan Pro - 99 euros par mois"
+           class="tile tile--pro">
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>workspace_premium</mat-icon>
+          </span>
+          <h3 class="tile__title">Passer en Pro</h3>
+          <p class="tile__sub">
+            Factures générées automatiquement, plus de saisie, paiement simplifié.
+          </p>
+          <span class="tile__cta tile__cta--pro">
+            Je passe Pro - {{ proPriceLabel() }}/mois <mat-icon>arrow_forward</mat-icon>
+          </span>
+        </a>
+      }
+
+      <!-- 6. Mon abonnement Pro — caché par défaut (showAbonnementProTile=false).
+           L'accès aux factures Stripe se fait via le chip « Plan Pro » du
+           header. Pas besoin d'une 2e porte d'entrée sur la home. -->
+      @if (showAbonnementProTile() && currentPlan() === 'paid') {
+        <a routerLink="/billing"
+           aria-label="Gérer mon abonnement Tuita Pro et télécharger mes factures"
+           class="tile tile--pro-active">
+          <span class="tile__badge tile__badge--pro-active">
+            <mat-icon>workspace_premium</mat-icon>
+            PRO
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>receipt_long</mat-icon>
+          </span>
+          <h3 class="tile__title">Mon abonnement Pro</h3>
+          <p class="tile__sub">Factures Stripe, paiements et resiliation.</p>
+          <span class="tile__cta">Gérer <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+
+    </div>
+  </section>
+}

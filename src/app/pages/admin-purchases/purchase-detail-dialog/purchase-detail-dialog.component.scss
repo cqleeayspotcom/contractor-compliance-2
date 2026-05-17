@@ -1,0 +1,270 @@
+.purchase-detail {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+
+    h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #073148;
+    }
+  }
+
+  &__head-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  &__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__amount {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #073148;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /**
+   * Layout 2 colonnes (≥960px) :
+   *   main = infos achat (action principale : retry / refund)
+   *   aside = statut contractor (info secondaire, sticky)
+   * Sur mobile : empile en 1 colonne, statut contractor remonte en haut.
+   */
+  &__body {
+    padding: 16px 18px;
+    overflow-y: auto;
+    max-height: 80vh;
+  }
+
+  &__contractor-link {
+    margin-top: 10px;
+    text-align: right;
+  }
+}
+
+// Layout 2 colonnes — réutilise les mêmes noms de classe que le free-invoice
+// detail dialog pour cohérence visuelle.
+.purchase-detail .layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 1fr);
+  gap: 1.25rem;
+  align-items: flex-start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+
+    .layout__contractor { order: -1; }
+  }
+
+  .layout__main {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .layout__contractor {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(80vh - 32px);
+    overflow-y: auto;
+
+    @media (max-width: 960px) {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+}
+
+.purchase-detail {
+
+  &__error {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #7f1d1d;
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #fff5f5;
+    padding: 8px 10px;
+    border-radius: 4px;
+    border-left: 3px solid #dc2626;
+  }
+
+  &__doc-btn {
+    margin-top: 10px;
+  }
+}
+
+.status-pill {
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+
+// Cards (réutilise les variantes du modal admin-invoices)
+.info-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #073148;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #6366f1;
+    }
+  }
+
+  &--alert {
+    background: #fee2e2;
+    border-color: #fecaca;
+    h3 mat-icon { color: #dc2626; }
+  }
+
+  &--ok {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    h3 mat-icon { color: #16a34a; }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    strong {
+      font-size: 0.92rem;
+      color: #1a1a1a;
+      word-break: break-word;
+    }
+
+    .muted {
+      font-size: 0.75rem;
+      color: #6b7280;
+    }
+
+    code {
+      background: #f3f4f6;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.82rem;
+      word-break: break-all;
+    }
+  }
+}
+
+.purchase-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 6px 0;
+    border-bottom: 1px dashed #f1f5f9;
+
+    &:last-child { border-bottom: none; }
+
+    mat-icon {
+      color: #6366f1;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    div { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+
+    strong { font-size: 0.85rem; }
+
+    small {
+      color: #6b7280;
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    &.purchase-timeline__item--err {
+      mat-icon { color: #dc2626; }
+      strong { color: #7f1d1d; }
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .purchase-detail {
+    width: 100%;
+
+    &__head {
+      flex-wrap: wrap;
+      padding: 10px 12px;
+
+      h2 { font-size: 1rem; }
+    }
+
+    &__amount { font-size: 0.9rem; }
+
+    &__body {
+      padding: 12px;
+      gap: 10px;
+    }
+
+    .info-card .info-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

@@ -1,0 +1,116 @@
+<div class="generate-dialog">
+  <h2 mat-dialog-title>Générer un code d'invitation</h2>
+
+  @if (!generatedCode()) {
+    <mat-dialog-content>
+      <p class="generate-dialog__intro">
+        Ce code permettra à un contractor de s'inscrire sur le portail Tuita.
+      </p>
+
+      <!-- Doit etre detecte automatiquement backend detecte l'admin qui a generer... -->
+      <mat-form-field appearance="outline" class="generate-dialog__form-field">
+        <mat-label>Ton nom ou email Tuita *</mat-label>
+        <input matInput
+               type="text"
+               required
+               maxlength="255"
+               placeholder="ex. moussa@tuita.fr"
+               [ngModel]="generatedByLabel()"
+               (ngModelChange)="generatedByLabel.set($event)">
+        <mat-icon matSuffix>person</mat-icon>
+      </mat-form-field>
+
+      <div class="generate-dialog__field">
+        <label>Validité du code</label>
+        <div class="ttl-buttons">
+          <button type="button"
+                  class="ttl-btn"
+                  [class.ttl-btn--active]="validForDays() === 7"
+                  (click)="setDays(7)">7 jours</button>
+          <button type="button"
+                  class="ttl-btn"
+                  [class.ttl-btn--active]="validForDays() === 14"
+                  (click)="setDays(14)">14 jours</button>
+          <button type="button"
+                  class="ttl-btn"
+                  [class.ttl-btn--active]="validForDays() === 30"
+                  (click)="setDays(30)">1 mois</button>
+          <button type="button"
+                  class="ttl-btn"
+                  [class.ttl-btn--active]="validForDays() === 60"
+                  (click)="setDays(60)">2 mois</button>
+        </div>
+        <p class="generate-dialog__hint">Min 7 jours, max 60 jours.</p>
+      </div>
+
+      <mat-form-field appearance="outline" class="generate-dialog__form-field">
+        <mat-label>Nombre maximum d'usages</mat-label>
+        <input matInput
+               type="number"
+               min="1"
+               max="10000"
+               [ngModel]="maxUses()"
+               (ngModelChange)="maxUses.set($event)">
+        <mat-icon matSuffix>group</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="generate-dialog__form-field">
+        <mat-label>À qui ce code est-il destiné ? *</mat-label>
+        <textarea matInput
+                  rows="2"
+                  required
+                  minlength="3"
+                  maxlength="2000"
+                  placeholder="ex. « Pierre Dupont — équipe Carrefour Lyon »"
+                  [ngModel]="note()"
+                  (ngModelChange)="note.set($event)"></textarea>
+        <mat-hint>Obligatoire — pour garder une trace de qui reçoit ce code.</mat-hint>
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <p class="generate-dialog__error">
+          <mat-icon>error_outline</mat-icon>
+          {{ errorMessage() }}
+        </p>
+      }
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end" class="generate-dialog__actions">
+      <button mat-button type="button" (click)="close()" [disabled]="isGenerating()">Annuler</button>
+      <button type="button"
+              class="generate-dialog__cta"
+              (click)="generate()"
+              [disabled]="!canGenerate()">
+        @if (isGenerating()) {
+          <mat-spinner diameter="18"></mat-spinner>
+          <span>Génération…</span>
+        } @else {
+          <mat-icon>add_circle</mat-icon>
+          <span>Générer le code</span>
+        }
+      </button>
+    </mat-dialog-actions>
+  } @else {
+    <!-- Code généré : affichage en gros + copie facile -->
+    <mat-dialog-content class="generate-dialog__success">
+      <div class="generate-dialog__success-icon">
+        <mat-icon>check_circle</mat-icon>
+      </div>
+      <h3>Voici ton code</h3>
+      <p>Communique-le au contractor — il pourra l'utiliser sur la page d'inscription.</p>
+
+      <button type="button" class="generated-code" (click)="copy()" matTooltip="Cliquer pour copier">
+        <span class="generated-code__value">{{ generatedCode() }}</span>
+        <mat-icon>content_copy</mat-icon>
+      </button>
+
+      <p class="generate-dialog__hint generate-dialog__hint--center">
+        Le code n'est pas sensible à la casse — l'artisan peut le saisir en minuscules.
+      </p>
+    </mat-dialog-content>
+
+    <mat-dialog-actions align="end">
+      <button mat-flat-button color="primary" type="button" (click)="close()">Terminer</button>
+    </mat-dialog-actions>
+  }
+</div>

@@ -1,0 +1,26 @@
+<div [ngClass]="containerClasses">
+  <div class="empty-state-icon">
+    <tuita-icon
+      [icon]="icon"
+      [size]="iconSize"
+      [color]="iconColor"
+    ></tuita-icon>
+  </div>
+
+  <div class="empty-state-content">
+    <h3 class="empty-state-title">{{ title }}</h3>
+    @if (description) {
+      <p class="empty-state-description">{{ description }}</p>
+    }
+  </div>
+
+  @if (showActionButton) {
+    <button
+      type="button"
+      class="empty-state-action"
+      (click)="onActionClick()"
+    >
+      {{ actionText }}
+    </button>
+  }
+</div>

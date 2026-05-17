@@ -1,0 +1,16 @@
+{
+  "data": {
+    "mid": "MIS-2026-043",
+    "caseNumber": "CASE-2026-043",
+    "missionTitle": "Diagnostic plomb",
+    "operationType": "DPB",
+    "operationTypeLabel": "Diagnostic Plomb",
+    "price": 890.00,
+    "targetAddress": "5 avenue des Champs",
+    "city": "Lyon",
+    "visitDateConfirmed": "2026-04-05T14:00:00Z",
+    "signedAt": "2026-04-05T18:00:00Z",
+    "canRun": true,
+    "invoice_status": "none"
+  }
+}

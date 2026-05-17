@@ -1,0 +1,7 @@
+.dots { display: inline-flex; gap: 3px; }
+.dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 8px;
+  font-size: 9px; font-weight: 600; background: #e9ecef; color: #adb5bd;
+  &--sent { background: #28a745; color: white; }
+}

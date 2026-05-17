@@ -1,0 +1,321 @@
+@use '../../../../styles/variables' as *;
+
+// =============================================================================
+// Push Pro Modal — Dégradé prussian-blue → orange Tuita, animations entrée
+// =============================================================================
+
+// Couleurs signature Tuita (alias locaux pour garder la lisibilité BEM)
+// Aligné sur la tuile "Passer en Pro" du dashboard : prussian-blue → green Tuita
+$pp-primary: $t-logo-blue;         // #073148 prussian-blue
+$pp-primary-dark: $primary-900;    // #07131A
+$pp-accent: $t-base-green;         // #04A777 green Tuita
+$pp-accent-dark: $base-green-900;  // #007a20
+
+// Animation d'entrée (slide-up + fade)
+@keyframes push-pro-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.push-pro {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  overflow: hidden;
+  max-height: 100%;  // respecte la hauteur contrainte du MatDialog (max-height 92vh)
+  height: 100%;
+  animation: push-pro-slide-up 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  // --- Bouton close -------------------------------------------------------
+  &__close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(#ffffff, 0.2);
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+
+    &:hover {
+      background: rgba(#ffffff, 0.35);
+    }
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  // --- Header (dégradé Tuita blue → orange, sticky top) -----------------
+  &__header {
+    position: relative;
+    flex: 0 0 auto;  // header sticky non-scrollable
+    padding: $t-gap-32 $t-gap-24 $t-gap-24;
+    text-align: center;
+    background: linear-gradient(135deg, $pp-primary 0%, $primary-700 55%, $pp-accent 100%);
+    color: #ffffff;
+
+    // Effet "brillance" décoratif en haut à droite
+    &::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -10%;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(#ffffff, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+  }
+
+  &__sparkle {
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: $t-gap-8;
+    display: inline-block;
+    animation: push-pro-sparkle 2.4s ease-in-out infinite;
+  }
+
+  @keyframes push-pro-sparkle {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.15) rotate(10deg); }
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 1.625rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: #ffffff; // override global h2 color from _theme.scss
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
+  &__subtitle {
+    margin: $t-gap-6 0 0;
+    font-size: $t-body-2;
+    color: #ffffff; // override global p color from _theme.scss
+    opacity: 0.94;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.16);
+  }
+
+  // --- Body (scrollable) -------------------------------------------------
+  &__body {
+    flex: 1 1 auto;
+    min-height: 0;                    // indispensable pour que overflow fonctionne dans flex
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; // inertie iOS
+    overscroll-behavior: contain;      // empêche le scroll de la page derrière sur mobile
+    padding: $t-gap-24 !important;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-16;
+    max-height: none !important;       // neutralise le max-height Material par défaut
+
+    // Scrollbar stylée aux couleurs Tuita (Webkit + Firefox)
+    scrollbar-width: thin;
+    scrollbar-color: rgba($pp-primary, 0.28) transparent;
+
+    &::-webkit-scrollbar { width: 6px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb {
+      background: rgba($pp-primary, 0.28);
+      border-radius: 3px;
+      &:hover { background: rgba($pp-primary, 0.45); }
+    }
+  }
+
+  &__benefits {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-12;
+  }
+
+  &__benefit {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+    padding: $t-gap-12;
+    background: linear-gradient(135deg, rgba($pp-primary, 0.04), rgba($pp-accent, 0.04));
+    border: 1px solid rgba($pp-primary, 0.12);
+    border-radius: 10px;
+    transition: transform 0.15s, box-shadow 0.15s;
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba($pp-primary, 0.08);
+    }
+  }
+
+  &__benefit-emoji {
+    font-size: 24px;
+    line-height: 1;
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  &__benefit-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    strong {
+      font-size: $t-body-2;
+      font-weight: 700;
+      color: $t-text-black;
+      line-height: 1.3;
+    }
+
+    span {
+      font-size: $t-body-3;
+      color: $t-color-light;
+      line-height: 1.4;
+    }
+  }
+
+  // --- Prix ---------------------------------------------------------------
+  &__price {
+    text-align: center;
+    margin-top: $t-gap-8;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: $t-gap-4;
+    background: linear-gradient(135deg, $pp-primary, $pp-accent);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: $pp-primary; // fallback
+  }
+
+  &__price-amount {
+    font-size: 2.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+  }
+
+  &__price-period {
+    font-size: $t-body-1;
+    font-weight: 600;
+  }
+
+  &__price-note {
+    text-align: center;
+    margin: 0;
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  // --- Actions (footer sticky non-scrollable) ----------------------------
+  &__actions {
+    flex: 0 0 auto;
+    padding: $t-gap-16 $t-gap-24 $t-gap-24 !important;
+    display: flex;
+    gap: $t-gap-8;
+    justify-content: flex-end;
+    margin: 0 !important;
+    background: #ffffff;
+    border-top: 1px solid rgba($pp-primary, 0.08);
+  }
+
+  &__btn {
+    font-weight: 700;
+    border-radius: 10px;
+    padding: 0 $t-gap-20 !important;
+    height: 44px;
+
+    &--secondary {
+      color: $t-color-light;
+    }
+
+    &--primary {
+      background: linear-gradient(135deg, $base-green-800 0%, $pp-accent 60%, $base-green-400 100%) !important;
+      color: #ffffff !important;
+      box-shadow: 0 6px 16px rgba($pp-accent, 0.38);
+      transition: transform 0.15s, box-shadow 0.15s;
+
+      mat-icon {
+        margin-right: $t-gap-6;
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba($pp-accent, 0.48);
+      }
+    }
+  }
+}
+
+// --- Responsive -----------------------------------------------------------
+@media (max-width: 600px) {
+  .push-pro {
+    &__header {
+      padding: $t-gap-20 $t-gap-20 $t-gap-16;
+    }
+
+    &__sparkle {
+      font-size: 32px;
+      margin-bottom: $t-gap-4;
+    }
+
+    &__title {
+      font-size: 1.375rem;
+    }
+
+    &__subtitle {
+      font-size: $t-body-3;
+    }
+
+    &__body {
+      padding: $t-gap-20 !important;
+      gap: $t-gap-12;
+    }
+
+    &__actions {
+      // safe-area pour iPhone notch + meilleure ergonomie pouce
+      padding:
+        $t-gap-12
+        $t-gap-20
+        calc(#{$t-gap-16} + env(safe-area-inset-bottom, 0px))
+        $t-gap-20 !important;
+      flex-direction: column-reverse;
+      gap: $t-gap-8;
+
+      .push-pro__btn {
+        width: 100%;
+        height: 48px; // tap target ≥ 48px (WCAG AAA)
+      }
+    }
+
+    &__price-amount {
+      font-size: 2.25rem;
+    }
+  }
+}

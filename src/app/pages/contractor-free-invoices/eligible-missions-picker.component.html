@@ -1,0 +1,38 @@
+<div class="picker">
+  <h3>Chantiers concernés (facultatif)</h3>
+  <p class="hint">
+    Sélectionne jusqu'à 3 chantiers réalisés ces 3 dernières semaines pour aider Tuita à valider ta demande.
+  </p>
+
+  @if (loading()) {
+    <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+  } @else if (missions().length === 0) {
+    <div class="empty-warning">
+      <mat-icon>info</mat-icon>
+      <p>
+        Aucun chantier terminé dans les 3 dernières semaines.
+        Tu peux quand même envoyer ta demande - Tuita aura juste moins de contexte pour la valider rapidement.
+      </p>
+    </div>
+  } @else {
+    <p class="counter">{{ selectedCount() }} / 3 sélectionné(s)</p>
+    <mat-selection-list class="missions-list">
+      @for (m of missions(); track m.mission_ref) {
+        <mat-list-option
+          [selected]="isSelected(m.mission_ref)"
+          [disabled]="isDisabled(m.mission_ref)"
+          (selectedChange)="toggle(m.mission_ref, $event)"
+        >
+          <div class="mission-row">
+            <strong class="ref">{{ m.mission_ref }}</strong>
+            <span class="title">{{ m.mission_title ?? 'Sans intitulé' }}</span>
+            <span class="meta">
+              Terminé le {{ formatDate(m.completed_at) }}
+              · {{ formatAmount(m.expected_amount_ttc) }}
+            </span>
+          </div>
+        </mat-list-option>
+      }
+    </mat-selection-list>
+  }
+</div>

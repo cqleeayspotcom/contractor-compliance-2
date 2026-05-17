@@ -1,0 +1,454 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.doc-detail {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: #fafafa;
+
+  &__head {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fafafa;
+    flex-shrink: 0;
+
+    h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #073148;
+    }
+  }
+
+  &__head-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    min-width: 0;
+
+    .type-badge {
+      background: #ede9fe;
+      color: #4c1d95;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .filename {
+      font-size: 0.85rem;
+      color: #4b5563;
+      max-width: 320px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .version-chip {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+  }
+
+  &__head-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  &__loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px;
+    color: #6b7280;
+
+    &--error {
+      color: #b91c1c;
+    }
+  }
+
+  &__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
+    gap: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  &__info {
+    overflow-y: auto;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-right: 1px solid #e5e7eb;
+    background: #fff;
+  }
+
+  &__file {
+    background: #f3f4f6;
+    overflow: hidden;
+    display: flex;
+    padding: 12px;
+  }
+
+  &__file-frame {
+    flex: 1 1 auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+    min-height: 0;
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      display: block;
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #fff;
+    }
+  }
+
+  &__file-state {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #6b7280;
+    text-align: center;
+    padding: 24px;
+
+    mat-icon {
+      font-size: 36px;
+      width: 36px;
+      height: 36px;
+    }
+
+    &--error {
+      color: #b91c1c;
+    }
+  }
+}
+
+// ── Status pill (mirrors admin-invoices) ─────────────────────────────
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+
+  &--ok {
+    background: #d1fae5;
+    color: #065f46;
+  }
+  &--warn {
+    background: #fef3c7;
+    color: #92400e;
+  }
+  &--alert {
+    background: #fee2e2;
+    color: #7f1d1d;
+  }
+  &--neutral {
+    background: #e5e7eb;
+    color: #374151;
+  }
+}
+
+// ── Info card (mirrors admin-invoices.scss) ─────────────────────────
+.info-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+
+  h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #073148;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #6366f1;
+    }
+  }
+
+  &--warn {
+    background: #fef3c7;
+    border-color: #fde68a;
+    h3 mat-icon { color: #d97706; }
+  }
+
+  &--alert {
+    background: #fee2e2;
+    border-color: #fecaca;
+    h3 mat-icon { color: #dc2626; }
+  }
+
+  &--accent {
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+    border-color: #c7d2fe;
+    h3 mat-icon { color: #4f46e5; }
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+
+    > div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+
+      &.expired strong {
+        color: #b91c1c;
+      }
+    }
+
+    label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    strong {
+      font-size: 0.9rem;
+      color: #1a1a1a;
+      word-break: break-word;
+    }
+
+    .muted {
+      font-size: 0.72rem;
+      color: #b91c1c;
+      font-style: italic;
+    }
+  }
+}
+
+.muted-block {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.rejection {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.6);
+  border-left: 3px solid #dc2626;
+
+  code {
+    background: #fff;
+    color: #7f1d1d;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+}
+
+.ocr-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed #c7d2fe;
+
+  .ocr-provider {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    code {
+      background: #fff;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.78rem;
+      color: #4338ca;
+    }
+  }
+
+  .ocr-confidence {
+    label {
+      display: block;
+      font-size: 0.72rem;
+      color: #4338ca;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+  }
+}
+
+// ── Key/value table for OCR fields ───────────────────────────────────
+.kv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th, td {
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid #eef2ff;
+  }
+
+  th {
+    color: #4b5563;
+    font-weight: 600;
+    width: 38%;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  td {
+    color: #1a1a1a;
+    word-break: break-word;
+    font-variant-numeric: tabular-nums;
+  }
+
+  tr:last-child th,
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  &__group th {
+    background: #e0e7ff;
+    color: #312e81;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-top: 8px;
+  }
+}
+
+// ── Versions list ────────────────────────────────────────────────────
+.versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  li {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 6px 8px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.82rem;
+  }
+
+  &__tag {
+    background: #e5e7eb;
+    color: #374151;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.72rem;
+  }
+
+  &__status {
+    color: #4b5563;
+    text-transform: capitalize;
+  }
+
+  &__date {
+    color: #6b7280;
+    font-size: 0.78rem;
+  }
+
+  code {
+    margin-left: auto;
+    background: #fee2e2;
+    color: #7f1d1d;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+  }
+}
+
+// ── Responsive : stack below 900px ───────────────────────────────────
+@media (max-width: 900px) {
+  .doc-detail__body {
+    grid-template-columns: minmax(0, 1fr);
+    overflow-y: auto;
+  }
+
+  .doc-detail__info {
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+    overflow-y: visible;
+  }
+
+  .doc-detail__file {
+    height: 280px;
+    flex-shrink: 0;
+  }
+
+  .doc-detail__head-main .filename {
+    max-width: 160px;
+  }
+}

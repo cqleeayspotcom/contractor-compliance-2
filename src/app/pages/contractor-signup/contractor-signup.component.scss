@@ -1,0 +1,362 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: block;
+  background: #f5f6f8;
+  min-height: 100vh;
+  padding: 32px 16px;
+}
+
+.signup-page {
+  max-width: 600px;
+  margin: 0 auto;
+  font-family: $t-default-font;
+
+  &__card {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 32px 28px;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+
+    @media (max-width: 600px) {
+      padding: 24px 20px;
+    }
+
+    &--success {
+      text-align: center;
+    }
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: 24px;
+
+    h1 {
+      margin: 6px 0 8px;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: $t-logo-blue;
+      letter-spacing: -0.015em;
+
+      @media (min-width: 600px) {
+        font-size: 1.75rem;
+      }
+    }
+
+    p {
+      margin: 0;
+      color: rgba($t-logo-blue, 0.75);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+  }
+
+}
+
+// ── Indicateur d'étapes (1. Mon code → 2. Mes infos) ─────────────────────
+.signup-form__steps {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.signup-form__step {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba($t-logo-blue, 0.08);
+  color: rgba($t-logo-blue, 0.55);
+
+  &--active {
+    background: $t-logo-blue;
+    color: #ffffff;
+  }
+  &--done {
+    background: rgba($t-base-green, 0.18);
+    color: darken($t-base-green, 6%);
+  }
+}
+
+// ── Bandeau "code OK" en haut de l'étape 2 ───────────────────────────────
+.code-confirmed {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba($t-base-green, 0.12);
+  border: 1px solid rgba($t-base-green, 0.3);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  color: rgba($t-logo-blue, 0.85);
+
+  mat-icon {
+    color: darken($t-base-green, 4%);
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  strong {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    letter-spacing: 0.1em;
+    color: $t-logo-blue;
+  }
+
+  &__change {
+    background: transparent;
+    border: none;
+    color: $t-logo-blue;
+    text-decoration: underline;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0 0 0 6px;
+
+    &:hover { color: $t-base-orange; }
+  }
+}
+
+// ── Form ──────────────────────────────────────────────────────────────────
+.signup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  &__code-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: $t-back-grey-medium;
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 6px;
+
+    label {
+      font-size: 0.825rem;
+      font-weight: 700;
+      color: rgba($t-logo-blue, 0.85);
+      margin-bottom: 8px;
+    }
+  }
+
+  &__row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+
+    @media (max-width: 480px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__full {
+    width: 100%;
+  }
+
+  &__error {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: rgba($t-base-orange, 0.1);
+    border: 1px solid rgba($t-base-orange, 0.3);
+    border-radius: 10px;
+    color: darken($t-base-orange, 6%);
+    font-size: 0.875rem;
+
+    mat-icon { flex-shrink: 0; }
+  }
+
+  &__submit {
+    height: 52px !important;
+    border-radius: 12px !important;
+    font-weight: 800 !important;
+    font-size: 1rem !important;
+    background: linear-gradient(135deg, $t-base-green 0%, darken($t-base-green, 6%) 100%) !important;
+    box-shadow: 0 6px 16px rgba($t-base-green, 0.35) !important;
+
+    // État loading : on garde le bouton visuellement actif (gradient vert),
+    // mais on bloque le pointer + on affiche le spinner blanc + libellé.
+    &--loading {
+      cursor: progress !important;
+      opacity: 0.92;
+    }
+
+    // Le spinner Material par défaut est bleu/primary → invisible sur le
+    // bouton vert. On force le stroke blanc + on aligne le label.
+    ::ng-deep .mat-mdc-progress-spinner circle {
+      stroke: #ffffff !important;
+    }
+  }
+
+  &__submit-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: #ffffff;
+    font-weight: 700;
+
+    mat-spinner {
+      flex-shrink: 0;
+    }
+  }
+
+  &__legal {
+    text-align: center;
+    margin: 0;
+    font-size: 0.8rem;
+    color: rgba($t-logo-blue, 0.6);
+  }
+
+  &__intro {
+    text-align: center;
+    margin: 0 0 6px;
+    font-size: 0.875rem;
+    color: rgba($t-logo-blue, 0.7);
+    line-height: 1.5;
+  }
+}
+
+// Icône check verte qui apparaît dans le champ téléphone quand le numéro
+// est correctement formaté → feedback visuel immédiat à l'artisan
+.phone-valid-icon {
+  color: darken($t-base-green, 4%) !important;
+}
+
+// La page passe d'étape 1 (1 champ central) à étape 2 (form) → on agrandit
+// le lede sur étape 1 pour ne pas qu'il paraisse vide.
+.signup-page__lede {
+  font-size: 1rem !important;
+  line-height: 1.55 !important;
+
+  strong {
+    color: $t-logo-blue;
+    font-weight: 800;
+  }
+}
+
+.code-input {
+  width: 100%;
+  max-width: 320px;
+  border: 2px solid rgba($t-logo-blue, 0.18);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 2.25rem;
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.4em;
+  color: $t-logo-blue;
+  background: #ffffff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &:focus {
+    outline: none;
+    border-color: $t-base-green;
+    box-shadow: 0 0 0 4px rgba($t-base-green, 0.18);
+  }
+
+  &::placeholder {
+    color: rgba($t-logo-blue, 0.25);
+    letter-spacing: 0.4em;
+  }
+}
+
+.code-hint {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  color: rgba($t-logo-blue, 0.6);
+  text-align: center;
+}
+
+// ── Success state ─────────────────────────────────────────────────────────
+.success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba($t-base-green, 0.18);
+  color: darken($t-base-green, 4%);
+  margin-bottom: 8px;
+
+  mat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.success-code {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba($t-base-green, 0.1) 0%, rgba($t-base-green, 0.18) 100%);
+  border: 2px solid $t-base-green;
+  border-radius: 16px;
+  padding: 22px 32px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin: 12px 0 8px;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba($t-base-green, 0.32);
+  }
+
+  &__value {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: $t-logo-blue;
+    letter-spacing: 0.18em;
+  }
+
+  mat-icon {
+    color: rgba($t-logo-blue, 0.55);
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+.success-hint {
+  font-size: 0.85rem;
+  color: rgba($t-logo-blue, 0.7);
+  margin: 0 0 20px;
+}
+
+.success-cta {
+  display: block !important;
+  margin: 8px auto 0 !important;
+  height: 52px !important;
+  min-width: 280px;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  animation: success-cta-pulse 1.8s ease-in-out infinite;
+  will-change: transform, box-shadow;
+
+  &:hover {
+    animation-play-state: paused;
+    transform: translateY(-1px) scale(1.02);
+  }
+}
+
+@keyframes success-cta-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 12px rgba($t-logo-blue, 0.25);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 8px 24px rgba($t-logo-blue, 0.45);
+  }
+}

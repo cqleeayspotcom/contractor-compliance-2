@@ -1,0 +1,266 @@
+<div class="doc-detail">
+  <!-- ── Sticky header ─────────────────────────────────────────────── -->
+  <header class="doc-detail__head">
+    <div class="doc-detail__head-main">
+      @if (detail(); as d) {
+        <span class="type-badge">{{ d.document.type_label ?? d.document.type ?? '—' }}</span>
+        <span class="status-pill" [class]="'status-pill--' + statusClass()">
+          {{ d.document.status_label ?? d.document.status ?? '—' }}
+        </span>
+        <span class="filename" [matTooltip]="d.document.original_filename ?? ''">
+          {{ d.document.original_filename ?? '—' }}
+        </span>
+        <span class="version-chip" *ngIf="d.document.document_version > 1">
+          v{{ d.document.document_version }}
+        </span>
+      } @else {
+        <h2>Document</h2>
+      }
+    </div>
+
+    <div class="doc-detail__head-actions">
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="download()"
+        [disabled]="loading() || !!loadError()"
+      >
+        <mat-icon>download</mat-icon>
+        Télécharger
+      </button>
+      <button
+        mat-stroked-button
+        type="button"
+        (click)="openInNewTab()"
+        [disabled]="fileLoading() || !!fileError() || !detail()?.document?.is_pdf && !detail()?.document?.is_image"
+      >
+        <mat-icon>open_in_new</mat-icon>
+        Ouvrir dans un onglet
+      </button>
+      <button mat-icon-button type="button" (click)="close()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── Loading / error state ─────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="doc-detail__loading">
+      <mat-progress-spinner mode="indeterminate" diameter="36" />
+      <span>Chargement du document…</span>
+    </div>
+  } @else if (loadError()) {
+    <div class="doc-detail__loading doc-detail__loading--error">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ loadError() }}</span>
+    </div>
+  } @else if (detail(); as d) {
+    <!-- ── Body : 2 columns desktop, stacked mobile ────────────────── -->
+    <section class="doc-detail__body">
+      <!-- LEFT : metadata + OCR ─────────────────────────────────── -->
+      <aside class="doc-detail__info">
+        <!-- Status card -->
+        <div
+          class="info-card"
+          [class.info-card--alert]="statusClass() === 'alert'"
+          [class.info-card--warn]="statusClass() === 'warn'"
+        >
+          <h3>
+            <mat-icon>verified</mat-icon>
+            Statut
+          </h3>
+          <div class="info-grid">
+            <div>
+              <label>État</label>
+              <strong>{{ d.document.status_label ?? d.document.status ?? '—' }}</strong>
+            </div>
+            <div>
+              <label>Version</label>
+              <strong>v{{ d.document.document_version }}</strong>
+            </div>
+            <div *ngIf="d.document.has_face_photo">
+              <label>Visage</label>
+              <strong>Photo extraite</strong>
+            </div>
+          </div>
+
+          @if (d.document.rejection_reason) {
+            <div class="rejection">
+              <code>{{ d.document.rejection_reason }}</code>
+              @if (d.document.rejection_details) {
+                <p>{{ d.document.rejection_details }}</p>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Obsolete version warning -->
+        @if (!d.document.is_current_version && d.superseded_by) {
+          <div class="info-card info-card--warn">
+            <h3>
+              <mat-icon>history</mat-icon>
+              Version obsolète
+            </h3>
+            <p class="muted-block">
+              Cette version a été remplacée par <strong>v{{ d.superseded_by.version }}</strong>.
+            </p>
+          </div>
+        }
+
+        <!-- Owner card -->
+        @if (d.owner) {
+          <div class="info-card">
+            <h3>
+              <mat-icon>business</mat-icon>
+              Entreprise
+            </h3>
+            <div class="info-grid">
+              <div>
+                <label>Raison sociale</label>
+                <strong>{{ d.owner.company_name ?? '—' }}</strong>
+              </div>
+              <div>
+                <label>SIREN</label>
+                <strong>{{ d.owner.company_siren ?? '—' }}</strong>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Dates card -->
+        <div class="info-card">
+          <h3>
+            <mat-icon>schedule</mat-icon>
+            Dates
+          </h3>
+          <div class="info-grid">
+            <div>
+              <label>Créé le</label>
+              <strong>{{ d.document.created_at | date:'short' }}</strong>
+            </div>
+            <div *ngIf="d.document.verified_at">
+              <label>Vérifié le</label>
+              <strong>{{ d.document.verified_at | date:'short' }}</strong>
+            </div>
+            <div *ngIf="d.document.rejected_at">
+              <label>Rejeté le</label>
+              <strong>{{ d.document.rejected_at | date:'short' }}</strong>
+            </div>
+            <div *ngIf="d.document.expires_at" [class.expired]="isExpired()">
+              <label>Expire le</label>
+              <strong>{{ d.document.expires_at | date:'shortDate' }}</strong>
+              <span *ngIf="isExpired()" class="muted">expiré</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- OCR extracted data -->
+        <div class="info-card info-card--accent">
+          <h3>
+            <mat-icon>auto_awesome</mat-icon>
+            OCR — données extraites
+          </h3>
+
+          @if (d.ocr_provider || confidencePct() !== null) {
+            <div class="ocr-meta">
+              <div *ngIf="d.ocr_provider" class="ocr-provider">
+                <label>Provider</label>
+                <code>{{ d.ocr_provider }}</code>
+              </div>
+              <div *ngIf="confidencePct() !== null" class="ocr-confidence">
+                <label>Confiance — {{ confidencePct() }}%</label>
+                <mat-progress-bar
+                  mode="determinate"
+                  [value]="confidencePct() ?? 0"
+                />
+              </div>
+            </div>
+          }
+
+          @if (extractedFields().length === 0) {
+            <p class="muted-block">Aucune donnée OCR disponible.</p>
+          } @else {
+            <table class="kv-table">
+              <tbody>
+                @for (f of extractedFields(); track trackByKey($index, f)) {
+                  @if (f.isObject && f.children) {
+                    <tr class="kv-table__group">
+                      <th colspan="2">{{ f.label }}</th>
+                    </tr>
+                    @for (sub of f.children; track trackByKey($index, sub)) {
+                      <tr>
+                        <th>{{ sub.label }}</th>
+                        <td>{{ sub.value }}</td>
+                      </tr>
+                    }
+                  } @else {
+                    <tr>
+                      <th>{{ f.label }}</th>
+                      <td>{{ f.value }}</td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+
+        <!-- Previous versions -->
+        @if (d.previous_versions.length > 0) {
+          <div class="info-card">
+            <h3>
+              <mat-icon>history</mat-icon>
+              Versions précédentes ({{ d.previous_versions.length }})
+            </h3>
+            <ul class="versions">
+              @for (v of d.previous_versions; track trackByUuid($index, v)) {
+                <li>
+                  <span class="versions__tag">v{{ v.document_version }}</span>
+                  <span class="versions__status">{{ v.status }}</span>
+                  <span class="versions__date" *ngIf="v.created_at">
+                    {{ v.created_at | date:'shortDate' }}
+                  </span>
+                  <code *ngIf="v.rejection_reason">{{ v.rejection_reason }}</code>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </aside>
+
+      <!-- RIGHT : file viewer ───────────────────────────────────── -->
+      <section class="doc-detail__file">
+        <div class="doc-detail__file-frame">
+          @if (fileLoading()) {
+            <div class="doc-detail__file-state">
+              <mat-progress-spinner mode="indeterminate" diameter="36" />
+              <span>Chargement de l'aperçu…</span>
+            </div>
+          } @else if (fileError()) {
+            <div class="doc-detail__file-state doc-detail__file-state--error">
+              <mat-icon>broken_image</mat-icon>
+              <span>{{ fileError() }}</span>
+            </div>
+          } @else if (d.document.is_pdf && safeFileUrl()) {
+            <iframe
+              [src]="safeFileUrl()"
+              title="Aperçu du document"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          } @else if (d.document.is_image && imageBlobUrl()) {
+            <img [src]="imageBlobUrl()" alt="Aperçu du document" />
+          } @else {
+            <div class="doc-detail__file-state">
+              <mat-icon>insert_drive_file</mat-icon>
+              <span>Aperçu indisponible pour ce format.</span>
+              <button mat-stroked-button type="button" (click)="download()">
+                <mat-icon>download</mat-icon>
+                Télécharger le fichier
+              </button>
+            </div>
+          }
+        </div>
+      </section>
+    </section>
+  }
+</div>

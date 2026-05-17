@@ -1,0 +1,46 @@
+<header [ngClass]="headerClasses">
+  @if (showBackButton) {
+    <button
+      type="button"
+      class="page-header-back"
+      (click)="onBackClick()"
+      [attr.aria-label]="backButtonText"
+    >
+      <tuita-icon [icon]="backButtonIcon" size="sm" color="primary"></tuita-icon>
+      <span>{{ backButtonText }}</span>
+    </button>
+  }
+
+  @if (hasBreadcrumbs) {
+    <nav class="page-header-breadcrumbs" aria-label="Breadcrumb">
+      <ol class="page-header-breadcrumbs-list">
+        @for (breadcrumb of breadcrumbs; track breadcrumb.label; let isLast = $last) {
+          <li
+            class="page-header-breadcrumb-item"
+            [class.page-header-breadcrumb-current]="isLast"
+            [attr.aria-current]="isLast ? 'page' : null"
+          >
+            @if (!isLast && breadcrumb.path) {
+              <a [routerLink]="breadcrumb.path" class="page-header-breadcrumb-link">
+                {{ breadcrumb.label }}
+              </a>
+            } @else {
+              <span class="page-header-breadcrumb-label">{{ breadcrumb.label }}</span>
+            }
+          </li>
+        }
+      </ol>
+    </nav>
+  }
+
+  <div class="page-header-content">
+    <div class="page-header-text">
+      <h1 class="page-header-title">{{ title }}</h1>
+      @if (subtitle) {
+        <p class="page-header-subtitle">{{ subtitle }}</p>
+      }
+    </div>
+
+    <ng-content select="[actions]"></ng-content>
+  </div>
+</header>

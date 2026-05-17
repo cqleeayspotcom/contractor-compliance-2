@@ -1,0 +1,642 @@
+@if (isLoading()) {
+  <div class="page-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement des documents...</p>
+  </div>
+} @else {
+  <!-- Bannière flottante visible quel que soit le scroll : garantit que
+       l'user voit qu'une action est en cours, même s'il était au milieu/bas
+       de la liste quand l'action a démarré (purchase post-modal close,
+       upload après scroll, etc.). Évite le « est-ce que ça bug ? ». -->
+  @if (isUploading() || isPollingPurchaseArrival()) {
+    <div class="floating-progress" role="status" aria-live="polite">
+      <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+      <span class="floating-progress__text">
+        @if (isPollingPurchaseArrival()) {
+          Livraison de votre document en cours - ne fermez pas la page
+        } @else {
+          Action en cours - ne fermez pas la page
+        }
+      </span>
+    </div>
+  }
+
+  <div class="page">
+
+    <!-- Header -->
+    <div class="page__header">
+      <div class="page__header-text">
+        <div class="page__title-row">
+          <app-back-button />
+          <h1><mat-icon class="page__title-icon">folder_open</mat-icon>Mes documents</h1>
+        </div>
+        <p>Dépose et vérifie tes documents en une seule page.</p>
+      </div>
+      <div class="page__header-actions">
+        <a mat-button
+           routerLink="/documents/purchases"
+           class="page__purchases-link">
+          <mat-icon>receipt_long</mat-icon>
+          Mes achats précédents
+        </a>
+        <button mat-icon-button
+                (click)="refresh()"
+                [disabled]="isRefreshing()"
+                matTooltip="Actualiser"
+                class="btn-refresh"
+                [class.btn-refresh--spinning]="isRefreshing()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Input file caché, déclenché par les boutons « Uploader » de chaque
+         ligne (triggerUpload()). La grande dropzone d'avant a été retirée :
+         sur mobile elle prenait toute la fold sans valeur ajoutée — chaque
+         requirement manquant porte déjà son propre bouton. -->
+    <input #fileInput type="file"
+           accept=".pdf,.jpg,.jpeg,.png,.webp"
+           multiple
+           hidden
+           (change)="onFileSelected($event)">
+
+ 
+
+    @if (purchaseBanner() === 'success') {
+      <div class="purchase-banner purchase-banner--ok" role="status">
+        @if (isPollingPurchaseArrival()) {
+          <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
+        } @else {
+          <mat-icon aria-hidden="true">check_circle</mat-icon>
+        }
+        <div>
+          <strong>Achat confirmé !</strong>
+          <span>
+            @if (isPollingPurchaseArrival()) {
+              Votre document officiel est en cours de livraison - il apparaîtra dans votre liste d'ici quelques secondes. Vous pourrez le télécharger directement depuis cette page.
+            } @else {
+              Le document officiel arrive dans quelques secondes - il sera validé automatiquement.
+            }
+          </span>
+        </div>
+      </div>
+    }
+    @if (purchaseBanner() === 'cancelled') {
+      <div class="purchase-banner purchase-banner--warn" role="status">
+        <mat-icon aria-hidden="true">info</mat-icon>
+        <span>Paiement annulé - aucun document n'a été acheté.</span>
+      </div>
+    }
+
+    @if (purchaseArrivalToast(); as toast) {
+      <div class="purchase-arrival-toast" role="status" aria-live="polite">
+        <mat-icon class="purchase-arrival-toast__icon" aria-hidden="true">download_done</mat-icon>
+        <div class="purchase-arrival-toast__body">
+          <strong>Votre document est prêt !</strong>
+          <span>{{ toast.label }} vient d'être ajouté à votre liste. Cliquez sur « Télécharger » pour le récupérer.</span>
+        </div>
+        <button mat-icon-button type="button"
+                class="purchase-arrival-toast__close"
+                aria-label="Fermer"
+                (click)="dismissPurchaseArrivalToast()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+
+    <!-- CTA permanent : achat officiel via Pappers.
+         Deux états selon la disponibilité du SIREN :
+           1. SIREN connu (session ou OCR d'un doc VERIFIED) → bouton plein bloc
+              cliquable, départ direct vers Stripe Checkout.
+           2. SIREN inconnu → carte avec champ de saisie SIREN inline. Pas de
+              modal surprise au clic — l'artisan voit dès le départ ce qu'on
+              attend de lui et le bouton reste désactivé tant que le SIREN
+              n'est pas valide (9 chiffres). -->
+    @if (hasKnownSiren()) {
+      <button type="button"
+              class="purchase-cta"
+              [disabled]="isUploading()"
+              [attr.aria-label]="'Récupérer mon justificatif d\'immatriculation officiel pour ' + extraitInpiPriceLabel()"
+              (click)="quickPurchaseImmatriculation()">
+        <div class="purchase-cta__icon" aria-hidden="true">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="purchase-cta__text">
+          <span class="purchase-cta__badge">
+            <mat-icon aria-hidden="true">verified</mat-icon>
+            Officiel
+          </span>
+          <span class="purchase-cta__title">
+            Récupérer mon justificatif d'immatriculation
+          </span>
+          <span class="purchase-cta__desc">
+            Déjà validé, livré en 30 secondes - pour seulement
+            <strong>{{ extraitInpiPriceLabel() }}</strong>.
+          </span>
+        </div>
+        <span class="purchase-cta__cta" aria-hidden="true">
+          <span class="purchase-cta__cta-price">{{ extraitInpiPriceLabel() }}</span>
+          <mat-icon class="purchase-cta__cta-arrow">arrow_forward</mat-icon>
+        </span>
+      </button>
+    } @else {
+      <div class="purchase-cta purchase-cta--needs-siren" role="group"
+           aria-label="Récupérer mon justificatif d'immatriculation - SIREN requis">
+        <div class="purchase-cta__icon" aria-hidden="true">
+          <mat-icon>receipt_long</mat-icon>
+        </div>
+        <div class="purchase-cta__form">
+          <span class="purchase-cta__badge">
+            <mat-icon aria-hidden="true">verified</mat-icon>
+            Officiel
+          </span>
+          <span class="purchase-cta__title">
+            Récupérer mon justificatif d'immatriculation
+          </span>
+          <span class="purchase-cta__desc">
+            Pour récupérer ton document officiel ({{ extraitInpiPriceLabel() }}, livré en 30 secondes),
+            indique d'abord ton <strong>SIREN</strong> - les <strong>9 premiers chiffres</strong> de ton SIRET.
+          </span>
+          <div class="purchase-cta__siren-row">
+            <mat-form-field appearance="outline" class="purchase-cta__siren-field">
+              <mat-label>SIREN (9 chiffres)</mat-label>
+              <input matInput
+                     type="text"
+                     inputmode="numeric"
+                     autocomplete="off"
+                     maxlength="9"
+                     placeholder="123 456 789"
+                     [value]="sirenInlineInput()"
+                     (input)="onSirenInlineChange($any($event.target).value)"
+                     (keydown.enter)="submitInlineSirenPurchase()" />
+              <mat-hint align="start">Visible sur ton Kbis ou ton avis INSEE.</mat-hint>
+            </mat-form-field>
+            <button mat-raised-button color="primary"
+                    type="button"
+                    class="purchase-cta__siren-btn"
+                    [disabled]="!hasValidSirenInline() || isUploading()"
+                    (click)="submitInlineSirenPurchase()">
+              <mat-icon>shopping_cart</mat-icon>
+              <span class="purchase-cta__siren-btn-text">
+                Récupérer · {{ extraitInpiPriceLabel() }}
+              </span>
+            </button>
+          </div>
+          <div class="purchase-cta__safety">
+            <mat-icon aria-hidden="true">verified_user</mat-icon>
+            <span>
+              Tu verras le <strong>nom officiel de ton entreprise</strong> avant de saisir ta carte.
+              Aucun débit tant que tu n'as pas confirmé.
+            </span>
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (expiringSoonDocs().length > 0) {
+      <div class="purchase-banner purchase-banner--warn" role="alert">
+        <mat-icon aria-hidden="true">schedule</mat-icon>
+        <div class="expiring-banner__body">
+          @if (expiringSoonDocs().length === 1) {
+            @let doc = expiringSoonDocs()[0];
+            <strong>{{ typeLabel(doc.type) }} expire dans {{ daysUntilExpiry(doc) }} jour{{ daysUntilExpiry(doc) > 1 ? 's' : '' }}</strong>
+            @if (isPurchasableDocType(doc.type)) {
+              <span>Rachète ton justificatif officiel maintenant pour rester conforme.</span>
+            } @else {
+              <span>Téléverse la nouvelle version dès que tu l'as pour rester conforme.</span>
+            }
+          } @else {
+            <strong>{{ expiringSoonDocs().length }} documents expirent bientôt</strong>
+            <span>Mets à jour ton dossier pour rester conforme sans interruption.</span>
+          }
+        </div>
+        @if (expiringSoonDocs().length === 1 && isPurchasableDocType(expiringSoonDocs()[0].type)) {
+          @if (hasKnownSiren()) {
+            <button mat-raised-button color="primary"
+                    class="expiring-banner__cta"
+                    [disabled]="isUploading()"
+                    (click)="purchaseDocumentByType(expiringSoonDocs()[0].type)">
+              <mat-icon>shopping_cart</mat-icon>
+              Racheter {{ extraitInpiPriceLabel() }}
+            </button>
+          } @else {
+            <button mat-stroked-button color="primary"
+                    class="expiring-banner__cta"
+                    [disabled]="isUploading()"
+                    (click)="quickPurchaseImmatriculation()">
+              <mat-icon>edit</mat-icon>
+              Indiquer mon SIREN
+            </button>
+          }
+        }
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="error-msg" role="alert">
+        <mat-icon aria-hidden="true">error_outline</mat-icon>
+        {{ errorMessage() }}
+      </div>
+    }
+
+    <!-- Verdict live : cartes d'upload en cours / termines -->
+    @if (uploadedDocs().length > 0) {
+      <section class="uploads-card" aria-live="polite" aria-label="Analyses en cours">
+        <div class="uploads-card__header">
+          <mat-icon aria-hidden="true">cloud_sync</mat-icon>
+          <div>
+            <h3>
+              @if (hasPendingUploads()) {
+                Analyse en cours
+              } @else {
+                Verdict
+              }
+            </h3>
+            <p>
+              @if (hasPendingUploads()) {
+                L'analyse automatique tourne, quelques secondes...
+              } @else {
+                Voici le resultat de vos dernieres analyses.
+              }
+            </p>
+          </div>
+        </div>
+
+        <div class="upload-list">
+          @for (doc of uploadedDocs(); track trackByUuid($index, doc)) {
+            <article class="upload-item"
+                     [class.upload-item--verified]="doc.status === 'verified'"
+                     [class.upload-item--rejected]="doc.status === 'rejected' || doc.status === 'error' || doc.status === 'expired' || doc.status === 'legally_outdated'"
+                     [class.upload-item--processing]="!doc.isFinal"
+                     [attr.role]="!doc.isFinal ? 'status' : null"
+                     [attr.aria-label]="doc.fileName + ' : ' + statusLabel(doc.status)">
+
+              <div class="upload-item__header">
+                <div class="upload-item__icon" aria-hidden="true">
+                  @if (!doc.isFinal) {
+                    <mat-spinner diameter="32" strokeWidth="3"></mat-spinner>
+                  } @else {
+                    <mat-icon>{{ statusIcon(doc.status) }}</mat-icon>
+                  }
+                </div>
+                <div class="upload-item__title">
+                  <span class="upload-item__filename">
+                    <span class="upload-item__emoji" aria-hidden="true">
+                      {{ typeEmoji(doc.detectedType || doc.declaredType) }}
+                    </span>
+                    {{ doc.fileName }}
+                  </span>
+                  <span class="upload-item__meta">
+                    @if (doc.detectedType) {
+                      Type détecté : <strong>{{ typeLabel(doc.detectedType) }}</strong>
+                    } @else if (!doc.isFinal) {
+                      <span class="upload-item__meta-pending">
+                        <mat-spinner diameter="12" strokeWidth="2"></mat-spinner>
+                        Classification automatique en cours...
+                      </span>
+                    } @else if (doc.declaredType) {
+                      Type déclaré : <strong>{{ typeLabel(doc.declaredType) }}</strong>
+                    }
+                  </span>
+                </div>
+                <button mat-icon-button type="button"
+                        class="upload-item__dismiss"
+                        aria-label="Retirer cette carte"
+                        (click)="removeUploadedDoc(doc.uuid)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+
+              <div class="upload-item__progress">
+                <div class="upload-item__phase">
+                  <span class="upload-item__phase-label">{{ phaseLabel(doc.phase) }}</span>
+                  @if (doc.elapsedSeconds !== null) {
+                    <span class="upload-item__elapsed">
+                      @if (doc.isFinal) {
+                        Termine en {{ formatElapsed(doc.elapsedSeconds) }}
+                      } @else {
+                        Depuis {{ formatElapsed(doc.elapsedSeconds) }}
+                      }
+                    </span>
+                  }
+                </div>
+                <div class="upload-item__bar"
+                     role="progressbar"
+                     [attr.aria-valuenow]="doc.isFinal ? 100 : null"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     [class.upload-item__bar--indeterminate]="!doc.isFinal"
+                     [class.upload-item__bar--ok]="doc.status === 'verified'"
+                     [class.upload-item__bar--ko]="doc.status === 'rejected' || doc.status === 'error' || doc.status === 'expired'">
+                  <span></span>
+                </div>
+              </div>
+
+              @if (doc.status === 'verified') {
+                <div class="upload-item__verdict upload-item__verdict--ok" role="status">
+                  <mat-icon class="upload-item__verdict-icon" aria-hidden="true">check_circle</mat-icon>
+                  <div class="upload-item__verdict-text">
+                    <span class="upload-item__verdict-label">Document accepté</span>
+                    <strong>
+                      @if (doc.detectedType) {
+                        {{ typeLabel(doc.detectedType) }} valide
+                      } @else {
+                        Vérification réussie
+                      }
+                    </strong>
+                    <span class="upload-item__verdict-desc">Les informations ont été extraites correctement.</span>
+                  </div>
+                  @if (doc.verificationScore !== null) {
+                    <span class="upload-item__score">
+                      {{ (doc.verificationScore * 100) | number:'1.0-0' }} %
+                    </span>
+                  }
+                </div>
+                @if (doc.extractedSummary) {
+                  <dl class="upload-item__fields">
+                    @for (entry of extractedEntries(doc.extractedSummary); track entry.key) {
+                      <div class="upload-item__field">
+                        <dt>{{ extractedFieldLabel(entry.key) }}</dt>
+                        <dd>{{ entry.value }}</dd>
+                      </div>
+                    }
+                  </dl>
+                }
+              }
+
+              @if (doc.status === 'rejected' || doc.status === 'error' || doc.status === 'expired' || doc.status === 'legally_outdated') {
+                <div class="upload-item__verdict upload-item__verdict--ko" role="status">
+                  <mat-icon class="upload-item__verdict-icon" aria-hidden="true">cancel</mat-icon>
+                  <div class="upload-item__verdict-text">
+                    <span class="upload-item__verdict-label">Document rejeté</span>
+                    <strong>
+                      @if (doc.rejectionCopy) {
+                        {{ doc.rejectionCopy.title }}
+                      } @else if (doc.status === 'error') {
+                        Échec de l'envoi
+                      } @else if (doc.status === 'expired' || doc.status === 'legally_outdated') {
+                        Document trop ancien
+                      } @else {
+                        Vérification échouée
+                      }
+                    </strong>
+                    <span class="upload-item__verdict-desc">
+                      @if (doc.rejectionCopy?.description) {
+                        {{ doc.rejectionCopy?.description }}
+                      } @else if (doc.failureDetail) {
+                        {{ doc.failureDetail }}
+                      } @else if (doc.error) {
+                        {{ doc.error }}
+                      } @else {
+                        La vérification automatique a échoué.
+                      }
+                    </span>
+                  </div>
+                </div>
+              }
+
+              <div class="upload-item__actions">
+                @if (doc.status === 'verified') {
+                  <button mat-stroked-button type="button"
+                          class="upload-item__action-btn"
+                          (click)="downloadUploadedDoc(doc.uuid)">
+                    <mat-icon>download</mat-icon>
+                    Télécharger
+                  </button>
+                }
+                @if (doc.status === 'rejected' || doc.status === 'error' || doc.status === 'expired' || doc.status === 'legally_outdated') {
+                  @let uploadDocType = doc.detectedType ?? doc.declaredType;
+                  @if (isPurchasableRejection(doc.failureReason, uploadDocType)) {
+                    <button mat-raised-button color="primary" type="button"
+                            class="upload-item__action-btn upload-item__action-btn--primary"
+                            [disabled]="isUploading()"
+                            (click)="purchaseDocumentByType(uploadDocType)">
+                      <mat-icon>shopping_cart</mat-icon>
+                      Récupérer l'officiel - {{ extraitInpiPriceLabel() }}
+                    </button>
+                  } @else {
+                    <button mat-raised-button color="primary" type="button"
+                            class="upload-item__action-btn upload-item__action-btn--primary"
+                            (click)="triggerUpload()">
+                      <mat-icon>refresh</mat-icon>
+                      {{ doc.rejectionCopy?.actionLabel ?? 'Réuploader' }}
+                    </button>
+                  }
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (hasProcessing() && uploadedDocs().length === 0) {
+      <div class="polling-banner">
+        <mat-spinner diameter="16"></mat-spinner>
+        <span>Des documents sont en cours de traitement - mise à jour automatique...</span>
+      </div>
+    }
+
+    <!-- Vue globale : requirements manquants + tous les documents uploadés
+         sans filtre. Pas de chips — vision unifiée pour l'artisan. -->
+    @if (missingRequirements().length === 0 && documents().length === 0) {
+      <div class="empty-state">
+        <mat-icon>folder_open</mat-icon>
+        <p>Aucun document pour l'instant - commencez par en déposer un.</p>
+      </div>
+    } @else {
+      <div class="doc-list">
+        <!-- En haut : les manquants — priorité visuelle -->
+        @for (req of missingRequirements(); track req.type) {
+          @let purchasable = isPurchasableDocType(req.type);
+          @let bonus = req.is_bonus === true;
+          <div class="doc-card doc-card--missing"
+               [class.doc-card--purchasable]="purchasable"
+               [class.doc-card--bonus]="bonus">
+            <div class="doc-card__icon-wrap doc-card__icon-wrap--warn">
+              <mat-icon class="doc-card__icon">{{ requirementIcon(req.type) }}</mat-icon>
+            </div>
+            <div class="doc-card__content">
+              <!-- typeLabel() unifie les variantes : pour type=kbis on affiche
+                   « KBIS (société) ou Avis SIRENE / Extrait D1 (auto-entrepreneur) »,
+                   au lieu du `req.label` backend qui est juste « Extrait Kbis ». -->
+              <span class="doc-card__label">
+                {{ typeLabel(req.type) }}
+                @if (bonus) {
+                  <span class="doc-card__optional-pill">Optionnel · bonus score</span>
+                }
+              </span>
+              @if (bonus) {
+                <span class="doc-card__sell-line doc-card__sell-line--bonus">
+                  <mat-icon class="doc-card__sell-icon">workspace_premium</mat-icon>
+                  Pas obligatoire pour démarrer - booste ton score et débloque un badge auprès des donneurs d'ordre.
+                </span>
+              } @else if (purchasable) {
+                <span class="doc-card__sell-line">
+                  <mat-icon class="doc-card__sell-icon">verified</mat-icon>
+                  Officiel · livré en 30 secondes · pas besoin de chercher
+                </span>
+              } @else {
+                <span class="doc-card__rejected">
+                  <mat-icon class="doc-card__warn-icon">warning</mat-icon>
+                  Document à fournir
+                </span>
+              }
+            </div>
+            <div class="doc-card__meta">
+              @if (bonus) {
+                <span class="status-badge status-badge--neutral">Optionnel</span>
+              } @else {
+                <span class="status-badge status-badge--red">Manquant</span>
+              }
+              @if (purchasable) {
+                <button mat-raised-button color="primary"
+                        class="doc-card__reupload doc-card__buy-cta tui-attract"
+                        [disabled]="isUploading()"
+                        (click)="quickPurchaseImmatriculation()">
+                  <mat-icon>bolt</mat-icon>
+                  Récupérer l'officiel · {{ extraitInpiPriceLabel() }}
+                </button>
+              } @else {
+                <button mat-raised-button color="primary"
+                        class="doc-card__reupload tui-attract"
+                        (click)="triggerUpload()">
+                  <mat-icon>cloud_upload</mat-icon>
+                  Uploader
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Puis tous les docs uploadés — triés par urgence (rejected →
+             expired → expiring → pending → verified) pour que ce qui
+             demande une action remonte en haut de la liste. -->
+        @for (doc of documentsByPriority(); track trackByUuid($index, doc)) {
+          <div class="doc-card" [attr.data-doc-uuid]="doc.uuid">
+            <div class="doc-card__icon-wrap">
+              <mat-icon class="doc-card__icon">{{ docIcon(doc.detected_type ?? doc.type) }}</mat-icon>
+            </div>
+            <div class="doc-card__content">
+              <span class="doc-card__label">{{ typeLabel(doc.detected_type ?? doc.type) }}</span>
+              <span class="doc-card__filename">{{ doc.file_name }}</span>
+              <span class="doc-card__size">{{ formatFileSize(doc.file_size) }}</span>
+              @if (doc.derived_from_rc_complete) {
+                <span class="doc-card__derived">
+                  <mat-icon class="doc-card__derived-icon">link</mat-icon>
+                  Incluse dans votre attestation RC Pro
+                </span>
+              }
+              @if (doc.status === 'verified' && doc.verified_at) {
+                <span class="doc-card__verified">
+                  <mat-icon class="doc-card__check-icon">check_circle</mat-icon>
+                  Vérifié le {{ doc.verified_at | date:'dd/MM/yyyy' }}
+                </span>
+              }
+              @if (doc.status === 'verified' && doc.expires_at && !isExpiringSoon(doc)) {
+                <span class="doc-card__expiry">
+                  <mat-icon class="doc-card__expiry-icon">event</mat-icon>
+                  Valide jusqu'au {{ doc.expires_at | date:'dd/MM/yyyy' }}
+                </span>
+              } @else if (doc.status === 'verified' && !doc.expires_at) {
+                <span class="doc-card__expiry">
+                  <mat-icon class="doc-card__expiry-icon">all_inclusive</mat-icon>
+                  Sans expiration
+                </span>
+              }
+              @if (doc.status === 'processing') {
+                <span class="doc-card__processing">
+                  <mat-spinner diameter="14"></mat-spinner>
+                  Analyse en cours...
+                </span>
+              }
+              @if (doc.status === 'rejected') {
+                @if (rejectionCopy(doc); as copy) {
+                  <span class="doc-card__rejected">
+                    <mat-icon class="doc-card__warn-icon">error_outline</mat-icon>
+                    <span class="doc-card__rejected-text">
+                      <strong>{{ copy.title }}</strong> - {{ copy.description }}
+                    </span>
+                  </span>
+                } @else if (doc.failure_detail) {
+                  <span class="doc-card__rejected">
+                    <mat-icon class="doc-card__warn-icon">error_outline</mat-icon>
+                    {{ doc.failure_detail }}
+                  </span>
+                }
+              }
+              @if (doc.status === 'expired' && doc.expires_at) {
+                <span class="doc-card__expired">
+                  <mat-icon class="doc-card__warn-icon">warning</mat-icon>
+                  Expiré depuis {{ daysSinceExpiry(doc) }} jour{{ daysSinceExpiry(doc) > 1 ? 's' : '' }}
+                </span>
+              }
+              @if (isExpiringSoon(doc)) {
+                <span class="doc-card__expiring">
+                  <mat-icon class="doc-card__warn-icon">schedule</mat-icon>
+                  Expire dans {{ daysUntilExpiry(doc) }} jour{{ daysUntilExpiry(doc) > 1 ? 's' : '' }}
+                </span>
+              }
+            </div>
+            <div class="doc-card__meta">
+              <span class="status-badge" [class]="statusClass(doc.status)">
+                {{ statusLabel(doc.status) }}
+              </span>
+              @if (doc.uploaded_at) {
+                <span class="doc-card__date">{{ doc.uploaded_at | date:'dd/MM/yyyy' }}</span>
+              }
+              @if (doc.status === 'verified') {
+                <button mat-icon-button
+                        class="doc-card__dl"
+                        matTooltip="Telecharger"
+                        (click)="downloadListDoc($event, doc)">
+                  <mat-icon>download</mat-icon>
+                </button>
+                @if (isExpiringSoon(doc) && isPurchasableDocType(doc.type)) {
+                  <button mat-stroked-button
+                          color="primary"
+                          class="doc-card__reupload tui-attract"
+                          [disabled]="isUploading()"
+                          (click)="purchaseDocumentByType(doc.type)">
+                    <mat-icon>shopping_cart</mat-icon>
+                    Racheter {{ extraitInpiPriceLabel() }}
+                  </button>
+                }
+              } @else if (doc.status === 'rejected' || doc.status === 'expired') {
+                @let listDocType = doc.detected_type ?? doc.type;
+                @if (isPurchasableRejection(doc.failure_reason, listDocType)) {
+                  <button mat-stroked-button
+                          color="primary"
+                          class="doc-card__reupload tui-attract"
+                          [disabled]="isUploading()"
+                          (click)="purchaseDocumentByType(listDocType)">
+                    <mat-icon>shopping_cart</mat-icon>
+                    Acheter {{ extraitInpiPriceLabel() }}
+                  </button>
+                } @else if (doc.status === 'expired' && isPurchasableDocType(doc.type)) {
+                  <button mat-stroked-button
+                          color="primary"
+                          class="doc-card__reupload tui-attract"
+                          [disabled]="isUploading()"
+                          (click)="purchaseDocumentByType(doc.type)">
+                    <mat-icon>shopping_cart</mat-icon>
+                    Racheter {{ extraitInpiPriceLabel() }}
+                  </button>
+                } @else {
+                  <button mat-stroked-button
+                          color="primary"
+                          class="doc-card__reupload tui-attract"
+                          (click)="triggerUpload()">
+                    <mat-icon>refresh</mat-icon>
+                    Reuploader
+                  </button>
+                }
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+}

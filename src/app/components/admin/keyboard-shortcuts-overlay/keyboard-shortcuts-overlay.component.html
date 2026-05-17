@@ -1,0 +1,50 @@
+@if (visible()) {
+  <div class="overlay-backdrop" (click)="onBackdropClick()"></div>
+  <div class="overlay-panel" role="dialog" aria-label="Raccourcis clavier">
+    <header class="overlay-head">
+      <h2>Raccourcis clavier</h2>
+      <button mat-icon-button (click)="closed.emit()" aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </header>
+    <div class="overlay-body">
+      <section>
+        <h3>Navigation</h3>
+        <dl>
+          <dt><kbd>J</kbd> / <kbd>↓</kbd></dt><dd>Suivante</dd>
+          <dt><kbd>K</kbd> / <kbd>↑</kbd></dt><dd>Précédente</dd>
+          <dt><kbd>Enter</kbd></dt><dd>Détail complet</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Onglets</h3>
+        <dl>
+          <dt><kbd>1</kbd></dt><dd>À valider</dd>
+          <dt><kbd>2</kbd></dt><dd>Bon pour paiement</dd>
+          <dt><kbd>3</kbd></dt><dd>Virement en cours</dd>
+          <dt><kbd>4</kbd></dt><dd>Litiges</dd>
+          <dt><kbd>5</kbd></dt><dd>Tout</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Actions facture</h3>
+        <dl>
+          <dt><kbd>V</kbd></dt><dd>Marquer payée</dd>
+          <dt><kbd>I</kbd></dt><dd>Virement lancé</dd>
+          <dt><kbd>D</kbd></dt><dd>Télécharger PDF</dd>
+          <dt><kbd>C</kbd></dt><dd>Copier IBAN</dd>
+          <dt><kbd>O</kbd></dt><dd>Détail complet</dd>
+        </dl>
+      </section>
+      <section>
+        <h3>Recherche & général</h3>
+        <dl>
+          <dt><kbd>/</kbd></dt><dd>Focus recherche</dd>
+          <dt><kbd>R</kbd></dt><dd>Rafraîchir</dd>
+          <dt><kbd>?</kbd></dt><dd>Cette aide</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Fermer</dd>
+        </dl>
+      </section>
+    </div>
+  </div>
+}

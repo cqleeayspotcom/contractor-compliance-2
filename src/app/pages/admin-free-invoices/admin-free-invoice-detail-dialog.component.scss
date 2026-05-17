@@ -1,0 +1,466 @@
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 !important;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+
+  &__main {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  &__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+  }
+}
+
+.dialog-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-right: 0.25rem;
+
+  &__pos {
+    font-size: 0.85rem;
+    color: #4b5563;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.loading-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 4rem 2rem;
+
+  &__label {
+    font-size: 0.875rem;
+    color: #6b7280;
+  }
+}
+
+.error-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 2rem;
+  color: #6b7280;
+
+  &__icon {
+    font-size: 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    color: #ef4444;
+  }
+}
+
+/**
+ * Layout 2 colonnes (desktop) :
+ *   - main : demande, pièces jointes, actions approve/reject (colonne large)
+ *   - aside : statut contractor (colonne droite, sticky → reste visible au scroll)
+ *
+ * Sur mobile/narrow (≤960px) : empile en colonne unique, le statut contractor
+ * passe en haut pour rester la 1ʳᵉ info vue avant de descendre lire la demande.
+ */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start;
+
+  @media (max-width: 960px) {
+    grid-template-columns: 1fr;
+
+    // Sur mobile, le statut contractor remonte en haut (ordre visuel inversé).
+    .layout__contractor { order: -1; }
+  }
+
+  &__main {
+    min-width: 0; // évite les débordements de grid avec le pre.just
+  }
+
+  &__contractor {
+    position: sticky;
+    top: 0;
+    align-self: flex-start;
+    max-height: calc(90vh - 180px); // header dialog + actions ≈ 180px
+    overflow-y: auto;
+
+    @media (max-width: 960px) {
+      position: static;
+      max-height: none;
+      overflow: visible;
+    }
+  }
+}
+
+.section {
+  margin-bottom: 1.25rem;
+  padding-top: 1.25rem;
+
+  h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 0.75rem;
+  }
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 1rem;
+  font-size: 0.875rem;
+
+  .label {
+    color: #6b7280;
+    white-space: nowrap;
+  }
+}
+
+.subject {
+  font-weight: 500;
+}
+
+.amount-highlight {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #1d4ed8;
+}
+
+.justification-block {
+  margin-top: 1rem;
+
+  .label {
+    display: block;
+    font-size: 0.75rem;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.4rem;
+  }
+}
+
+.just {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.875rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Attachments */
+
+.attachments {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.attachment-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.6rem 0.75rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.att-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.att-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+
+  > div {
+    min-width: 0;
+  }
+
+  .att-icon {
+    color: #6b7280;
+    flex-shrink: 0;
+  }
+}
+
+.att-preview {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.att-preview__img {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  cursor: zoom-in;
+  transition: transform 120ms ease;
+
+  &:hover {
+    transform: scale(1.01);
+  }
+}
+
+.att-preview--pdf {
+  width: 100%;
+}
+
+.att-preview__pdf {
+  display: block;
+  width: 100%;
+  height: 400px;
+  border: 0;
+  background: #f3f4f6;
+}
+
+.att-name {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.att-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.att-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.att-error {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: #ef4444;
+
+  mat-icon {
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+/* Action blocks */
+
+.actions-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  padding-top: 1.25rem;
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.action-block {
+  mat-form-field {
+    width: 100%;
+  }
+
+  button {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+}
+
+.approve-block {
+  padding-right: 0.75rem;
+  border-right: 1px solid #e5e7eb;
+
+  @media (max-width: 640px) {
+    padding-right: 0;
+    border-right: none;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+}
+
+/* Result blocks */
+
+.result-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+
+  mat-icon {
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  &.result-ok {
+    background: #d1fae5;
+    color: #065f46;
+    mat-icon { color: #10b981; }
+  }
+
+  &.result-ko {
+    background: #fee2e2;
+    color: #991b1b;
+    mat-icon { color: #ef4444; }
+  }
+
+  &.result-neutral {
+    background: #f3f4f6;
+    color: #374151;
+    mat-icon { color: #9ca3af; }
+  }
+}
+
+.associated-missions {
+  margin: 24px 0;
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+
+  .warning-empty {
+    background: #fef3c7;
+    border-left: 4px solid #f59e0b;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  li {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--mat-sys-outline-variant, rgba(0, 0, 0, 0.12));
+
+    &:last-child { border-bottom: 0; }
+    &.orphan { background: #fff7ed; }
+
+    &.total {
+      font-weight: 600;
+      text-align: right;
+      background: #f8fafc;
+    }
+  }
+
+  .row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .ref {
+    font-family: monospace;
+    font-size: 0.9rem;
+  }
+
+  .title {
+    font-weight: 500;
+  }
+
+  .meta {
+    font-size: 0.85rem;
+    color: var(--mat-sys-on-surface-variant, rgba(0, 0, 0, 0.6));
+    margin-top: 4px;
+  }
+
+  .orphan-badge {
+    color: #c2410c;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+}
+
+/* Status chip */
+
+.status-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+
+  &.status-pending_admin_approval {
+    background: #fef3c7;
+    color: #92400e;
+  }
+
+  &.status-authorized {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  &.status-rejected {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  &.status-expired {
+    background: #f3f4f6;
+    color: #6b7280;
+  }
+
+  &.status-consumed {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+
+  &.status-cancelled {
+    background: #f3f4f6;
+    color: #9ca3af;
+  }
+}

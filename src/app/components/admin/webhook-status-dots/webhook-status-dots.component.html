@@ -1,0 +1,10 @@
+<span class="dots">
+  @for (e of events; track e.key) {
+    <span
+      class="dot"
+      [class.dot--sent]="webhooks[e.key]"
+      [title]="'webhook ' + e.label + ': ' + (webhooks[e.key] ? 'envoyé' : 'pas envoyé')">
+      {{ e.abbr }}
+    </span>
+  }
+</span>

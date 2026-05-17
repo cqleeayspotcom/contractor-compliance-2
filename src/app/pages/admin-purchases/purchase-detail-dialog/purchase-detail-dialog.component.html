@@ -1,0 +1,131 @@
+<div class="purchase-detail" *ngIf="data">
+  <header class="purchase-detail__head">
+    <div class="purchase-detail__head-main">
+      <h2>{{ data.label }}</h2>
+      <mat-chip class="status-pill" [style.background-color]="statusColor(data.status)" [style.color]="'#fff'">
+        {{ statusLabel(data.status) }}
+      </mat-chip>
+      <span class="purchase-detail__amount">{{ data.price_eur | number: '1.2-2' }} €</span>
+    </div>
+    <div class="purchase-detail__head-actions">
+      <button
+        mat-flat-button
+        color="warn"
+        *ngIf="canRetry(data.status)"
+        (click)="emitRetry()"
+      >
+        <mat-icon>refresh</mat-icon> Relancer
+      </button>
+      <button mat-icon-button mat-dialog-close aria-label="Fermer">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+  </header>
+
+  <div class="purchase-detail__body layout">
+    <!-- Colonne principale : infos achat (action: retry/refund) -->
+    <main class="layout__main">
+      <!-- Identifiants -->
+      <section class="info-card">
+        <h3><mat-icon>fingerprint</mat-icon> Identifiants</h3>
+        <div class="info-grid">
+          <div>
+            <label>Type</label>
+            <strong>{{ data.label }}</strong>
+            <span class="muted">{{ data.document_type }}</span>
+          </div>
+          <div>
+            <label>SIREN</label>
+            <strong><code>{{ data.siren || '—' }}</code></strong>
+          </div>
+          <div>
+            <label>UUID</label>
+            <strong><code>{{ data.uuid | slice:0:8 }}…</code></strong>
+          </div>
+        </div>
+      </section>
+
+    <!-- Paiement (Stripe) -->
+    <section *ngIf="data.stripe_payment_intent_id" class="info-card">
+      <h3><mat-icon>payment</mat-icon> Paiement</h3>
+      <div class="info-grid">
+        <div>
+          <label>Stripe PaymentIntent</label>
+          <strong><code>{{ data.stripe_payment_intent_id }}</code></strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Provider (Pappers) — admin internal -->
+    <section *ngIf="data.pappers_request_id || data.source" class="info-card">
+      <h3><mat-icon>cloud_done</mat-icon> Provider</h3>
+      <div class="info-grid">
+        <div *ngIf="data.source">
+          <label>Source</label>
+          <strong>{{ data.source }}</strong>
+        </div>
+        <div *ngIf="data.pappers_request_id">
+          <label>Request ID</label>
+          <strong><code>{{ data.pappers_request_id }}</code></strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Erreur -->
+    <section *ngIf="data.error_message" class="info-card info-card--alert">
+      <h3><mat-icon>error_outline</mat-icon> Erreur</h3>
+      <p class="purchase-detail__error">{{ data.error_message }}</p>
+    </section>
+
+    <!-- Timeline -->
+    <section class="info-card">
+      <h3><mat-icon>schedule</mat-icon> Timeline</h3>
+      <ol class="purchase-timeline">
+        @for (e of data.timeline; track e.event) {
+          <li [class.purchase-timeline__item--err]="e.event === 'failed'">
+            <mat-icon>{{ timelineIcon(e.event) }}</mat-icon>
+            <div>
+              <strong>{{ e.label }}</strong>
+              <small *ngIf="e.at">{{ e.at | date: 'dd/MM/yy HH:mm:ss' }}</small>
+              <small *ngIf="!e.at" class="muted">en attente</small>
+            </div>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <!-- Document livré -->
+    <section *ngIf="data.document" class="info-card info-card--ok">
+      <h3><mat-icon>description</mat-icon> Document livré</h3>
+      <div class="info-grid">
+        <div>
+          <label>Fichier</label>
+          <strong>{{ data.document.file_name || '—' }}</strong>
+        </div>
+        <div>
+          <label>Statut</label>
+          <strong><code>{{ data.document.status }}</code></strong>
+        </div>
+        <div *ngIf="data.document.uploaded_at">
+          <label>Livré le</label>
+          <strong>{{ data.document.uploaded_at | date: 'dd/MM/yy HH:mm' }}</strong>
+        </div>
+      </div>
+      <a mat-stroked-button [href]="data.document.download_url" target="_blank" rel="noopener" class="purchase-detail__doc-btn">
+        <mat-icon>download</mat-icon> Télécharger le PDF
+      </a>
+    </section>
+    </main>
+
+    <!-- Colonne droite : statut contractor (sticky desktop, secondaire) -->
+    <aside *ngIf="data.user?.phone as phone" class="layout__contractor">
+      <app-contractor-compliance-summary [phone]="phone" />
+      <div class="purchase-detail__contractor-link">
+        <button mat-stroked-button (click)="goToContractor(phone)">
+          <mat-icon>person_search</mat-icon>
+          Voir le profil 360° →
+        </button>
+      </div>
+    </aside>
+  </div>
+</div>

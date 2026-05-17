@@ -1,0 +1,16 @@
+<footer class="tuita-footer">
+  <div class="tuita-footer__inner">
+    <span class="tuita-footer__copyright">
+      &copy; {{ currentYear }} {{ companyInfo.name }}
+    </span>
+    <nav class="tuita-footer__links">
+      <a *ngFor="let link of legalLinks"
+         class="tuita-footer__link"
+         [href]="link.path"
+         target="_blank"
+         rel="noopener">
+        {{ link.label }}
+      </a>
+    </nav>
+  </div>
+</footer>

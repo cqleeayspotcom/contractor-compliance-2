@@ -1,0 +1,71 @@
+<header class="contractor-header">
+  <div class="contractor-header__inner">
+    <!-- Logo -->
+    <a routerLink="/dashboard" class="contractor-header__logo" aria-label="Tuita - Accueil">
+      <img src="/assets/logo-tuita.svg" alt="Tuita" class="contractor-header__logo-img" />
+    </a>
+
+    <!-- Spacer -->
+    <div class="contractor-header__spacer"></div>
+
+    <!-- Navigation actions -->
+    <nav class="contractor-header__nav" aria-label="Navigation principale">
+      <!-- Missions -->
+      <button
+        mat-icon-button
+        class="contractor-header__btn"
+        routerLinkActive="contractor-header__btn--active"
+        matTooltip="Missions"
+        aria-label="Missions"
+        routerLink="/missions">
+        <mat-icon>assignment</mat-icon>
+      </button>
+
+      <!-- Compliance -->
+      <button
+        mat-icon-button
+        class="contractor-header__btn"
+        routerLinkActive="contractor-header__btn--active"
+        matTooltip="Compliance"
+        aria-label="Compliance"
+        routerLink="/dashboard">
+        <mat-icon>verified_user</mat-icon>
+      </button>
+
+      <!-- Profil -->
+      <a
+        mat-icon-button
+        class="contractor-header__btn"
+        routerLinkActive="contractor-header__btn--active"
+        matTooltip="Mon profil"
+        aria-label="Mon profil"
+        routerLink="/profile">
+        <mat-icon>person</mat-icon>
+      </a>
+
+      <!-- Refresh : gardé sur mobile car critique sur la page /missions
+           (rafraîchir pour voir les nouvelles offres dispo) — le pull-to-
+           refresh natif n'est pas toujours fiable sur Chrome mobile. -->
+      <button
+        mat-icon-button
+        class="contractor-header__btn"
+        [matTooltip]="canRefresh() ? 'Rafraîchir' : 'Action en cours - rafraîchissement indisponible'"
+        [attr.aria-label]="canRefresh() ? 'Rafraîchir' : 'Rafraîchir (indisponible)'"
+        [disabled]="!canRefresh()"
+        (click)="refresh()">
+        <mat-icon>refresh</mat-icon>
+      </button>
+
+      <!-- Exit / Logout : masqué sur mobile (déjà disponible dans /profile
+           via le bouton "Se déconnecter"). Visible uniquement sur desktop. -->
+      <button
+        mat-icon-button
+        class="contractor-header__btn contractor-header__btn--desktop-only"
+        matTooltip="Quitter"
+        aria-label="Quitter"
+        (click)="exit()">
+        <mat-icon>exit_to_app</mat-icon>
+      </button>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,119 @@
+@if (isLoading()) {
+  <div class="page-loading">
+    <mat-spinner diameter="48"></mat-spinner>
+    <p>Chargement...</p>
+  </div>
+} @else if (errorMessage()) {
+  <div class="page-loading">
+    <mat-icon class="error-icon">error_outline</mat-icon>
+    <p>{{ errorMessage() }}</p>
+    <button mat-flat-button color="primary" (click)="goBack()">Retour</button>
+  </div>
+} @else if (document(); as doc) {
+  <div class="page">
+
+    <app-back-button [to]="'/documents'" />
+
+
+    <div class="status-card">
+
+      <!-- Status header -->
+      <div class="status-header">
+        @if (isProcessing()) {
+          <div class="status-icon status-icon--processing">
+            <mat-spinner diameter="40"></mat-spinner>
+          </div>
+          <h1>Vérification en cours</h1>
+          <p class="status-subtitle">Lecture automatique de votre document en cours...</p>
+        } @else if (doc.status === 'verified') {
+          <div class="status-icon status-icon--verified">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+          <h1>Document vérifié</h1>
+          <p class="status-subtitle">Votre document a été vérifié avec succès</p>
+        } @else if (doc.status === 'rejected') {
+          <div class="status-icon status-icon--rejected">
+            <mat-icon>cancel</mat-icon>
+          </div>
+          @if (rejectionCopy(); as copy) {
+            <h1>{{ copy.title }}</h1>
+            <p class="status-subtitle">{{ copy.description }}</p>
+          } @else {
+            <h1>Document refusé</h1>
+            <p class="status-subtitle">{{ doc.failure_detail ?? 'Le document n\'a pas pu être vérifié' }}</p>
+          }
+        }
+      </div>
+
+      <!-- Document info -->
+      <div class="info-grid">
+        <div class="info-row">
+          <span class="info-label">Fichier</span>
+          <span class="info-value">{{ doc.file_name ?? 'Inconnu' }}</span>
+        </div>
+        @if (doc.file_size) {
+          <div class="info-row">
+            <span class="info-label">Taille</span>
+            <span class="info-value">{{ formatFileSize(doc.file_size) }}</span>
+          </div>
+        }
+        <div class="info-row">
+          <span class="info-label">Type</span>
+          <span class="info-value">{{ typeLabel(doc.detected_type ?? doc.type) }}</span>
+        </div>
+        @if (doc.detection_confidence !== null) {
+          <div class="info-row">
+            <span class="info-label">Fiabilité de la lecture</span>
+            <div class="confidence-bar">
+              <mat-progress-bar mode="determinate" [value]="confidencePercent()"></mat-progress-bar>
+              <span class="confidence-value">{{ confidencePercent() }}%</span>
+            </div>
+          </div>
+        }
+        <div class="info-row">
+          <span class="info-label">Envoyé le</span>
+          <span class="info-value">{{ doc.uploaded_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+        </div>
+        @if (doc.verified_at) {
+          <div class="info-row">
+            <span class="info-label">Vérifié le</span>
+            <span class="info-value info-value--green">{{ doc.verified_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Actions -->
+      <div class="status-actions">
+        @if (doc.status === 'verified') {
+          <button mat-raised-button color="primary" (click)="downloadDocument()" [disabled]="isDownloading()">
+            <mat-icon>download</mat-icon>
+            {{ isDownloading() ? 'Téléchargement...' : 'Télécharger le document' }}
+          </button>
+
+          @if (nextAction() && nextAction() !== 'none') {
+            <app-onboarding-next-step-cta [nextAction]="nextAction()" class="doc-next-step"/>
+            <button mat-button class="doc-secondary-link" (click)="goToDashboard()">
+              Retour au tableau de bord
+            </button>
+          } @else {
+            <button mat-stroked-button (click)="goToDashboard()">
+              Retour au tableau de bord
+            </button>
+          }
+        }
+        @if (doc.status === 'rejected') {
+          <button mat-raised-button color="primary" (click)="goBack()">
+            {{ rejectionCopy()?.actionLabel ?? 'Renvoyer un document' }}
+          </button>
+        }
+        @if (isProcessing()) {
+          <button mat-stroked-button (click)="refreshStatus()">
+            <mat-icon>refresh</mat-icon>
+            Actualiser
+          </button>
+        }
+      </div>
+
+    </div>
+  </div>
+}

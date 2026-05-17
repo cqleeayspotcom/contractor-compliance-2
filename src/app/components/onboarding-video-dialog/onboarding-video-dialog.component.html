@@ -1,0 +1,54 @@
+<header class="video-dialog__header">
+  <h2 mat-dialog-title class="video-dialog__title">
+    Étape {{ data.stepNumber }} sur {{ data.totalSteps }} - {{ data.stepTitle }}
+  </h2>
+  <!-- Sortie de secours toujours active. Combinée à `disableClose: true` sur
+       le dialog, sans cette croix l'utilisateur reste bloqué si la vidéo ne
+       déclenche jamais l'event (ended) (autoplay refusé, codec, etc.). -->
+  <button type="button"
+          class="video-dialog__close"
+          aria-label="Fermer la vidéo"
+          (click)="forceClose()">
+    <span aria-hidden="true">×</span>
+  </button>
+</header>
+
+<div mat-dialog-content class="video-dialog__content">
+  <video class="video-dialog__player"
+         [src]="data.videoUrl"
+         autoplay
+         muted
+         playsinline
+         controls
+         preload="metadata"
+         (ended)="onVideoEnded()"
+         aria-label="Tutoriel vidéo de l'étape en cours">
+  </video>
+
+  @if (data.helpLink; as help) {
+    <a class="video-dialog__help-link"
+       [href]="help.url"
+       target="_blank"
+       rel="noopener noreferrer">
+      <span class="video-dialog__help-icon" aria-hidden="true">↗</span>
+      <span class="video-dialog__help-label">{{ help.label }}</span>
+    </a>
+  }
+</div>
+
+<footer mat-dialog-actions class="video-dialog__actions"
+        [class.video-dialog__actions--ready]="canDismiss()">
+  @if (data.forceWatch && !videoEnded()) {
+    <span class="video-dialog__hint" aria-live="polite">
+      <span class="video-dialog__hint-icon" aria-hidden="true">▶</span>
+      Visionne la vidéo jusqu'au bout pour continuer
+    </span>
+  } @else {
+    <button type="button"
+            class="video-dialog__cta"
+            (click)="dismiss()">
+      <span class="video-dialog__cta-check" aria-hidden="true">✓</span>
+      J'ai compris
+    </button>
+  }
+</footer>

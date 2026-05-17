@@ -1,0 +1,434 @@
+<div class="page">
+  <div class="kyc-card">
+
+    <!-- Barre de progression 3 phases (Filme-toi / Envoi / Vérification).
+         Visible UNIQUEMENT pendant le parcours actif (qr_code → processing).
+         Cachée sur idle (écran d'accueil), verified_recap, approved et
+         rejected (verdicts plein écran). Cf. KycProgressBarComponent. -->
+    <app-kyc-progress-bar [state]="state()"></app-kyc-progress-bar>
+
+    <!-- ========== VERIFIED RECAP (identité déjà validée) ========== -->
+    @if (state() === 'verified_recap') {
+      <div class="kyc-hero">
+        <div class="result-icon result-icon--success">
+          <mat-icon>verified</mat-icon>
+        </div>
+
+        <h1>Identité vérifiée</h1>
+
+        @if (verifiedName()) {
+          <p class="hero-subtitle verified-name">{{ verifiedName() }}</p>
+        }
+
+        @if (verifiedAt()) {
+          <p class="verified-date">
+            <mat-icon>event_available</mat-icon>
+            <span>Vérifiée le {{ verifiedAt() | date:'dd/MM/yyyy' }}</span>
+          </p>
+        }
+
+        <p class="verified-info">
+          Votre vérification d'identité est active. Rien à faire de votre côté - vous pouvez
+          accepter des missions sans relancer la vérification.
+        </p>
+
+        <button mat-raised-button
+                color="primary"
+                class="kyc-cta"
+                (click)="goToDashboard()">
+          Retour au tableau de bord
+        </button>
+
+        <!-- Porte de secours auditée : lien discret, masqué par défaut
+             derrière un modal de confirmation. -->
+        <button type="button" class="verified-redo-link" (click)="openRedoConfirm()">
+          Un problème avec ma vérification&nbsp;?
+        </button>
+      </div>
+    }
+
+    <!-- ========== IDLE STATE ========== -->
+    @if (state() === 'idle') {
+      <div class="kyc-hero">
+        <button type="button"
+                class="help-btn"
+                aria-label="Aide"
+                (click)="openHelpDialog()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+
+        <div class="hero-icon-circle">
+          <mat-icon class="hero-icon">verified_user</mat-icon>
+        </div>
+
+        <h1>Vérification d'identité</h1>
+        <p class="hero-subtitle">
+          Enregistrez une courte vidéo (10 sec) en suivant les instructions à l'écran
+        </p>
+
+        <!-- Steps preview -->
+        <div class="steps-preview">
+          <div class="step-item">
+            <span class="step-num">1</span>
+            <span>Acceptez les conditions</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">2</span>
+            <span>Effectuez 2 gestes (ex: tourner la tête à gauche)</span>
+          </div>
+          <div class="step-item">
+            <span class="step-num">3</span>
+            <span>Nous vérifions votre identité</span>
+          </div>
+        </div>
+
+        <!-- Terms checkbox -->
+        <div class="terms-check" [class.tui-attract-halo]="!termsAccepted()">
+          <mat-checkbox [checked]="termsAccepted()" (change)="termsAccepted.set($event.checked)">
+            J'accepte les
+          </mat-checkbox>
+          <a class="terms-link" (click)="openTermsDialog($event)">conditions de vérification d'identité</a>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-msg">
+            <mat-icon>error_outline</mat-icon>
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <button mat-raised-button
+                color="primary"
+                class="kyc-cta tui-attract"
+                [disabled]="!termsAccepted()"
+                (click)="startChallenge()">
+          Commencer
+          <mat-icon>arrow_forward</mat-icon>
+        </button>
+      </div>
+    }
+
+    <!-- ========== DESKTOP → QR CODE ========== -->
+    @if (state() === 'qr_code') {
+      <div class="kyc-hero">
+        <button type="button"
+                class="help-btn"
+                aria-label="Aide"
+                (click)="openHelpDialog()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+
+        <div class="hero-icon-circle hero-icon-circle--info">
+          <mat-icon class="hero-icon">qr_code_2</mat-icon>
+        </div>
+
+        <h1>Scannez avec votre téléphone</h1>
+        <p class="hero-subtitle">
+          La vérification d'identité nécessite la caméra de votre téléphone
+        </p>
+
+        <div class="qr-container">
+          <img [src]="qrCodeUrl()" alt="QR Code" class="qr-image" />
+        </div>
+
+        <p class="qr-hint">
+          Ouvrez l'appareil photo de votre téléphone et scannez le QR code ci-dessus
+        </p>
+
+        <div class="qr-waiting">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>En attente de la vérification sur votre téléphone...</span>
+        </div>
+
+        <button mat-button class="kyc-secondary-btn" (click)="forceDesktopMode()">
+          Je veux utiliser la caméra de mon PC
+        </button>
+      </div>
+    }
+
+    <!-- ========== CHALLENGE READY (mobile or forced desktop) ========== -->
+    @if (state() === 'challenge_ready') {
+      <div class="kyc-hero">
+        <button type="button"
+                class="help-btn"
+                aria-label="Aide"
+                (click)="openHelpDialog()">
+          <mat-icon>help_outline</mat-icon>
+        </button>
+
+        <h1>2 gestes à faire</h1>
+
+        <div class="challenge-list">
+          @for (ch of challenge()?.challenges ?? []; track ch.order) {
+            <div class="challenge-item" [attr.data-action]="ch.action">
+              <span class="challenge-number">{{ ch.order }}</span>
+              @if (ch.icon) {
+                <mat-icon class="challenge-icon">{{ ch.icon }}</mat-icon>
+              }
+              <span class="challenge-label">{{ ch.label }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- Conseils visuels ultra courts, pas de prose -->
+        <div class="tips-row">
+          <div class="tip"><mat-icon>wb_sunny</mat-icon><span>Bonne lumière</span></div>
+          <div class="tip"><mat-icon>center_focus_strong</mat-icon><span>Visage dans l'ovale</span></div>
+          <div class="tip"><mat-icon>bolt</mat-icon><span>Gestes francs</span></div>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="error-msg">
+            <mat-icon>error_outline</mat-icon>
+            {{ errorMessage() }}
+          </div>
+        }
+
+        <button mat-raised-button
+                color="primary"
+                class="kyc-cta tui-attract"
+                (click)="startRecording()">
+          <mat-icon>videocam</mat-icon>
+          Démarrer
+        </button>
+      </div>
+    }
+
+    <!-- ========== COUNTDOWN (3-2-1 avant recording) ========== -->
+    @if (state() === 'countdown') {
+      <div class="kyc-hero">
+        <div class="video-container">
+          <video #videoPreview class="video-preview" autoplay muted playsinline></video>
+          <svg viewBox="0 0 240 320" class="video-oval-border" preserveAspectRatio="none">
+            <ellipse cx="120" cy="160" rx="110" ry="150"
+                     fill="none"
+                     stroke="#04A777"
+                     stroke-width="3"
+                     stroke-dasharray="12 8"
+                     stroke-linecap="round" />
+          </svg>
+          <div class="countdown-overlay">
+            @for (n of [countdownValue()]; track n) {
+              <span class="countdown-number">{{ n }}</span>
+            }
+          </div>
+          <p class="video-guide-text">Centrez votre visage</p>
+        </div>
+      </div>
+    }
+
+    <!-- ========== RECORDING ========== -->
+    @if (state() === 'recording') {
+      <div class="kyc-hero">
+        <div class="recording-header">
+          <span class="recording-dot"></span>
+          <span class="recording-label">REC</span>
+          <span class="recording-timer">{{ recordingSeconds() }}s / {{ maxDuration }}s</span>
+        </div>
+
+        <!-- Badge numero + compte a rebours du challenge en cours.
+             L'utilisateur voit clairement combien de temps il lui reste pour
+             ce geste specifique, et quand on bascule vers le 2e challenge. -->
+        <div class="challenge-badge" [attr.data-challenge]="challengeNumber()">
+          <div class="challenge-badge-header">
+            <span class="challenge-badge-num">Geste {{ challengeNumber() }} / 2</span>
+            <span class="challenge-badge-countdown">{{ challengeSecondsLeft() }}s</span>
+          </div>
+          <div class="challenge-badge-progress">
+            <div class="challenge-badge-progress-bar"
+                 [style.width.%]="challengeProgressPct()"></div>
+          </div>
+        </div>
+
+        <!-- Live challenge instruction avec icone directionnelle -->
+        @if (currentChallengeLabel()) {
+          <div class="live-instruction" [attr.data-action]="currentChallengeAction()">
+            @if (currentChallengeIcon()) {
+              <mat-icon class="live-instruction-icon">{{ currentChallengeIcon() }}</mat-icon>
+            }
+            <span class="live-instruction-text">{{ currentChallengeLabel() }}</span>
+          </div>
+        }
+
+        <div class="video-container">
+          <video #videoPreview class="video-preview" autoplay muted playsinline></video>
+          <svg viewBox="0 0 240 320" class="video-oval-border" preserveAspectRatio="none">
+            <ellipse cx="120" cy="160" rx="110" ry="150"
+                     fill="none"
+                     stroke="#04A777"
+                     stroke-width="3"
+                     stroke-dasharray="12 8"
+                     stroke-linecap="round" />
+          </svg>
+          <p class="video-guide-text">Placez votre visage dans l'ovale</p>
+        </div>
+
+        <button mat-raised-button
+                color="warn"
+                class="kyc-cta"
+                (click)="stopRecording()">
+          <mat-icon>stop</mat-icon>
+          Arrêter l'enregistrement
+        </button>
+      </div>
+    }
+
+    <!-- ========== UPLOADING ========== -->
+    @if (state() === 'uploading') {
+      <div class="kyc-hero">
+        <mat-spinner diameter="56"></mat-spinner>
+        <h1>Envoi de la vidéo...</h1>
+        <p class="hero-subtitle">Veuillez patienter</p>
+      </div>
+    }
+
+    <!-- ========== PROCESSING ========== -->
+    @if (state() === 'processing') {
+      <div class="kyc-hero">
+        <div class="processing-animation">
+          <div class="processing-ring"></div>
+          <mat-icon class="processing-icon">face</mat-icon>
+        </div>
+        <h1>Analyse en cours...</h1>
+        <div class="processing-steps">
+          <div class="processing-step" [class.processing-step--active]="true">
+            <mat-icon>check_circle</mat-icon>
+            <span>Vidéo reçue</span>
+          </div>
+          <div class="processing-step processing-step--active processing-step--pulse">
+            <mat-spinner diameter="16"></mat-spinner>
+            <span>Vérification biométrique</span>
+          </div>
+          <div class="processing-step">
+            <mat-icon>radio_button_unchecked</mat-icon>
+            <span>Comparaison avec votre pièce d'identité</span>
+          </div>
+        </div>
+        <p class="hero-subtitle">Cela peut prendre quelques instants...</p>
+
+        <div class="processing-warning">
+          <mat-icon>schedule</mat-icon>
+          <div class="processing-warning__text">
+            <strong>Environ 2 minutes</strong>
+            <span>Ne fermez pas cette page - le résultat s'affichera automatiquement ici. En cas de forte affluence, l'analyse peut prendre quelques minutes.</span>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ========== POLLING STALLED (timeout doux, pas un rejet) ========== -->
+    @if (state() === 'polling_stalled') {
+      <div class="kyc-hero">
+        <mat-icon class="result-icon" style="background: #fff8e1; color: #b8860b;">hourglass_top</mat-icon>
+        <h1>Cela prend plus de temps que prévu</h1>
+        <p class="hero-subtitle">
+          Votre vérification est toujours en cours côté serveur. Cliquez sur "Vérifier maintenant" pour récupérer le résultat,
+          ou revenez plus tard - il sera visible sur votre tableau de bord.
+        </p>
+        <button mat-raised-button color="primary" class="kyc-cta" (click)="refreshNow()">
+          <mat-icon>refresh</mat-icon>
+          Vérifier maintenant
+        </button>
+        <button mat-button class="kyc-cta" (click)="goToDashboard()">
+          Revenir au tableau de bord
+        </button>
+      </div>
+    }
+
+    <!-- ========== APPROVED ========== -->
+    @if (state() === 'approved') {
+      <div class="kyc-hero">
+        <div class="result-icon result-icon--success">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <h1>Identité vérifiée !</h1>
+        <p class="hero-subtitle">Votre vérification d'identité a été approuvée</p>
+
+        @if (nextAction() && nextAction() !== 'none') {
+          <app-onboarding-next-step-cta [nextAction]="nextAction()" class="kyc-next-step"/>
+          <button mat-button class="kyc-secondary-link" (click)="goToDashboard()">
+            Retour au tableau de bord
+          </button>
+        } @else {
+          <button mat-raised-button color="primary" class="kyc-cta" (click)="goToDashboard()">
+            Retour au tableau de bord
+          </button>
+        }
+      </div>
+    }
+
+    <!-- ========== REJECTED ========== -->
+    @if (state() === 'rejected') {
+      <div class="kyc-hero">
+        <div class="result-icon result-icon--failure">
+          <mat-icon>cancel</mat-icon>
+        </div>
+        <h1>Vérification échouée</h1>
+        <p class="hero-subtitle">{{ failureReason() }}</p>
+
+        @if (failureCode(); as code) {
+          @if (failureGuide(code).actions.length > 0) {
+            <div class="kyc-failure-guide">
+              <p class="kyc-failure-guide__heading">Que faire :</p>
+              <ul class="kyc-failure-guide__list">
+                @for (action of failureGuide(code).actions; track action) {
+                  <li>{{ action }}</li>
+                }
+              </ul>
+              <p class="kyc-failure-guide__code">
+                Code de référence (à transmettre au support si besoin) :
+                <code>{{ code }}</code>
+              </p>
+            </div>
+          }
+        }
+
+        @if (failureDebug()) {
+          <details class="kyc-debug">
+            <summary>
+              <mat-icon>bug_report</mat-icon>
+              Détails techniques (mode debug - non visible en production)
+            </summary>
+            <div class="kyc-debug__body">
+              @if (failureCode()) {
+                <p class="kyc-debug__row"><strong>Code :</strong> <code>{{ failureCode() }}</code></p>
+              }
+              @if (failureDetail()) {
+                <p class="kyc-debug__row"><strong>Détail :</strong> {{ failureDetail() }}</p>
+              }
+              <p class="kyc-debug__row"><strong>Provider :</strong> {{ failureDebug()?.biometric_provider ?? '-' }}</p>
+
+              @if (failureDebug()?.thresholds; as t) {
+                <p class="kyc-debug__row">
+                  <strong>Seuils utilisés :</strong>
+                  face_match {{ t.face_match }} (mobile {{ t.face_match_mobile }} / desktop {{ t.face_match_desktop }})
+                  · liveness {{ t.liveness }}
+                </p>
+              }
+
+              @if (failureDebug()?.liveness_result) {
+                <p class="kyc-debug__row"><strong>Résultat liveness :</strong></p>
+                <pre class="kyc-debug__json">{{ formatDebug(failureDebug()?.liveness_result) }}</pre>
+              }
+
+              @if (failureDebug()?.biometric_result) {
+                <p class="kyc-debug__row"><strong>Résultat biométrique brut (comparaison vs pièce d'identité, scores) :</strong></p>
+                <pre class="kyc-debug__json">{{ formatDebug(failureDebug()?.biometric_result) }}</pre>
+              }
+
+              <p class="kyc-debug__row kyc-debug__hint">
+                Ce bloc est exposé uniquement en local / staging / KYC_MOCK_BIOMETRIC=true. En production, seul le message ci-dessus est visible.
+              </p>
+            </div>
+          </details>
+        }
+
+        <button mat-raised-button color="primary" class="kyc-cta tui-attract" (click)="retry()">
+          <mat-icon>refresh</mat-icon>
+          Réessayer
+        </button>
+      </div>
+    }
+
+  </div>
+</div>

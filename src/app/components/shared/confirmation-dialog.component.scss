@@ -1,0 +1,84 @@
+@use '../../../styles/variables' as *;
+
+:host {
+  display: block;
+}
+
+.confirmation-dialog {
+  padding: $t-gap-8 0;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+    margin: 0 0 $t-gap-12;
+    padding: 0;
+    font-size: $t-headline-6;
+    font-weight: 600;
+    line-height: 1.4;
+    color: $t-color;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    font-size: 28px;
+    line-height: 28px;
+
+    &[data-type='error']   { color: $t-base-orange; }
+    &[data-type='warning'] { color: #FFA000; }
+    &[data-type='info']    { color: $t-logo-blue; }
+    &[data-type='success'] { color: $t-base-green; }
+  }
+
+  &__content {
+    margin: 0;
+    padding: 0;
+  }
+
+  &__message {
+    margin: 0 0 $t-gap-8;
+    font-size: $t-body-1;
+    line-height: 1.5;
+    color: $t-color;
+    word-wrap: break-word;
+    white-space: pre-line;
+  }
+
+  &__actions {
+    padding: $t-gap-8 0 0;
+    margin: 0;
+    gap: $t-gap-8;
+
+    button {
+      min-width: 110px;
+    }
+  }
+
+  // Variantes : titre coloré pour signaler la nature de l'action
+  &--error    .confirmation-dialog__title { color: $t-base-orange; }
+  &--warning  .confirmation-dialog__title { color: #FFA000; }
+  &--info     .confirmation-dialog__title { color: $t-logo-blue; }
+  &--success  .confirmation-dialog__title { color: $t-base-green; }
+}
+
+@media (max-width: 640px) {
+  .confirmation-dialog {
+    &__title {
+      font-size: $t-body-1;
+    }
+
+    &__message {
+      font-size: $t-body-2;
+    }
+
+    &__actions {
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

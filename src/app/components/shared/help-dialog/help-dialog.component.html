@@ -1,0 +1,128 @@
+<div class="help-dialog">
+  <div class="help-dialog__header">
+    <mat-icon class="help-dialog__icon">help_outline</mat-icon>
+    <h2>Comment ça marche ?</h2>
+    <button type="button"
+            class="help-dialog__close"
+            aria-label="Fermer"
+            (click)="close()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="help-dialog__body">
+    <!-- Vidéo d'intro Tuita — même asset que le bandeau onboarding et le
+         stepper d'upload. Autoplay muet + controls natifs ; preload=metadata
+         pour ne pas charger le flux tant que l'utilisateur n'appuie pas. -->
+    <div class="help-dialog__video-wrap">
+      <video #helpVideo
+             class="help-dialog__video"
+             src="assets/videos/Intégration_Tuita_tuita.mp4"
+             autoplay
+             muted
+             playsinline
+             controls
+             preload="metadata"
+             (play)="videoEnded.set(false)"
+             (ended)="videoEnded.set(true)"
+             aria-label="Présentation Tuita en vidéo"></video>
+
+      @if (videoEnded()) {
+        <button type="button"
+                class="help-dialog__video-replay"
+                aria-label="Revoir la vidéo"
+                (click)="replayVideo(helpVideo)">
+          <mat-icon aria-hidden="true">replay</mat-icon>
+          <span>Revoir la vidéo</span>
+        </button>
+      }
+    </div>
+
+    <section>
+      <h3><mat-icon>flag</mat-icon>À quoi sert cette page ?</h3>
+      <p>
+        Tuita vérifie que vous êtes en règle (documents officiels + identité)
+        avant de vous confier des chantiers. Une fois validé, vous recevez
+        des missions et Tuita vous paie après chaque intervention.
+      </p>
+      <p>
+        <strong>Votre parcours en 3 étapes :</strong>
+      </p>
+      <ul>
+        <li><strong>1. Vos documents</strong> - vous déposez vos justificatifs (entreprise, assurance, banque...).</li>
+        <li><strong>2. Votre identité</strong> - une courte vidéo selfie pour confirmer que c'est bien vous.</li>
+        <li><strong>3. Le test Tuita</strong> - un QCM rapide sur les règles métier.</li>
+      </ul>
+      <p class="help-tip">
+        <mat-icon>lightbulb</mat-icon>
+        <span>Tant qu'une étape n'est pas terminée, la suivante reste en grisé. Suivez l'ordre proposé par le bandeau coloré en haut du tableau de bord.</span>
+      </p>
+    </section>
+
+    <section>
+      <h3><mat-icon>folder_shared</mat-icon>Quels documents préparer ?</h3>
+      <ul>
+        <li>
+          <strong>Justificatif d'immatriculation</strong> (extrait Kbis pour une société, avis SIRENE pour un auto-entrepreneur).
+          <br><em>À récupérer sur</em> : votre espace Infogreffe ou
+          <a href="https://procedures.inpi.fr/" target="_blank" rel="noopener">procedures.inpi.fr</a>.
+          Vous pouvez aussi le commander en 1 clic depuis Tuita pour {{ extraitInpiPriceLabel() }}.
+        </li>
+        <li>
+          <strong>Attestation de vigilance URSSAF</strong> (datée de moins de 6 mois).
+          <br><em>À récupérer sur</em> :
+          <a href="https://www.urssaf.fr/" target="_blank" rel="noopener">urssaf.fr</a>, espace en ligne → onglet « Attestations ».
+        </li>
+        <li>
+          <strong>Attestation de RC pro</strong> (responsabilité civile professionnelle, en cours de validité).
+          <br><em>À récupérer auprès de</em> : votre assureur (mail ou espace client).
+        </li>
+        <li>
+          <strong>RIB</strong> au nom de l'entreprise (pour que Tuita vous paie).
+          <br><em>À récupérer sur</em> : l'application de votre banque pro.
+        </li>
+        <li>
+          <strong>Pièce d'identité</strong> du dirigeant : carte nationale d'identité, passeport ou titre de séjour, en cours de validité.
+        </li>
+      </ul>
+      <p class="help-tip">
+        <mat-icon>photo_camera</mat-icon>
+        <span>Photo nette, document entier dans le cadre, pas de reflets. Format accepté : PDF, JPG, PNG, WebP - jusqu'à 10 Mo par fichier.</span>
+      </p>
+    </section>
+
+    <section>
+      <h3><mat-icon>badge</mat-icon>La vérification d'identité (vidéo)</h3>
+      <p>
+        Une fois votre pièce d'identité acceptée, vous enregistrez une courte vidéo (≈ 10 secondes)
+        en suivant 2 gestes affichés à l'écran (tourner la tête, sourire, etc.). C'est demandé une seule fois.
+      </p>
+      <ul>
+        <li>Bonne lumière, face à une fenêtre ou une lampe.</li>
+        <li>Visage centré dans l'ovale vert, pas de casquette ni lunettes de soleil.</li>
+        <li>Gestes francs - un mouvement timide ne sera pas détecté.</li>
+      </ul>
+      <p>
+        Le résultat s'affiche en quelques secondes (jusqu'à quelques minutes en cas de forte affluence).
+      </p>
+    </section>
+
+    <section>
+      <h3><mat-icon>support_agent</mat-icon>Vous êtes bloqué ?</h3>
+      <ul>
+        <li><strong>Document refusé</strong> - la carte rouge précise pourquoi (mauvais type, expiré, illisible). Re-déposez le bon document.</li>
+        <li><strong>Vidéo identité refusée</strong> - l'écran d'erreur liste les actions à essayer (lumière, retirer accessoires, recommencer).</li>
+      </ul>
+      <p class="help-tip">
+        <mat-icon>shield</mat-icon>
+        <span>Vos documents et votre vidéo sont stockés de manière sécurisée et utilisés uniquement pour valider votre conformité Tuita.</span>
+      </p>
+    </section>
+  </div>
+
+  <div class="help-dialog__actions">
+    <button mat-raised-button color="primary" (click)="close()">
+      J'ai compris
+    </button>
+  </div>
+</div>

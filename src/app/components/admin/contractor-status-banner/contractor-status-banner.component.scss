@@ -1,0 +1,48 @@
+.status-banner {
+  border: 1px solid #c8e6c9;
+  background: #f1f8e9;
+  border-radius: 6px;
+  padding: 12px 16px;
+
+  &.degraded {
+    border-color: #ffcc80;
+    background: #fff3e0;
+  }
+
+  &__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    h3 { margin: 0; font-size: 0.9rem; text-transform: uppercase; color: rgba(0,0,0,0.6); letter-spacing: 0.04em; }
+  }
+
+  .identity { margin: 4px 0; font-size: 0.95rem; }
+
+  .kpis {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 6px 0;
+    font-size: 0.9rem;
+
+    .ok { color: #2e7d32; display: inline-flex; align-items: center; gap: 4px; }
+    .ko { color: #c62828; display: inline-flex; align-items: center; gap: 4px; font-weight: 500; }
+    .muted { color: rgba(0,0,0,0.6); }
+    mat-icon { font-size: 16px; height: 16px; width: 16px; }
+  }
+
+  .revenue { margin: 4px 0; font-size: 0.9rem; }
+
+  .warnings {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 0;
+    padding-top: 8px;
+    border-top: 1px dashed rgba(0,0,0,0.1);
+    color: #ef6c00;
+    font-weight: 500;
+    font-size: 0.85rem;
+    mat-icon { font-size: 18px; height: 18px; width: 18px; }
+  }
+}

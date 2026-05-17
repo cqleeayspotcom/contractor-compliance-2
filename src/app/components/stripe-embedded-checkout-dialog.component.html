@@ -1,0 +1,51 @@
+<div class="stripe-dialog">
+  <div class="stripe-dialog__header">
+    <div class="stripe-dialog__title-wrap">
+      <mat-icon class="stripe-dialog__lock">lock</mat-icon>
+      <div>
+        <h2>{{ data.title ?? 'Paiement sécurisé' }}</h2>
+        @if (data.subtitle) {
+          <p class="stripe-dialog__subtitle">{{ data.subtitle }}</p>
+        }
+        <p class="stripe-dialog__microcopy">
+          Paiement sécurisé via Stripe · aucune donnée bancaire n'est stockée par TUITA
+        </p>
+      </div>
+    </div>
+    <button mat-icon-button type="button" class="stripe-dialog__close"
+            aria-label="Fermer" (click)="cancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="stripe-dialog__body">
+    @if (isLoading()) {
+      <div class="stripe-dialog__loading">
+        <mat-spinner diameter="42"></mat-spinner>
+        <p>Chargement du paiement sécurisé...</p>
+      </div>
+    }
+
+    @if (errorMessage()) {
+      <div class="stripe-dialog__error">
+        <mat-icon>error_outline</mat-icon>
+        <div>
+          <strong>Impossible de charger le paiement</strong>
+          <p>{{ errorMessage() }}</p>
+        </div>
+      </div>
+    }
+
+    <div
+      id="stripe-embedded-root"
+      class="stripe-dialog__mount"
+      [class.stripe-dialog__mount--hidden]="isLoading() || errorMessage()"
+    ></div>
+  </div>
+
+  <div class="stripe-dialog__actions">
+    <button mat-button type="button" (click)="cancel()">
+      Annuler
+    </button>
+  </div>
+</div>

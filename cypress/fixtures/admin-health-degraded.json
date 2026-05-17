@@ -1,0 +1,8 @@
+{
+  "services": [
+    { "name": "database", "status": "healthy", "latency_ms": 15 },
+    { "name": "redis", "status": "healthy", "latency_ms": 5 },
+    { "name": "storage", "status": "degraded", "latency_ms": 2500 },
+    { "name": "ocr", "status": "down", "latency_ms": 0 }
+  ]
+}

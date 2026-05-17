@@ -1,0 +1,403 @@
+@use '../../../../styles/variables' as *;
+
+// ─────────────────────────────────────────────────────────────────────────
+// Invoice payment timeline — rendu visuel vertical type "stepper".
+// Objectif : transparence totale du statut paiement pour le contractor.
+// Couleurs : #22c55e (done) / #3b82f6 (in_progress) / #9ca3af (pending)
+//            #ef4444 (rejected) / #e5e7eb (skipped).
+// Ces hex sont figés ici (hors palette SCSS projet) car la timeline a des
+// contraintes de lisibilité de statut indépendantes du thème Tuita.
+// ─────────────────────────────────────────────────────────────────────────
+
+$tl-done:        #22c55e;
+$tl-in-progress: #3b82f6;
+$tl-pending:     #9ca3af;
+$tl-rejected:    #ef4444;
+$tl-skipped:     #e5e7eb;
+
+.invoice-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-20;
+  padding: $t-gap-20;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+
+  &__header {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-4;
+  }
+
+  &__status {
+    margin: 0;
+    font-size: $t-subtitle-1;
+    font-weight: 700;
+    color: $t-text-black;
+  }
+
+  &__desc {
+    margin: 0;
+    font-size: $t-body-2;
+    color: $t-color-light;
+    line-height: 1.5;
+  }
+}
+
+// ── Liste verticale ──────────────────────────────────────────────────────
+.timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-14;
+  padding: 0;
+  // Pas de padding-bottom fixe : géré par la hauteur du segment.
+
+  &__rail {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 28px;
+  }
+
+  &__dot {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 2px solid $tl-pending;
+    color: #fff;
+    z-index: 1;
+    transition: background 0.2s ease, border-color 0.2s ease;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &__dot-pulse {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #fff;
+    animation: timeline-pulse 1.4s ease-in-out infinite;
+  }
+
+  &__segment {
+    flex: 1;
+    width: 2px;
+    min-height: 28px;
+    background: $tl-pending;
+    margin-top: -1px; // chevauche légèrement le dot pour éviter le jointage visible
+  }
+
+  &__body {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: $t-gap-20;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-4;
+  }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+  }
+
+  &__emoji {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  &__date {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  &__eta {
+    font-size: $t-body-3;
+    font-weight: 500;
+    color: $tl-in-progress;
+  }
+
+  &__by {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-color-light;
+    cursor: help;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  &__comment {
+    font-size: $t-body-3;
+    color: $t-text-black;
+    font-style: italic;
+    padding: $t-gap-6 $t-gap-10;
+    background: $t-back-grey-medium;
+    border-radius: 6px;
+    border-left: 3px solid $tl-pending;
+  }
+
+  &__payref {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-family: monospace;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+  }
+
+  // ── Variantes d'état ───────────────────────────────────────────────────
+
+  &--done {
+    .timeline-step__dot {
+      background: $tl-done;
+      border-color: $tl-done;
+    }
+    .timeline-step__segment {
+      background: $tl-done;
+    }
+    .timeline-step__comment {
+      border-left-color: $tl-done;
+    }
+  }
+
+  &--in-progress {
+    .timeline-step__dot {
+      background: $tl-in-progress;
+      border-color: $tl-in-progress;
+      box-shadow: 0 0 0 4px rgba($tl-in-progress, 0.2);
+      animation: timeline-dot-pulse 1.8s ease-in-out infinite;
+    }
+    .timeline-step__name {
+      color: $tl-in-progress;
+    }
+  }
+
+  &--pending {
+    .timeline-step__dot {
+      background: #fff;
+      border-color: $tl-pending;
+    }
+    .timeline-step__name {
+      color: $t-color-light;
+    }
+    .timeline-step__segment {
+      background: $tl-pending;
+    }
+  }
+
+  &--rejected {
+    .timeline-step__dot {
+      background: $tl-rejected;
+      border-color: $tl-rejected;
+    }
+    .timeline-step__segment {
+      background: $tl-skipped;
+    }
+    .timeline-step__name {
+      color: $tl-rejected;
+    }
+    .timeline-step__comment {
+      border-left-color: $tl-rejected;
+      background: rgba($tl-rejected, 0.06);
+    }
+  }
+
+  &--skipped {
+    opacity: 0.55;
+
+    .timeline-step__dot {
+      background: #fff;
+      border-color: $tl-skipped;
+    }
+    .timeline-step__segment {
+      background: $tl-skipped;
+    }
+    .timeline-step__name {
+      color: $tl-pending;
+    }
+  }
+}
+
+@keyframes timeline-pulse {
+  0%, 100% { transform: scale(0.8); opacity: 0.9; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+@keyframes timeline-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+  50%      { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.1); }
+}
+
+// ── Prochaine étape — carte bleu clair ──────────────────────────────────
+.next-action {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-8;
+  padding: $t-gap-14 $t-gap-16;
+  background: rgba($tl-in-progress, 0.08);
+  border-left: 4px solid $tl-in-progress;
+  border-radius: 8px;
+
+  &__header {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+  }
+
+  &__icon {
+    color: $tl-in-progress;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $t-body-2;
+    font-weight: 700;
+    color: $tl-in-progress;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+
+  &__what {
+    margin: 0;
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+  }
+
+  &__meta {
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $t-gap-16;
+
+    > div {
+      display: flex;
+      align-items: baseline;
+      gap: $t-gap-4;
+    }
+
+    dt {
+      font-size: $t-body-3;
+      color: $t-color-light;
+      margin: 0;
+    }
+
+    dd {
+      margin: 0;
+      font-size: $t-body-3;
+      font-weight: 600;
+      color: $t-text-black;
+    }
+  }
+}
+
+// ── Alerte "équipe prévenue" — orange ───────────────────────────────────
+.support-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-10;
+  padding: $t-gap-12 $t-gap-14;
+  background: $base-orange-50;
+  border-left: 4px solid $base-orange-700;
+  border-radius: 8px;
+
+  &__icon {
+    color: $base-orange-700;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: $t-body-2;
+    color: $t-text-black;
+
+    strong {
+      font-weight: 700;
+    }
+  }
+}
+
+// ── Responsive ───────────────────────────────────────────────────────────
+@media (max-width: 600px) {
+  .invoice-timeline {
+    padding: $t-gap-14;
+    gap: $t-gap-16;
+  }
+
+  .timeline-step {
+    gap: $t-gap-10;
+
+    &__rail {
+      width: 24px;
+    }
+
+    &__dot {
+      width: 24px;
+      height: 24px;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
+
+    &__title {
+      font-size: $t-body-2;
+    }
+
+    &__body {
+      padding-bottom: $t-gap-16;
+    }
+  }
+
+  .next-action__meta {
+    flex-direction: column;
+    gap: $t-gap-4;
+  }
+}

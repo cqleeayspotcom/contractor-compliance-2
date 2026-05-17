@@ -1,0 +1,21 @@
+{
+  "data": {
+    "current_plan": "free",
+    "plans": [
+      {
+        "id": "free",
+        "name": "Gratuit",
+        "price_eur_month": 0,
+        "features": ["Dashboard compliance", "Upload documents", "KYC biometrique"],
+        "limitations": ["Factures manuelles uniquement"]
+      },
+      {
+        "id": "paid",
+        "name": "Pro",
+        "price_eur_month": 99.00,
+        "features": ["Tout le plan Gratuit", "Factures auto-generees", "Support prioritaire"],
+        "limitations": []
+      }
+    ]
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "data": {
+    "contractor": {
+      "phone": "P33756874218",
+      "firstName": "LUCIAN",
+      "lastName": "SIRBU",
+      "companyName": "SIRBU LUCIAN BTP",
+      "siren": "123456789"
+    },
+    "compliance": {
+      "score": 85,
+      "global_status": "pending",
+      "is_verified": false
+    },
+    "billing": {
+      "plan": "free",
+      "can_upgrade": true
+    },
+    "documents": {
+      "total_required": 6,
+      "verified": 5,
+      "missing": 0,
+      "pending": 1,
+      "expired": 0,
+      "rejected": 0,
+      "items": [
+        { "type": "kbis", "label": "Extrait KBIS", "status": "verified", "expires_at": "2027-07-15T00:00:00Z", "days_until_expiry": 360, "can_purchase": true, "purchase_price_eur": 3.90, "document_uuid": "doc-kbis-uuid-002" },
+        { "type": "rc", "label": "Attestation RC Pro", "status": "verified", "expires_at": "2027-01-01T00:00:00Z", "days_until_expiry": 170, "can_purchase": false, "purchase_price_eur": null, "document_uuid": "doc-rc-uuid-001" },
+        { "type": "urssaf", "label": "Attestation URSSAF", "status": "verified", "expires_at": "2027-06-15T00:00:00Z", "days_until_expiry": 335, "can_purchase": false, "purchase_price_eur": null, "document_uuid": "doc-urssaf-uuid-002" },
+        { "type": "rib", "label": "RIB", "status": "verified", "expires_at": null, "days_until_expiry": null, "can_purchase": false, "purchase_price_eur": null, "document_uuid": "doc-rib-uuid-001" },
+        { "type": "id_card", "label": "Piece d'identite", "status": "pending", "expires_at": null, "days_until_expiry": null, "can_purchase": false, "purchase_price_eur": null, "document_uuid": "doc-cni-uuid-002" },
+        { "type": "decennale", "label": "Attestation Decennale", "status": "verified", "expires_at": "2027-12-31T00:00:00Z", "days_until_expiry": 530, "can_purchase": false, "purchase_price_eur": null, "document_uuid": "doc-dec-uuid-001" }
+      ]
+    },
+    "kyc": {
+      "status": "rejected",
+      "can_start": true,
+      "last_attempt_at": "2026-07-10T14:00:00Z"
+    },
+    "certification": {
+      "completed": true,
+      "completed_at": "2026-04-13T10:00:00Z",
+      "score": 85
+    },
+    "account_state": "kyc_rejected",
+    "missions_count": 5,
+    "next_action": "retry_kyc"
+  }
+}

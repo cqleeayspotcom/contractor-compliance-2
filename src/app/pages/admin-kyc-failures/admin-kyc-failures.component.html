@@ -1,0 +1,147 @@
+<div class="page">
+  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+
+  <header class="page-header">
+    <h1>Échecs KYC — investigation</h1>
+    <p class="subtitle">Visualisation lecture seule des sessions biométriques rejetées.</p>
+  </header>
+
+  <div class="readonly-banner">
+    <mat-icon>lock</mat-icon>
+    <div>
+      <strong>Mode lecture seule</strong> — Les rejets biométriques sont des décisions de sécurité
+      non réversibles via cette interface. Pour contester un rejet, contactez l'équipe sécurité.
+    </div>
+  </div>
+
+  <mat-card class="filters-card">
+    <div class="filters">
+      <mat-form-field appearance="outline" class="filter-reason">
+        <mat-label>Motif d'échec</mat-label>
+        <mat-select
+          [value]="failureReasonFilter()"
+          (valueChange)="onFailureReasonChange($event)"
+        >
+          @for (opt of failureReasonOptions; track opt.value) {
+            <mat-option [value]="opt.value">{{ opt.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-phone">
+        <mat-label>Téléphone contractor</mat-label>
+        <input
+          matInput
+          type="text"
+          [value]="phoneFilter()"
+          (input)="phoneFilter.set($any($event.target).value)"
+          (keydown.enter)="onPhoneSearch()"
+          placeholder="P33756874218"
+        />
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" (click)="onPhoneSearch()">
+        <mat-icon>search</mat-icon>
+        Rechercher
+      </button>
+    </div>
+  </mat-card>
+
+  @if (isLoading()) {
+    <div class="centered">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else if (errorMsg()) {
+    <div class="error-banner">{{ errorMsg() }}</div>
+  } @else if (!hasResults()) {
+    <mat-card class="empty-state">
+      <mat-icon>inbox</mat-icon>
+      <p>Aucun échec KYC sur cette plage de dates.</p>
+    </mat-card>
+  } @else {
+
+    <mat-card class="table-card">
+      <div class="table-scroll">
+        <table mat-table [dataSource]="rows()" [trackBy]="trackByUuid" matSort
+               [matSortActive]="sort() === 'created_at' ? 'date' : sort()"
+               [matSortDirection]="direction()"
+               (matSortChange)="onSortChange($event)" class="kyc-table">
+
+          <ng-container matColumnDef="uuid">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="uuid">Session</th>
+            <td mat-cell *matCellDef="let row">
+              <code class="uuid-cell">{{ row.uuid.slice(0, 8) }}…</code>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="contractor">
+            <th mat-header-cell *matHeaderCellDef>Contractor</th>
+            <td mat-cell *matCellDef="let row">
+              <div class="contractor-cell">
+                <div class="contractor-name">{{ contractorName(row) }}</div>
+                <div class="contractor-phone">{{ (row.contractor_phone | phoneDisplay) || '—' }}</div>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="failure_reason">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="failure_reason">Motif d'échec</th>
+            <td mat-cell *matCellDef="let row">
+              @if (row.failure_reason) {
+                <mat-chip class="reason-chip">{{ failureReasonLabel(row.failure_reason) }}</mat-chip>
+              } @else {
+                <span class="muted">—</span>
+              }
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="liveness_score">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="liveness_score">Liveness</th>
+            <td mat-cell *matCellDef="let row" class="mono">
+              {{ formatScore(row.liveness_score) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="face_match_score">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="face_match_score">Face match</th>
+            <td mat-cell *matCellDef="let row" class="mono">
+              {{ formatScore(row.face_match_score) }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="provider">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="provider">Provider</th>
+            <td mat-cell *matCellDef="let row">{{ row.biometric_provider || '—' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="date">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header="date">Date</th>
+            <td mat-cell *matCellDef="let row">{{ formatDate(row.completed_at || row.created_at) }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef class="actions-col">Actions</th>
+            <td mat-cell *matCellDef="let row" class="actions-col">
+              <button mat-stroked-button (click)="openDetail(row)">
+                <mat-icon>visibility</mat-icon>
+                Voir le détail
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+
+      <mat-paginator
+        [length]="total()"
+        [pageSize]="pageSize()"
+        [pageIndex]="page()"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        (page)="onPageChange($event)"
+      ></mat-paginator>
+    </mat-card>
+  }
+
+</div>

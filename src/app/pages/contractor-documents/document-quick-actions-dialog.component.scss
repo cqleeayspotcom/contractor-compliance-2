@@ -1,0 +1,405 @@
+.qad {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  padding: 4px;
+}
+
+.qad__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(7, 49, 72, 0.08);
+
+  button {
+    border-radius: 8px;
+    font-weight: 600;
+  }
+}
+
+.qad__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.qad__head-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(7, 49, 72, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  mat-icon {
+    color: #073148;
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+  }
+}
+
+.qad__head-text {
+  flex: 1;
+  min-width: 0;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #073148;
+    margin: 0 0 2px;
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: 13px;
+    color: rgba(7, 49, 72, 0.65);
+    margin: 0;
+    line-height: 1.4;
+  }
+}
+
+.qad__close {
+  flex-shrink: 0;
+  margin-top: -4px;
+  color: rgba(7, 49, 72, 0.55);
+}
+
+.qad__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.qad__section {
+  padding: 16px;
+  border-radius: 10px;
+  background: rgba(7, 49, 72, 0.02);
+  border: 1px solid rgba(7, 49, 72, 0.08);
+
+  &--highlight {
+    background: linear-gradient(135deg, rgba(76, 175, 80, 0.05), rgba(76, 175, 80, 0.1));
+    border-color: rgba(76, 175, 80, 0.25);
+  }
+}
+
+.qad__section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+
+  h3 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #073148;
+    margin: 0 0 2px;
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: 12.5px;
+    color: rgba(7, 49, 72, 0.65);
+    margin: 0;
+    line-height: 1.4;
+
+    strong {
+      color: #073148;
+      font-weight: 700;
+    }
+  }
+}
+
+.qad__num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #073148;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.qad__drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 24px 16px;
+  border: 2px dashed rgba(7, 49, 72, 0.22);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+
+  &:hover, &--active {
+    border-color: #073148;
+    background: rgba(7, 49, 72, 0.03);
+  }
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: #073148;
+    margin-bottom: 4px;
+  }
+
+  strong {
+    font-size: 14px;
+    font-weight: 700;
+    color: #073148;
+  }
+
+  span {
+    font-size: 12.5px;
+    color: rgba(7, 49, 72, 0.6);
+  }
+}
+
+.qad__safety {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  background: rgba(34, 139, 90, 0.06);
+  border: 1px solid rgba(34, 139, 90, 0.22);
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(7, 49, 72, 0.85);
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    color: rgb(34, 139, 90);
+    margin-top: 1px;
+  }
+
+  strong {
+    font-weight: 700;
+    color: #073148;
+  }
+}
+
+.qad__buy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@keyframes qad-buy-attract {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px rgba(4, 167, 119, 0.25),
+      0 0 0 0 rgba(4, 167, 119, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px rgba(4, 167, 119, 0.4),
+      0 0 0 10px rgba(4, 167, 119, 0);
+  }
+}
+
+.qad__buy-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px !important;
+  height: auto !important;
+  line-height: 1.3 !important;
+  text-align: left;
+  border-radius: 10px !important;
+  animation: qad-buy-attract 2.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
+  mat-icon {
+    flex-shrink: 0;
+    font-size: 22px;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.qad__buy-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  strong {
+    font-size: 14px;
+    font-weight: 700;
+    display: block;
+  }
+
+  span {
+    font-size: 12px;
+    opacity: 0.82;
+    font-weight: 400;
+  }
+}
+
+.qad__buy-price {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 700;
+  padding-left: 8px;
+}
+
+.qad__siren-field {
+  margin: 14px 0 4px;
+  padding: 12px 14px;
+  background: rgba(25, 118, 210, 0.06);
+  border-left: 3px solid #1976d2;
+  border-radius: 8px;
+}
+
+.qad__siren-intro {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: #333;
+  line-height: 1.4;
+}
+
+.qad__siren-input {
+  width: 100%;
+  max-width: 280px;
+}
+
+.qad__siren-warn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  background: rgba(244, 67, 54, 0.08);
+  border-radius: 8px;
+  color: #d32f2f;
+  font-size: 12.5px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.qad__download-btn {
+  width: 100%;
+  gap: 8px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// ── Mobile : dialog plein écran, header sticky, body scrollable ──────────────
+@media (max-width: 600px) {
+  .qad {
+    height: 100vh;
+    max-height: 100vh;
+    gap: 12px;
+    padding: 12px 10px 10px;
+  }
+
+  .qad__head {
+    gap: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(7, 49, 72, 0.08);
+    flex-shrink: 0;
+  }
+
+  .qad__head-icon {
+    width: 38px;
+    height: 38px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .qad__head-text {
+    h2 {
+      font-size: 16px;
+    }
+
+    p {
+      font-size: 12px;
+    }
+  }
+
+  .qad__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    gap: 12px;
+    padding-right: 2px;
+  }
+
+  .qad__section {
+    padding: 12px;
+  }
+
+  .qad__section-head {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .qad__buy-btn {
+    padding: 12px !important;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .qad__buy-text {
+    strong {
+      font-size: 13px;
+    }
+
+    span {
+      font-size: 11.5px;
+    }
+  }
+
+  .qad__buy-price {
+    font-size: 14px;
+    padding-left: 6px;
+  }
+
+  .qad__siren-input {
+    max-width: 100%;
+  }
+
+  .qad__footer {
+    padding-top: 10px;
+    margin-top: 0;
+    flex-shrink: 0;
+  }
+}

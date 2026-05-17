@@ -1,0 +1,197 @@
+.tuita-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+
+  // Size variants
+  &--sm {
+    .tuita-logo__container {
+      width: 80px;
+      height: auto;
+
+      svg {
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    &.tuita-logo--full .tuita-logo__container {
+      width: 120px;
+    }
+
+    &.tuita-logo--icon .tuita-logo__container {
+      width: 32px;
+    }
+
+    &.tuita-logo--compact .tuita-logo__container {
+      width: 40px;
+    }
+  }
+
+  &--md {
+    .tuita-logo__container {
+      width: 120px;
+      height: auto;
+
+      svg {
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    &.tuita-logo--full .tuita-logo__container {
+      width: 180px;
+    }
+
+    &.tuita-logo--icon .tuita-logo__container {
+      width: 48px;
+    }
+
+    &.tuita-logo--compact .tuita-logo__container {
+      width: 60px;
+    }
+  }
+
+  &--lg {
+    .tuita-logo__container {
+      width: 160px;
+      height: auto;
+
+      svg {
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    &.tuita-logo--full .tuita-logo__container {
+      width: 240px;
+    }
+
+    &.tuita-logo--icon .tuita-logo__container {
+      width: 64px;
+    }
+
+    &.tuita-logo--compact .tuita-logo__container {
+      width: 80px;
+    }
+  }
+
+  &--xl {
+    .tuita-logo__container {
+      width: 200px;
+      height: auto;
+
+      svg {
+        width: 100%;
+        height: auto;
+      }
+    }
+
+    &.tuita-logo--full .tuita-logo__container {
+      width: 320px;
+    }
+
+    &.tuita-logo--icon .tuita-logo__container {
+      width: 96px;
+    }
+
+    &.tuita-logo--compact .tuita-logo__container {
+      width: 120px;
+    }
+  }
+
+  // Container for SVG content
+  &__container {
+    display: block;
+    transition: transform 0.2s ease;
+
+    svg {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+  }
+
+  // Hover effect (optional, can be removed)
+  &:hover &__container {
+    transform: scale(1.02);
+  }
+
+  // Color variants - ensuring proper contrast
+  &--white {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+  }
+
+  &--primary {
+    // No additional styling needed for primary color
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    &--lg,
+    &--xl {
+      &.tuita-logo--full .tuita-logo__container {
+        width: 180px;
+      }
+
+      &.tuita-logo--icon .tuita-logo__container {
+        width: 56px;
+      }
+
+      &.tuita-logo--compact .tuita-logo__container {
+        width: 70px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    &--md,
+    &--lg,
+    &--xl {
+      &.tuita-logo--full .tuita-logo__container {
+        width: 140px;
+      }
+
+      &.tuita-logo--icon .tuita-logo__container {
+        width: 40px;
+      }
+
+      &.tuita-logo--compact .tuita-logo__container {
+        width: 50px;
+      }
+    }
+
+    &--sm {
+      &.tuita-logo--full .tuita-logo__container {
+        width: 100px;
+      }
+
+      &.tuita-logo--icon .tuita-logo__container {
+        width: 28px;
+      }
+
+      &.tuita-logo--compact .tuita-logo__container {
+        width: 35px;
+      }
+    }
+  }
+
+  // Focus styles for accessibility
+  &:focus {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  // Reduced motion support
+  @media (prefers-reduced-motion: reduce) {
+    &__container {
+      transition: none;
+    }
+
+    &:hover &__container {
+      transform: none;
+    }
+  }
+}

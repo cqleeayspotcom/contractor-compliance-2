@@ -1,0 +1,124 @@
+<h2 mat-dialog-title class="dialog-title">Nouvelle demande de facture libre</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()" class="free-invoice-form">
+  <mat-dialog-content class="dialog-content">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Objet</mat-label>
+      <input matInput formControlName="subject" maxlength="200" />
+      <mat-hint>Ex: « Opération de toiture »</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-label>Montant TTC souhaité</mat-label>
+      <input matInput type="number" min="0.01" step="0.01" formControlName="requested_amount_ttc" />
+      <span matTextSuffix>€</span>
+      <mat-hint>Indicatif - Tuita figera le montant final à l'approbation.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="outline"
+      subscriptSizing="dynamic"
+      floatLabel="always"
+      class="justification-field"
+      [class.justification-field--ok]="justificationOk()"
+      [class.justification-field--short]="!justificationOk() && justificationLength() > 0"
+    >
+      <mat-label>Justification</mat-label>
+      <textarea
+        matInput
+        formControlName="justification"
+        rows="4"
+        maxlength="5000"
+        placeholder="Expliquez en quelques phrases la nature de la prestation, le contexte (mission hors-plateforme, dépannage urgent, frais à rembourser...) et pourquoi elle ne passe pas par une mission tuita.fr."
+      ></textarea>
+
+      <mat-hint align="start">
+        @if (justificationLength() === 0) {
+          <span>≥ 30 caractères requis</span>
+        } @else if (!justificationOk()) {
+          <span class="counter counter--short">
+            Encore {{ justificationRemaining() }} caractère{{ justificationRemaining() > 1 ? 's' : '' }} pour atteindre les 30 minimum
+          </span>
+        } @else {
+          <span class="counter counter--ok">
+            <mat-icon class="counter__icon">check_circle</mat-icon>
+            Longueur OK
+          </span>
+        }
+      </mat-hint>
+
+      <mat-hint align="end">{{ justificationLength() }} / 5000</mat-hint>
+    </mat-form-field>
+
+    <section class="files">
+      <h3 class="files__title">
+        Pièces jointes
+        <span class="files__hint">≥ 1 fichier · max 5 · PDF/JPG/PNG · 10 Mo chacun</span>
+      </h3>
+
+      <label
+        class="dropzone"
+        [class.dropzone--dragging]="isDragging()"
+        [class.dropzone--filled]="files().length > 0"
+        (dragover)="onDragOver($event)"
+        (dragleave)="onDragLeave($event)"
+        (drop)="onDrop($event)"
+      >
+        <input
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png"
+          (change)="onFilesSelected($event)"
+          hidden
+        />
+        <mat-icon class="dropzone__icon">cloud_upload</mat-icon>
+        <span class="dropzone__title">
+          @if (files().length === 0) {
+            Glissez vos fichiers ici
+          } @else {
+            Ajouter d'autres fichiers
+          }
+        </span>
+        <span class="dropzone__cta">ou cliquez pour parcourir</span>
+      </label>
+
+      @if (files().length > 0) {
+        <ul class="files__list" role="list">
+          @for (f of files(); track f.name; let i = $index) {
+            <li class="files__item">
+              <mat-icon class="files__item-icon" [attr.data-kind]="iconKind(f)">
+                {{ iconFor(f) }}
+              </mat-icon>
+              <span class="files__item-info">
+                <span class="files__item-name" [title]="f.name">{{ f.name }}</span>
+                <span class="files__item-size">{{ formatSize(f.size) }}</span>
+              </span>
+              <button
+                type="button"
+                mat-icon-button
+                class="files__item-remove"
+                (click)="removeFile(i); $event.preventDefault()"
+                aria-label="Supprimer ce fichier"
+              >
+                <mat-icon>close</mat-icon>
+              </button>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+    <app-eligible-missions-picker (selectionChange)="missionRefs.set($event)"></app-eligible-missions-picker>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button mat-dialog-close type="button">Annuler</button>
+    <button
+      mat-flat-button
+      color="primary"
+      type="submit"
+      [disabled]="submitting() || form.invalid || files().length < 1"
+    >
+      Envoyer la demande
+    </button>
+  </mat-dialog-actions>
+</form>

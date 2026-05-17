@@ -1,0 +1,8 @@
+.vchips { display: inline-flex; gap: 4px; }
+.vchip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 11px; font-size: 11px; font-weight: 600;
+  &--approved { background: #28a745; color: white; }
+  &--rejected { background: #dc3545; color: white; }
+  &--pending  { background: #e9ecef; color: #6c757d; }
+}

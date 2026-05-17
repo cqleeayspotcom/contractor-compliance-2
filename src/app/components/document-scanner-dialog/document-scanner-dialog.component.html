@@ -1,0 +1,92 @@
+<div class="scanner-dialog" mat-dialog-content>
+  <header class="scanner-dialog__header">
+    <h2>{{ title() }}</h2>
+    <p class="scanner-dialog__hint" [class.hidden]="state() === 'error' || state() === 'loading'">
+      {{ hint() }}
+    </p>
+  </header>
+
+  @if (state() === 'loading') {
+    <div class="scanner-dialog__loading">
+      <div class="scanner-dialog__spinner" role="progressbar" aria-label="Chargement"></div>
+      <p>Préparation de la photo...</p>
+    </div>
+  }
+
+  @if (state() === 'error') {
+    <div class="scanner-dialog__error">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage() || 'Scanner indisponible.' }}</p>
+      <p class="scanner-dialog__error-detail">
+        Tu peux envoyer la photo telle quelle, on saura la traiter côté serveur.
+      </p>
+    </div>
+  }
+
+  @if (state() === 'ready' || state() === 'editing' || state() === 'submitting') {
+    <div class="scanner-dialog__preview" #overlay
+         (pointermove)="onHandlePointerMove($event)"
+         (pointerup)="onHandlePointerUp($event)">
+      <canvas #previewCanvas class="scanner-dialog__canvas"></canvas>
+
+      @if (state() === 'editing') {
+        @for (side of cornerSides; track side) {
+          <button type="button"
+                  class="scanner-dialog__handle"
+                  [attr.data-side]="side"
+                  [style.left.px]="handlePosition(side).left"
+                  [style.top.px]="handlePosition(side).top"
+                  (pointerdown)="onHandlePointerDown(side, $event)"
+                  aria-label="Coin déplaçable">
+          </button>
+        }
+      }
+
+      @if (state() === 'submitting') {
+        <div class="scanner-dialog__overlay-spinner">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+<div class="scanner-dialog__actions" mat-dialog-actions>
+  @if (state() === 'error') {
+    <button mat-button (click)="cancel()">Reprendre la photo</button>
+    <button mat-flat-button color="primary" (click)="fallback()">
+      Envoyer telle quelle
+    </button>
+  } @else if (state() === 'editing') {
+    <button mat-button (click)="cancel()">Reprendre la photo</button>
+    <button mat-flat-button color="primary"
+            class="scanner-dialog__cta"
+            (click)="applyEdits()">
+      <mat-icon>check</mat-icon>
+      C'est bon
+    </button>
+  } @else {
+    <button mat-button (click)="cancel()" [disabled]="state() === 'submitting'">
+      Reprendre la photo
+    </button>
+    @if (state() === 'loading') {
+      <button mat-stroked-button (click)="fallback()">
+        Envoyer telle quelle
+      </button>
+    } @else {
+      <button mat-stroked-button
+              (click)="startEditing()"
+              [disabled]="state() !== 'ready'">
+        <mat-icon>crop_free</mat-icon>
+        Ajuster les bords
+      </button>
+      <button mat-flat-button color="primary"
+              class="scanner-dialog__cta"
+              (click)="confirm()"
+              [disabled]="state() !== 'ready'">
+        <mat-icon>check</mat-icon>
+        Valider
+      </button>
+    }
+  }
+</div>

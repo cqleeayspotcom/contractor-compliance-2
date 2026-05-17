@@ -1,0 +1,1648 @@
+@use '../../../styles/variables' as *;
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: $t-gap-24;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-20;
+  min-height: 100vh;
+  background-color: $t-back-grey-light;
+}
+
+.page-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: $t-gap-16;
+
+  p {
+    font-size: $t-body-1;
+    color: $t-color-light;
+    margin: 0;
+  }
+}
+
+// Note : la classe `.floating-progress` est définie en global dans
+// `src/styles.scss` pour pouvoir être réutilisée ailleurs (billing pendant
+// le polling Stripe, etc.). Cf. fichier styles global.
+
+// Header
+.page__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  &-text {
+    h1 {
+      font-size: $t-headline-5;
+      font-weight: 700;
+      color: $t-text-black;
+      margin: 0;
+    }
+
+    p {
+      font-size: $t-body-2;
+      color: $t-color-light;
+      margin: $t-gap-4 0 0;
+    }
+  }
+}
+
+.page__header-actions {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+}
+
+.page__title-row {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-12;
+  flex-wrap: wrap;
+
+  h1 {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-8;
+  }
+}
+
+.page__title-icon {
+  color: $primary-700;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.btn-refresh {
+  color: $t-color-light;
+  transition: color 0.2s;
+
+  &:hover {
+    color: $primary-700;
+  }
+
+  &--spinning mat-icon {
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.btn-upload {
+  border-radius: 8px;
+  font-weight: 700;
+  gap: $t-gap-8;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// Polling banner
+.polling-banner {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-10 $t-gap-16;
+  background: rgba($primary-700, 0.06);
+  border-radius: 8px;
+  font-size: $t-body-3;
+  color: $primary-700;
+  font-weight: 500;
+}
+
+// Filter chips
+.filter-chips {
+  display: flex;
+  gap: $t-gap-8;
+  flex-wrap: wrap;
+}
+
+// Document list
+.doc-list {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+}
+
+.doc-card {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-16;
+  padding: $t-gap-20;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s;
+
+  &:hover {
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  &__dl {
+    color: $primary-700;
+  }
+
+  &__reupload {
+    min-height: 36px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      margin-right: 4px;
+    }
+  }
+
+  &__icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: $t-back-grey-high;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: $primary-700;
+  }
+
+  &__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-4;
+    min-width: 0;
+  }
+
+  &__label {
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__filename {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__size {
+    font-size: $t-body-4;
+    color: $t-color-extra-light;
+  }
+
+  &__processing {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-3;
+    color: $primary-700;
+  }
+
+  &__rejected {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $base-warn-500;
+    line-height: 1.35;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    strong {
+      font-weight: 600;
+    }
+  }
+
+  &__verified {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-base-green;
+    font-weight: 500;
+  }
+
+  &__check-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &__expired {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-base-orange;
+    font-weight: 500;
+  }
+
+  &__expiry {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-color-light;
+    font-weight: 500;
+  }
+
+  &__expiry-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &__expiring {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $t-base-orange;
+    font-weight: 500;
+    opacity: 0.85;
+  }
+
+  &__warn-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &__upload-link {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    font-size: $t-body-3;
+    color: $base-warn-500;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: $t-gap-8;
+    flex-shrink: 0;
+  }
+
+  &__date {
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+}
+
+// Status badges
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: $t-gap-4;
+  padding: $t-gap-4 $t-gap-10;
+  border-radius: 20px;
+  font-size: $t-body-3;
+  font-weight: 600;
+  white-space: nowrap;
+
+  &--green {
+    background: rgba($t-base-green, 0.1);
+    color: $t-base-green;
+  }
+
+  &--red {
+    background: rgba($base-warn-500, 0.1);
+    color: $base-warn-500;
+  }
+
+  &--orange {
+    background: rgba($t-base-orange, 0.1);
+    color: $t-base-orange;
+  }
+
+  &--yellow {
+    background: rgba(#D97706, 0.1);
+    color: #D97706;
+  }
+
+  &--grey {
+    background: $t-back-grey-high;
+    color: $t-color-light;
+  }
+
+  // Pour les pièces optionnelles (bonus, ex: décennale) — ton neutre
+  // bleu Tuita pour bien distinguer du `--red` « pièce obligatoire ».
+  &--neutral {
+    background: rgba($t-logo-blue, 0.08);
+    color: $t-logo-blue;
+  }
+}
+
+// Pastille « Optionnel · bonus score » à côté du label pour signaler
+// que la pièce ne bloque pas la conformité — l'artisan voit du premier
+// coup d'œil que ce n'est pas urgent.
+.doc-card__optional-pill {
+  display: inline-block;
+  margin-left: $t-gap-8;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba($t-logo-blue, 0.08);
+  color: $t-logo-blue;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.doc-card__sell-line--bonus {
+  color: rgba($t-logo-blue, 0.78);
+}
+
+// Mention « Incluse dans votre attestation RC Pro » sur la card décennale
+// auto-dérivée (clone d'une RC Pro `rc_complete`). Bleu doux non-alarmant :
+// c'est une bonne nouvelle, pas un warning.
+.doc-card__derived {
+  display: inline-flex;
+  align-items: center;
+  gap: $t-gap-4;
+  margin-top: $t-gap-4;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba($t-logo-blue, 0.08);
+  color: $t-logo-blue;
+  font-size: 0.78rem;
+  font-weight: 600;
+  width: fit-content;
+
+  .doc-card__derived-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// Carte d'une pièce bonus manquante : fond légèrement bleu (et pas
+// orange comme les pièces obligatoires) — pour ne PAS donner l'impression
+// d'urgence. Cohérent avec le badge « Optionnel ».
+.doc-card--bonus {
+  border-color: rgba($t-logo-blue, 0.15) !important;
+  background: rgba($t-logo-blue, 0.02);
+
+  .doc-card__icon-wrap--warn {
+    background: rgba($t-logo-blue, 0.08) !important;
+    .doc-card__icon { color: $t-logo-blue !important; }
+  }
+}
+
+// Empty state
+.empty-state {
+  text-align: center;
+  padding: $t-gap-48;
+  color: $t-color-light;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  mat-icon {
+    font-size: 56px;
+    width: 56px;
+    height: 56px;
+    color: $t-color-extra-light;
+  }
+
+  p {
+    margin: $t-gap-12 0 $t-gap-16;
+    font-size: $t-body-1;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Upload zone — zone unique cliquable + dropzone, feedback visuel direct.
+// ---------------------------------------------------------------------------
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-4;
+  padding: $t-gap-32 $t-gap-20;
+  background: #ffffff;
+  border: 2px dashed rgba($t-text-black, 0.12);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 180px;
+
+  @media (min-width: 768px) {
+    padding: $t-gap-48 $t-gap-24;
+  }
+
+  &:hover:not(&--uploading) {
+    border-color: $t-base-green;
+    background: rgba($t-base-green, 0.04);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba($t-base-green, 0.08);
+  }
+
+  &--active {
+    border-color: $t-base-green;
+    background: rgba($t-base-green, 0.06);
+    border-style: solid;
+  }
+
+  &--uploading {
+    cursor: progress;
+    border-style: solid;
+    border-color: rgba($primary-700, 0.3);
+    background: rgba($primary-700, 0.04);
+  }
+
+  &__icon-wrap {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba($t-base-green, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: $t-gap-8;
+    transition: transform 0.2s;
+
+    mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: $t-base-green;
+    }
+  }
+
+  &:hover &__icon-wrap {
+    transform: scale(1.05);
+  }
+
+  &__title {
+    font-size: 17px;
+    font-weight: 700;
+    color: $t-text-black;
+    margin: 0;
+    text-align: center;
+  }
+
+  &__hint {
+    font-size: 13px;
+    color: $t-color-light;
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.purchase-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: $t-gap-12;
+  padding: $t-gap-14 $t-gap-16;
+  border-radius: 10px;
+  line-height: 1.35;
+
+  mat-icon {
+    font-size: 26px;
+    width: 26px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+
+  strong {
+    display: block;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  span {
+    font-size: 13px;
+    opacity: 0.9;
+  }
+
+  &--ok {
+    background: rgba($base-green-600, 0.1);
+    color: $base-green-800;
+    border: 1px solid rgba($base-green-600, 0.25);
+  }
+
+  &--warn {
+    background: rgba($t-base-orange, 0.1);
+    color: $t-base-orange;
+    border: 1px solid rgba($t-base-orange, 0.25);
+  }
+}
+
+.expiring-banner__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+// ---------------------------------------------------------------------------
+// Toast d'arrivée post-achat : apparaît quand le polling post-redirect Stripe
+// détecte le nouveau Document livré par Pappers. Confirme au contractor qu'il
+// peut cliquer « Télécharger » sur la nouvelle carte.
+.purchase-arrival-toast {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-12;
+  padding: $t-gap-14 $t-gap-16;
+  border-radius: 10px;
+  background: rgba($base-green-600, 0.12);
+  color: $base-green-800;
+  border: 1px solid rgba($base-green-600, 0.3);
+  box-shadow: 0 4px 12px rgba($base-green-600, 0.12);
+  animation: purchase-arrival-toast-in 0.35s ease-out;
+
+  &__icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.35;
+
+    strong {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    span {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+  }
+
+  &__close {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}
+
+@keyframes purchase-arrival-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Card mise en avant pour un requirement manquant ET achetable : on signale
+// visuellement que l'utilisateur a un raccourci payant pour résoudre la ligne.
+// Border-left + fond très léger + sell-line + bouton plein.
+.doc-card--purchasable {
+  background: linear-gradient(90deg, $primary-50 0%, #ffffff 60%);
+  border-left: 4px solid $primary-700;
+  padding-left: $t-gap-16;
+
+  .doc-card__sell-line {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-6;
+    font-size: $t-body-3;
+    color: $primary-800;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+
+  .doc-card__sell-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: $t-base-green;
+    flex-shrink: 0;
+  }
+
+  .doc-card__buy-cta {
+    min-height: 40px;
+    padding: 0 $t-gap-16;
+    box-shadow: 0 2px 6px rgba($primary-800, 0.18);
+    font-weight: 700;
+    letter-spacing: 0.1px;
+
+    &:hover:not(:disabled) {
+      box-shadow: 0 4px 10px rgba($primary-800, 0.26);
+    }
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Pulse discret sur la carte du document qui vient d'arriver — attire l'œil
+// juste après le scroll, puis disparaît (classe retirée en JS après 4 s).
+.doc-card--just-arrived {
+  animation: doc-just-arrived-pulse 1.6s ease-in-out;
+  animation-iteration-count: 2;
+  box-shadow: 0 0 0 3px rgba($base-green-600, 0.35);
+  border-radius: 10px;
+}
+
+@keyframes doc-just-arrived-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba($base-green-600, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba($base-green-600, 0.25); }
+}
+
+.expiring-banner__cta {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+// Pulse + halo vert sur le pavé d'achat one-shot — même grammaire que le
+// bouton « Commencer » du dashboard. L'œil de l'artisan doit accrocher.
+@keyframes purchase-cta-attract {
+  0%, 100% {
+    box-shadow:
+      0 2px 8px rgba($primary-700, 0.18),
+      0 0 0 0 rgba($primary-700, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 6px 18px rgba($primary-700, 0.32),
+      0 0 0 10px rgba($primary-700, 0);
+  }
+}
+
+@keyframes purchase-cta-arrow {
+  0%, 100% { transform: translateX(0); }
+  50%      { transform: translateX(4px); }
+}
+
+// ---------------------------------------------------------------------------
+// CTA permanent : bouton plein bloc pour pousser à l'achat Pappers officiel.
+// Tout le bloc est cliquable (pas juste un bouton à droite). Couleur primaire
+// (vert Tuita) pour maximiser l'attention — c'est le chemin heureux.
+// ---------------------------------------------------------------------------
+// CTA d'achat — s'applique au <button> (SIREN connu, achat direct)
+// ET au <div class="purchase-cta--needs-siren"> (SIREN à saisir inline).
+// Le sélecteur attribut couvre les deux balises sans dupliquer la grammaire visuelle.
+.purchase-cta {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-16;
+  padding: $t-gap-16 $t-gap-20;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba($primary-700, 0.08), rgba($primary-700, 0.16));
+  border: 1.5px solid rgba($primary-700, 0.35);
+  width: 100%;
+  text-align: left;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 8px rgba($primary-700, 0.08);
+  font-family: inherit;
+
+  &__icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: $primary-700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba($primary-700, 0.25);
+
+    mat-icon {
+      color: #fff;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    align-self: flex-start;
+    font-size: 11px !important;
+    font-weight: 700;
+    color: $primary-700;
+    background: rgba($primary-700, 0.12);
+    padding: 2px 8px;
+    border-radius: 999px;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+
+    mat-icon {
+      font-size: 12px !important;
+      width: 12px !important;
+      height: 12px !important;
+    }
+  }
+
+  &__title {
+    font-size: 15.5px !important;
+    line-height: 1.3 !important;
+    font-weight: 700 !important;
+    color: $t-text-black;
+    margin: 0 !important;
+    display: block;
+  }
+
+  &__desc {
+    font-size: 13px !important;
+    color: $t-color-light;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+    display: block;
+
+    strong {
+      color: $primary-700;
+      font-weight: 700;
+    }
+  }
+
+  &__cta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+    padding: 10px 16px;
+    border-radius: 10px;
+    background: $primary-700;
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+    box-shadow: 0 2px 6px rgba($primary-700, 0.3);
+  }
+
+  &__cta-price {
+    white-space: nowrap;
+  }
+
+  &__cta-arrow {
+    font-size: 18px !important;
+    width: 18px !important;
+    height: 18px !important;
+    transition: transform 0.18s ease;
+  }
+}
+
+// État 1 — SIREN connu : <button> plein bloc cliquable, pulse + halo vert.
+button.purchase-cta {
+  cursor: pointer;
+  animation: purchase-cta-attract 2.4s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+
+  .purchase-cta__cta-arrow {
+    animation: purchase-cta-arrow 1.6s ease-in-out infinite;
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba($primary-700, 0.14), rgba($primary-700, 0.22));
+    border-color: $primary-700;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba($primary-700, 0.18);
+
+    .purchase-cta__cta-arrow {
+      transform: translateX(3px);
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba($primary-700, 0.12);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 540px) {
+    flex-wrap: wrap;
+
+    .purchase-cta__cta {
+      width: 100%;
+      justify-content: center;
+      margin-top: 4px;
+    }
+  }
+}
+
+// État 2 — SIREN à renseigner : <div> avec champ inline + bouton désactivé
+// tant que SIREN invalide. La hiérarchie visuelle est nette :
+//   - SIREN < 9 chiffres → bouton muet (gris pâle, opacity 0.55, cursor not-allowed)
+//   - SIREN valide → bouton plein primary Tuita + pulse + halo vert qui invite
+//     clairement au clic, comme le ferait l'état "SIREN connu" plus haut.
+// Sans cette différence visuelle l'artisan ne sait pas si on attend qu'il
+// remplisse ou s'il peut cliquer.
+.purchase-cta--needs-siren {
+  align-items: flex-start;
+  cursor: default;
+  // Léger halo statique pour rester visible, sans agresser.
+  box-shadow: 0 2px 10px rgba($primary-700, 0.10);
+
+  .purchase-cta__icon {
+    margin-top: 2px;
+  }
+
+  .purchase-cta__form {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-10;
+  }
+
+  .purchase-cta__siren-row {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+    margin-top: $t-gap-6;
+
+    @media (max-width: 540px) {
+      flex-direction: column;
+      gap: $t-gap-8;
+    }
+  }
+
+  .purchase-cta__siren-field {
+    flex: 1;
+    min-width: 0;
+    max-width: 280px;
+
+    @media (max-width: 540px) {
+      max-width: 100%;
+      width: 100%;
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Bouton « Récupérer · 9,99 € »
+  //
+  // On force la couleur primary Tuita ($primary-700, vert profond) via les
+  // CSS variables MDC qu'Angular Material v17+ utilise pour le rendu, plutôt
+  // que d'attendre que le thème global le fasse. Le thème courant rend le
+  // primary trop pâle / proche du disabled — l'artisan ne distingue pas les
+  // deux états et hésite. On force le contraste ici.
+  // -------------------------------------------------------------------------
+  .purchase-cta__siren-btn {
+    flex-shrink: 0;
+    height: 56px;
+    padding: 0 18px !important;
+    border-radius: 12px !important;
+    font-weight: 700 !important;
+    font-size: 14.5px !important;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+    transition: transform 0.15s ease, box-shadow 0.18s ease, background-color 0.18s ease !important;
+
+    // État ENABLED — SIREN 9 chiffres saisi : bouton vif + pulse + halo
+    // green qui appelle au clic. On override les variables MDC pour ne plus
+    // dépendre du thème global.
+    &:not(:disabled) {
+      --mdc-protected-button-container-color: #{$primary-700};
+      --mdc-protected-button-label-text-color: #fff;
+      background: $primary-700 !important;
+      color: #fff !important;
+      box-shadow:
+        0 4px 14px rgba($primary-700, 0.32),
+        0 2px 4px rgba($primary-700, 0.18) !important;
+      animation: purchase-cta-attract 2.4s ease-in-out infinite;
+
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
+
+      mat-icon {
+        color: #fff !important;
+      }
+
+      &:hover {
+        transform: translateY(-1px);
+        box-shadow:
+          0 6px 18px rgba($primary-700, 0.42),
+          0 3px 6px rgba($primary-700, 0.22) !important;
+        background: darken($primary-700, 4%) !important;
+      }
+
+      &:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 6px rgba($primary-700, 0.24) !important;
+      }
+    }
+
+    // État DISABLED — SIREN incomplet : gris pâle clair, opacité réduite,
+    // cursor not-allowed. Surcharge stricte de la primary pour éviter que
+    // Material n'affiche par défaut un primary muté qui ressemble visuellement
+    // au state enabled — c'était précisément le bug FIX-046 v1.
+    &:disabled,
+    &.mat-mdc-button-disabled,
+    &[disabled='true'] {
+      --mdc-protected-button-disabled-container-color: #{$t-back-grey-high};
+      --mdc-protected-button-disabled-label-text-color: #{$t-color-light};
+      background: $t-back-grey-high !important;
+      color: $t-color-light !important;
+      box-shadow: none !important;
+      cursor: not-allowed !important;
+      opacity: 0.85;
+
+      mat-icon {
+        color: $t-color-light !important;
+      }
+    }
+
+    mat-icon {
+      margin-right: 6px;
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+    }
+
+    @media (max-width: 540px) {
+      width: 100%;
+      height: 48px;
+      font-size: 14px !important;
+    }
+  }
+
+  .purchase-cta__siren-btn-text {
+    white-space: nowrap;
+  }
+
+  // Ligne de réassurance — flex avec icône fixe et texte 1-bloc pour éviter
+  // les wraps moches type "nom officiel de ton" \n "entreprise" \n "avant de"
+  // qui faisaient ressembler à une faute de mise en page.
+  .purchase-cta__safety {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-8;
+    margin-top: $t-gap-6;
+    padding: $t-gap-8 $t-gap-12;
+    background: rgba($primary-700, 0.06);
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: $t-text-black;
+    line-height: 1.5;
+
+    mat-icon {
+      font-size: 18px !important;
+      width: 18px !important;
+      height: 18px !important;
+      color: $primary-700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    > span,
+    > :not(mat-icon) {
+      flex: 1;
+      min-width: 0;
+    }
+
+    strong {
+      color: $t-text-black;
+      font-weight: 700;
+    }
+  }
+
+  @media (max-width: 540px) {
+    flex-wrap: wrap;
+    gap: $t-gap-12;
+    padding: $t-gap-14 $t-gap-16;
+
+    .purchase-cta__icon {
+      width: 40px;
+      height: 40px;
+
+      mat-icon {
+        font-size: 22px;
+        width: 22px;
+        height: 22px;
+      }
+    }
+
+    .purchase-cta__title {
+      font-size: 14.5px !important;
+    }
+
+    .purchase-cta__desc {
+      font-size: 12.5px !important;
+    }
+  }
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-14;
+  background: rgba($base-warn-500, 0.08);
+  color: $base-warn-500;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Live verdict cards (uploads en cours + verdicts finaux)
+// ---------------------------------------------------------------------------
+.uploads-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-16;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-14;
+
+  @media (min-width: 768px) {
+    padding: $t-gap-20;
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+      color: $primary-700;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: $t-text-black;
+      margin: 0 0 2px;
+      line-height: 1.2;
+    }
+
+    p {
+      margin: 0;
+      font-size: 14px;
+      color: $t-color-light;
+      line-height: 1.35;
+    }
+  }
+}
+
+.upload-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: $t-gap-12;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.upload-item {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+  padding: $t-gap-14;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  background: #ffffff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &--processing {
+    border-color: rgba($primary-700, 0.25);
+    background: rgba($primary-700, 0.02);
+  }
+
+  &--verified {
+    border-color: rgba($base-green-600, 0.35);
+    background: rgba($base-green-600, 0.03);
+  }
+
+  &--rejected {
+    border-color: rgba($base-warn-500, 0.35);
+    background: rgba($base-warn-500, 0.03);
+  }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-10;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .upload-item--verified & mat-icon { color: $base-green-800; }
+    .upload-item--rejected & mat-icon { color: $base-warn-500; }
+  }
+
+  &__title {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__emoji {
+    font-size: 18px;
+    margin-right: 4px;
+  }
+
+  &__filename {
+    font-size: 16px;
+    font-weight: 600;
+    color: $t-text-black;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  &__meta {
+    font-size: 13px;
+    color: $t-color-light;
+    line-height: 1.3;
+
+    strong {
+      color: $t-text-black;
+      font-weight: 600;
+    }
+  }
+
+  &__meta-pending {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-6;
+    color: $primary-700;
+    font-weight: 500;
+  }
+
+  &__dismiss {
+    flex-shrink: 0;
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  &__progress {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-6;
+  }
+
+  &__phase {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: $t-gap-8;
+    font-size: 13px;
+  }
+
+  &__phase-label {
+    font-weight: 600;
+    color: $t-text-black;
+  }
+
+  &__elapsed {
+    color: $t-color-light;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__bar {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+
+    span {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+      border-radius: 3px;
+      background: $primary-700;
+      transform-origin: left center;
+      transition: background 0.2s;
+    }
+
+    &--indeterminate span {
+      width: 40%;
+      animation: upload-bar-indeterminate 1.4s ease-in-out infinite;
+    }
+
+    &--ok span {
+      background: $base-green-600;
+      animation: none;
+      width: 100%;
+    }
+
+    &--ko span {
+      background: $base-warn-500;
+      animation: none;
+      width: 100%;
+    }
+  }
+
+  &__verdict {
+    display: flex;
+    align-items: flex-start;
+    gap: $t-gap-12;
+    padding: $t-gap-14 $t-gap-16;
+    border-radius: 10px;
+    line-height: 1.35;
+
+    &--ok {
+      background: rgba($base-green-600, 0.1);
+      color: $base-green-800;
+      border: 1px solid rgba($base-green-600, 0.25);
+    }
+
+    &--ko {
+      background: rgba($base-warn-500, 0.08);
+      color: $base-warn-500;
+      border: 1px solid rgba($base-warn-500, 0.3);
+    }
+  }
+
+  &__verdict-icon {
+    font-size: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    flex-shrink: 0;
+    margin-top: -2px;
+  }
+
+  &__verdict-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__verdict-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    opacity: 0.75;
+  }
+
+  &__verdict-text strong {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  &__verdict-desc {
+    font-size: 13px;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+
+  &__score {
+    font-size: 13px;
+    font-weight: 700;
+    background: rgba($base-green-600, 0.15);
+    color: $base-green-800;
+    padding: 4px 10px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__reason {
+    margin: 0;
+    font-size: 14px;
+    color: inherit;
+    opacity: 0.9;
+  }
+
+  &__fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: $t-gap-4 $t-gap-12;
+    margin: 0;
+    padding: $t-gap-10 $t-gap-12;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+
+    @media (min-width: 480px) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+
+    dt {
+      font-size: 11px;
+      font-weight: 600;
+      color: $t-color-light;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin: 0;
+    }
+
+    dd {
+      font-size: 14px;
+      font-weight: 600;
+      color: $t-text-black;
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-8;
+
+    @media (min-width: 480px) {
+      flex-direction: row;
+    }
+  }
+
+  &__action-btn {
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    flex: 1;
+    border-radius: 8px;
+
+    mat-icon {
+      margin-right: 6px;
+    }
+
+    &--primary {
+      order: -1;
+
+      @media (min-width: 480px) {
+        order: 0;
+      }
+    }
+  }
+}
+
+@keyframes upload-bar-indeterminate {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(80%); }
+  100% { transform: translateX(250%); }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .page {
+    padding: $t-gap-16;
+    gap: $t-gap-16;
+  }
+
+  .page__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: $t-gap-12;
+
+    &-actions {
+      align-self: stretch;
+      justify-content: flex-end;
+    }
+
+    .btn-upload {
+      flex: 1;
+    }
+  }
+
+  .doc-card {
+    flex-wrap: wrap;
+    padding: $t-gap-16;
+
+    &__meta {
+      width: 100%;
+      flex-direction: row;
+      justify-content: space-between;
+      margin-top: $t-gap-8;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Documents acceptés : panneau informatif affiché sous la dropzone pour
+// lister tous les types attendus, regroupés par catégorie. Pas de bouton,
+// pas d'interaction — purement pédagogique.
+// ---------------------------------------------------------------------------
+.accepted-docs {
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 14px;
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+
+  &--collapsed {
+    gap: 0;
+    padding: $t-gap-12 $t-gap-16;
+  }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+
+    mat-icon {
+      color: $primary-700;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: $t-color-dark;
+      flex: 1;
+    }
+
+    &:hover h2 {
+      color: $primary-700;
+    }
+  }
+
+  &__chevron {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: $t-gap-12;
+  }
+
+  &__category {
+    background: $t-back-grey-light;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    padding: $t-gap-12 $t-gap-16;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    h3 {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: $t-color-dark;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+        color: $primary-700;
+      }
+    }
+
+    p {
+      margin: 0;
+      font-size: 0.78rem;
+      color: $t-color-light;
+      font-style: italic;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+
+      li {
+        font-size: 0.85rem;
+        color: $t-color-dark;
+        line-height: 1.4;
+
+        &::before {
+          content: "•";
+          color: $primary-700;
+          margin-right: 6px;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-8;
+    padding-top: $t-gap-12;
+    border-top: 1px dashed rgba(0, 0, 0, 0.08);
+    font-size: 0.85rem;
+    color: $t-color-light;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: $primary-700;
+    }
+  }
+}
