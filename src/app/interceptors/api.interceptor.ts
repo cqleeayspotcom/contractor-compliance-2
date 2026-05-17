@@ -43,16 +43,15 @@ export const apiInterceptor: HttpInterceptorFn = (
       //     du domaine.
       //   - Sur tuita.fr exact → redirect tuita.fr/contractor/login.
       // [ADAPTATION TUITA BACKEND]
-      // L'auth est gérée par Tuita (cookie __contractor_ssid via SMS).
-      // En cas de 401, on redirige toujours vers le login Tuita externe —
-      // les routes /login et /signup locales sont désactivées (cf. app.routes.ts).
-      if (error.status === 401 && !isAuthEndpoint(req.url)) {
+      // Auth Tuita (cookie __contractor_ssid). PROD → page login externe.
+      // NON-PROD → page /login in-app (cf. contractor-cookie.interceptor.ts
+      // pour le rationale complet). On évite aussi de rebouclage si l'utilisateur
+      // est déjà sur /login ou /signup.
+      if (error.status === 401 && !isAuthEndpoint(req.url) && !isOnSelfServedAuthPage()) {
         if (window.location.hostname === 'tuita.fr') {
           window.location.href = 'https://tuita.fr/contractor/login';
         } else {
-          // Dev local : redirect vers la page de login Tuita servie par
-          // le backend monolithe (port 8060). À ajuster selon le path réel.
-          window.location.href = 'http://localhost:8060/contractor/login';
+          window.location.assign('/login');
         }
         return throwError(() => error);
       }

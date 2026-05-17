@@ -27,26 +27,35 @@ export const routes: Routes = [
     title: 'Service indisponible - Tuita',
   },
 
-  // Default -> Dashboard (le featureFlagGuard rabat sur /service-unavailable
-  // si flag OFF avant même le redirect).
+  // Default -> Dashboard. Pas de canActivate ici : Angular 21 interdit la
+  // combinaison redirectTo + canActivate (NG04014, les redirects sont
+  // évalués avant les guards). Le featureFlagGuard est appliqué sur la
+  // route `dashboard` cible — il rabattra sur /service-unavailable si flag OFF.
   {
     path: '',
     redirectTo: 'dashboard',
     pathMatch: 'full',
-    canActivate: [featureFlagGuard],
   },
 
   // [ADAPTATION TUITA BACKEND]
-  // Les routes /signup et /login sont DÉSACTIVÉES dans cette intégration :
-  // l'auth contractor est entièrement gérée par le monolithe Tuita
-  // (ContractorAuthAction + cookie __contractor_ssid via SMS). Les
-  // composants legacy sont conservés sur disque pour référence mais ne
-  // sont plus routés — l'utilisateur arrive ici DÉJÀ authentifié via le
-  // flow Tuita (sinon l'interceptor renvoie vers tuita.fr/contractor/login).
-  // Si on atterrit sur /login ou /signup par erreur, redirect vers dashboard
-  // (qui déclenchera un 401 → interceptor → login Tuita).
+  // Auth contractor gérée par le monolithe Tuita (ContractorAuthAction
+  // + cookie __contractor_ssid via PIN SMS). En PROD, l'utilisateur arrive
+  // déjà authentifié depuis tuita.fr ; sinon l'intercepteur renvoie vers
+  // tuita.fr/contractor/login.
+  // En LOCAL/DEV : la page de login Tuita n'existe pas sur le monolithe
+  // (juste l'API JSON /contractor/auth/{pin,login}). On expose donc cette
+  // route /login in-app qui parle directement à l'API Tuita via proxy
+  // (/contractor/auth/** → localhost:8060). /signup reste désactivé : pas
+  // d'auto-inscription contractor — un admin Tuita doit créer le compte.
   { path: 'signup', redirectTo: 'dashboard', pathMatch: 'full' },
-  { path: 'login', redirectTo: 'dashboard', pathMatch: 'full' },
+  {
+    path: 'login',
+    loadComponent: () =>
+      import('./pages/contractor-login/contractor-login.component').then(
+        m => m.ContractorLoginComponent
+      ),
+    title: 'Connexion - Tuita',
+  },
 
   // Contractor Dashboard (compliance score, docs, KYC, billing)
   // featureFlagGuard appliqué ici : c'est le point d'entrée principal, et

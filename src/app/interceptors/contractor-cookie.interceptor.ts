@@ -42,15 +42,16 @@ export function contractorCookieInterceptor(
         shouldRedirectOn401()
       ) {
         // [ADAPTATION TUITA BACKEND]
-        // L'auth contractor est gérée par le monolithe Tuita (cookie
-        // __contractor_ssid via SMS). Les routes /login et /signup locales
-        // sont désactivées — on redirige vers le portail Tuita (prod ou
-        // backend monolithe local sur :8060).
+        // PROD : la page de login Tuita vit sur tuita.fr → redirect externe.
+        // NON-PROD (localhost, staging *.run.app, preview…) : la page
+        // tuita.fr/contractor/login n'est pas servie par le monolithe local
+        // (juste l'API /contractor/auth/{pin,login}). On reste donc dans
+        // l'app sur /login, qui appelle directement l'API Tuita via le
+        // proxy Angular (cf. proxy.conf.json).
         if (isProductionDomain()) {
           window.location.href = 'https://tuita.fr/contractor/login';
         } else {
-          console.warn('401 hors prod — redirect vers le login Tuita monolithe (localhost:8060)');
-          window.location.href = 'http://localhost:8060/contractor/login';
+          window.location.assign('/login');
         }
       }
       return throwError(() => error);
@@ -94,10 +95,22 @@ function isProductionDomain(): boolean {
 }
 
 const REDIRECT_STORAGE_KEY = '__contractor_last_401_redirect';
-const REDIRECT_COOLDOWN_MS = 10_000;
+const REDIRECT_COOLDOWN_MS = 2_000;
 
+/**
+ * Le cooldown protège uniquement contre un loop infini si /login lui-même
+ * renvoie un 401 (cas extrême). On stocke le timestamp en sessionStorage
+ * mais on autorise le redirect dès qu'on n'est plus sur /login — sinon
+ * un reload de l'app dans la fenêtre 10s laisse l'utilisateur bloqué sur
+ * /dashboard avec « Session expirée ».
+ */
 function shouldRedirectOn401(): boolean {
   try {
+    const onLogin = window.location.pathname.startsWith('/login');
+    if (!onLogin) {
+      sessionStorage.setItem(REDIRECT_STORAGE_KEY, String(Date.now()));
+      return true;
+    }
     const last = Number(sessionStorage.getItem(REDIRECT_STORAGE_KEY) ?? '0');
     const now = Date.now();
     if (now - last < REDIRECT_COOLDOWN_MS) {

@@ -63,18 +63,29 @@ export class ContractorLoginComponent {
     }
     this.loading.set(true);
     try {
+      // Tuita monolithe : POST /contractor/auth/pin avec { smsphone }.
+      // Envoie le SMS contenant le PIN (ContractorOauthWrapper::sendSmsPassword).
       await firstValueFrom(
-        this.http.post(`${environment.apiUrl}/contractor/auth/request-code`,
-          { phone: this.normalizedPhone() },
+        this.http.post(`${environment.apiUrl}/contractor/auth/pin`,
+          { smsphone: this.normalizedPhone() },
           { withCredentials: true })
       );
       this.step.set('code');
     } catch (err: unknown) {
-      const errorCode = (err as { error?: { error?: { code?: string } } })?.error?.error?.code;
-      const msg = errorCode === 'phone_not_found'
-        ? 'Aucun compte pour ce numéro - inscrivez-vous.'
-        : 'Erreur. Réessayez.';
-      this.snack.open(msg, 'OK', { duration: 4000 });
+      console.error('[login] /contractor/auth/pin failed', err);
+      const e = err as { status?: number; statusText?: string; error?: { error?: { code?: string }; detail?: string; title?: string } };
+      const errorCode = e?.error?.error?.code;
+      let msg: string;
+      if (errorCode === 'phone_not_found') {
+        msg = 'Aucun compte pour ce numéro - inscrivez-vous.';
+      } else if (e?.status === 0) {
+        msg = 'Backend injoignable (vérifie le proxy / docker).';
+      } else if (e?.status) {
+        msg = `Erreur ${e.status} ${e.statusText ?? ''} ${e.error?.detail ?? e.error?.title ?? ''}`.trim();
+      } else {
+        msg = 'Erreur. Réessayez.';
+      }
+      this.snack.open(msg, 'OK', { duration: 6000 });
     } finally {
       this.loading.set(false);
     }
@@ -87,9 +98,11 @@ export class ContractorLoginComponent {
     }
     this.loading.set(true);
     try {
+      // Tuita monolithe : POST /contractor/auth/login avec { smsphone, pincode }.
+      // Pose le cookie __contractor_ssid (ContractorOauthWrapper::contractorLogin).
       await firstValueFrom(
-        this.http.post(`${environment.apiUrl}/contractor/auth/verify-code`,
-          { phone: this.normalizedPhone(), code: this.code() },
+        this.http.post(`${environment.apiUrl}/contractor/auth/login`,
+          { smsphone: this.normalizedPhone(), pincode: this.code() },
           { withCredentials: true })
       );
       // Recharge la session avec le cookie fraîchement posé avant de naviguer :
