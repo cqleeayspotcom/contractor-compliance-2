@@ -72,7 +72,7 @@ describe('AdminInvoiceService', () => {
 
   it('GET /stuck-counts', () => {
     service.getStuckCounts().subscribe();
-    const req = http.expectOne('/contractor-compliance/admin/invoices/stuck-counts');
+    const req = http.expectOne('/contractor-compliance/admin/invoices/stats/stuck-counts');
     req.flush({ data: { validating: 3 } });
   });
 

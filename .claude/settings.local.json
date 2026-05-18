@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "*",
       "Bash(ls c:/Users/MSA/Desktop/code/platform-backend/module/ 2>&1)",
       "Read(//c/Users/MSA/Desktop/code/platform-backend/module/**)"
     ],

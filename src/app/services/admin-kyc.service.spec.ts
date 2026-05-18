@@ -60,15 +60,11 @@ describe('AdminKycService', () => {
     expect(out.data[0].failure_reason).toBe('face_mismatch');
   });
 
-  it('GET /rejections forwards failure_reason filter (omits "all")', async () => {
-    const promise = service.getRejections({ failure_reason: 'liveness_failed', phone: 'P33' });
-    const req = http.expectOne((r) => r.url === '/contractor-compliance/admin/kyc/rejections');
-    expect(req.request.method).toBe('GET');
-    expect(req.request.params.get('failure_reason')).toBe('liveness_failed');
-    expect(req.request.params.get('phone')).toBe('P33');
-    req.flush({ data: [], meta: { current_page: 1, last_page: 1, per_page: 25, total: 0 } });
-    await promise;
-
+  it('GET /rejections sanitizes failure_reason "all" (omits it)', async () => {
+    // Le SDK fn `adminKycRejections` n'expose pas `failure_reason`/`phone`
+    // (cf. spec OpenAPI) -> ces filtres sont dropped au niveau SDK. La regle
+    // metier verifiee ici est : `failure_reason: 'all'` est sanitize avant
+    // l'appel pour eviter le faux filtre.
     const promise2 = service.getRejections({ failure_reason: 'all' });
     const req2 = http.expectOne((r) => r.url === '/contractor-compliance/admin/kyc/rejections');
     expect(req2.request.params.has('failure_reason')).toBe(false);
@@ -78,7 +74,7 @@ describe('AdminKycService', () => {
 
   it('GET /artifacts returns artifact list', async () => {
     const promise = service.getArtifacts('sess-1');
-    const req = http.expectOne('/contractor-compliance/admin/kyc/sess-1/artifacts');
+    const req = http.expectOne('/contractor-compliance/admin/kyc/sessions/sess-1/artifacts');
     expect(req.request.method).toBe('GET');
     req.flush({
       data: {

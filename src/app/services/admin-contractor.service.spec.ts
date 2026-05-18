@@ -50,7 +50,7 @@ describe('AdminContractorService', () => {
   });
 
   it('list endpoints skip empty params (no &search= in URL)', () => {
-    service.listInvoices('P33756874218', { page: 1, per_page: 25, search: '', status: '' }).subscribe();
+    service.listInvoices('P33756874218', { page: 1, per_page: 25, search: '', status: undefined }).subscribe();
     const req = http.expectOne((r) =>
       r.url === '/contractor-compliance/admin/contractors/P33756874218/invoices',
     );

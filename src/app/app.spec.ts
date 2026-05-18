@@ -9,6 +9,9 @@ class ContractorLayoutStub {}
 
 describe('App', () => {
   beforeEach(async () => {
+    // Reset explicite : sinon le 2e `it` voit un TestBed déjà instancié par le
+    // 1er (Angular ne reset pas auto entre tests dans la même file ici).
+    TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
       imports: [App, ContractorLayoutStub],
     })

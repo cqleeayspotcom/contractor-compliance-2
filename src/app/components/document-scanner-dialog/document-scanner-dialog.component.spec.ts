@@ -80,7 +80,17 @@ describe('DocumentScannerDialogComponent', () => {
   });
 
   it('starts in "loading" state then transitions to "ready" once the engine resolves', async () => {
-    setUp();
+    // Détection auto OK → l'ngOnInit passe direct en `ready` (sans détection,
+    // le composant bascule en `editing` pour forcer l'ajustement manuel, cf.
+    // commentaire dans ngOnInit).
+    setUp({
+      detectReturns: {
+        topLeftCorner: { x: 10, y: 10 },
+        topRightCorner: { x: 900, y: 10 },
+        bottomLeftCorner: { x: 10, y: 700 },
+        bottomRightCorner: { x: 900, y: 700 },
+      },
+    });
     const fixture = TestBed.createComponent(DocumentScannerDialogComponent);
     fixture.detectChanges();
     expect(fixture.componentInstance.state()).toBe('loading');
@@ -143,7 +153,17 @@ describe('DocumentScannerDialogComponent', () => {
   });
 
   it('confirms with extracted blob payload and the original filename', async () => {
-    const { dialogRef, engine } = setUp();
+    // Détection auto OK requise : `confirm()` ne fait rien si state !== 'ready'
+    // (cf. early-return ligne 228 du composant). Sans `detectReturns`, l'init
+    // place le state à `editing` et la validation est ignorée.
+    const { dialogRef, engine } = setUp({
+      detectReturns: {
+        topLeftCorner: { x: 10, y: 10 },
+        topRightCorner: { x: 900, y: 10 },
+        bottomLeftCorner: { x: 10, y: 700 },
+        bottomRightCorner: { x: 900, y: 700 },
+      },
+    });
     const fixture = TestBed.createComponent(DocumentScannerDialogComponent);
     fixture.detectChanges();
     await flush();

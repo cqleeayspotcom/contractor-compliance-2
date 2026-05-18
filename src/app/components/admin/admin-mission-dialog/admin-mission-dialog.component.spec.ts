@@ -60,7 +60,7 @@ describe('AdminMissionDialogComponent', () => {
   it('fetches /admin/missions/{ref} on init and renders mission_ref + KPIs + invoices', () => {
     fixture.detectChanges();
     const req = http.expectOne('/contractor-compliance/admin/missions/M-1');
-    req.flush(fakeDetail);
+    req.flush({ data: fakeDetail });
     fixture.detectChanges();
     const html: string = fixture.nativeElement.outerHTML;
     expect(html).toContain('M-1');
@@ -79,7 +79,7 @@ describe('AdminMissionDialogComponent', () => {
 
   it('clicking an invoice row emits openInvoice with uuid', () => {
     fixture.detectChanges();
-    http.expectOne('/contractor-compliance/admin/missions/M-1').flush(fakeDetail);
+    http.expectOne('/contractor-compliance/admin/missions/M-1').flush({ data: fakeDetail });
     fixture.detectChanges();
     let captured: string | null = null;
     fixture.componentInstance.openInvoice.subscribe((u: string) => (captured = u));
@@ -90,7 +90,7 @@ describe('AdminMissionDialogComponent', () => {
 
   it('disables tuita.fr button with tooltip', () => {
     fixture.detectChanges();
-    http.expectOne('/contractor-compliance/admin/missions/M-1').flush(fakeDetail);
+    http.expectOne('/contractor-compliance/admin/missions/M-1').flush({ data: fakeDetail });
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('button[data-test="tuita-live"]');
     expect(btn.disabled).toBe(true);
