@@ -34,4 +34,4 @@ export function documentsDownload(http: HttpClient, rootUrl: string, params: Doc
   );
 }
 
-documentsDownload.PATH = '/contractor-compliance/documents/{uuid}/download';
+documentsDownload.PATH = '/contractor-compliance/documents/{uuid}/file';

@@ -8,6 +8,7 @@ import { adminFreeInvoicesGet } from '../api/fn/admin-free-invoices/admin-free-i
 import { adminFreeInvoicesReject } from '../api/fn/admin-free-invoices/admin-free-invoices-reject';
 import { adminFreeInvoicesList } from '../api/fn/admin-free-invoices/admin-free-invoices-list';
 import { adminFreeInvoicesApprove } from '../api/fn/admin-free-invoices/admin-free-invoices-approve';
+import { adminFreeInvoicesAttachments } from '../api/fn/admin-free-invoices/admin-free-invoices-attachments';
 
 /**
  * AdminFreeInvoiceService
@@ -19,8 +20,6 @@ import { adminFreeInvoicesApprove } from '../api/fn/admin-free-invoices/admin-fr
  *
  * Le header X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts.
  */
-
-const BASE_URL = '/contractor-compliance/admin/free-invoices';
 
 @Injectable({ providedIn: 'root' })
 export class AdminFreeInvoiceService {
@@ -61,7 +60,8 @@ export class AdminFreeInvoiceService {
    * blob — choix architectural assumé : HttpClient direct pour ce blob.
    */
   fetchAttachmentBlob(uuid: string, index: number): Observable<Blob> {
-    return this.http.get(`${BASE_URL}/${uuid}/attachments/${index}`, {
+    const base = adminFreeInvoicesAttachments.PATH.replace('{uuid}', encodeURIComponent(uuid));
+    return this.http.get(`${base}/${index}`, {
       responseType: 'blob',
     });
   }

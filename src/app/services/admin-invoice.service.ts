@@ -11,6 +11,13 @@ import { adminInvoicesPaymentInProgress } from '../api/fn/admin-invoices/admin-i
 import { adminInvoicesPaidDisputed } from '../api/fn/admin-invoices/admin-invoices-paid-disputed';
 import { adminInvoicesStatsStuckCounts } from '../api/fn/admin-invoices/admin-invoices-stats-stuck-counts';
 import { adminInvoicesPdf } from '../api/fn/admin-invoices/admin-invoices-pdf';
+import { adminInvoicesList } from '../api/fn/admin-invoices/admin-invoices-list';
+import { adminInvoicesMarkPaymentInProgress } from '../api/fn/admin-invoices/admin-invoices-mark-payment-in-progress';
+import { adminInvoicesMarkPaid } from '../api/fn/admin-invoices/admin-invoices-mark-paid';
+import { adminInvoicesReopen } from '../api/fn/admin-invoices/admin-invoices-reopen';
+import { adminInvoicesResolveDispute } from '../api/fn/admin-invoices/admin-invoices-resolve-dispute';
+import { adminInvoicesForceResendWebhook } from '../api/fn/admin-invoices/admin-invoices-force-resend-webhook';
+import { adminInvoicesAddNote } from '../api/fn/admin-invoices/admin-invoices-add-note';
 
 /**
  * Admin Invoice Service
@@ -354,8 +361,6 @@ export interface AddNoteBody {
   category?: string;
 }
 
-const BASE_URL = '/contractor-compliance/admin/invoices';
-
 @Injectable({ providedIn: 'root' })
 export class AdminInvoiceService {
   private readonly http = inject(HttpClient);
@@ -438,6 +443,7 @@ export class AdminInvoiceService {
   // status[] multi-valeur, missing_validations, stale_days, plan, paid_disputed,
   // validator_missing) ne sont pas exposés par le spec → choix architectural
   // assumé de bypasser le SDK pour conserver l'intégralité des filtres.
+  // URL via `.PATH` du SDK pour éviter la désync si la spec OpenAPI bouge.
   searchInvoices(filters: InvoiceSearchFilters): Observable<PaginatedInvoices> {
     let params = new HttpParams();
     Object.entries(filters).forEach(([k, v]) => {
@@ -448,56 +454,66 @@ export class AdminInvoiceService {
         params = params.set(k, String(v));
       }
     });
-    return this.http.get<PaginatedInvoices>(BASE_URL, { params });
+    return this.http.get<PaginatedInvoices>(adminInvoicesList.PATH, { params });
   }
 
   // HttpClient direct : header `If-Unchanged-Since` (optimistic locking) non supporté
-  // via SDK invoke(). Le body est désormais déclaré côté SDK mais l'API du service
-  // expose ifUnchangedSince donc on reste cohérent avec mark-paid/reopen/etc.
+  // via SDK invoke(). URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/mark-payment-in-progress`, body, headers ? { headers } : {});
+    const url = adminInvoicesMarkPaymentInProgress.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 
   // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
+  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   markPaid(uuid: string, body: MarkPaidBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/mark-paid`, body, headers ? { headers } : {});
+    const url = adminInvoicesMarkPaid.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 
   // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
+  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   reopen(uuid: string, body: ReopenBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/reopen`, body, headers ? { headers } : {});
+    const url = adminInvoicesReopen.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 
   // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
+  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   resolveDispute(uuid: string, body: ResolveDisputeBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/resolve-dispute`, body, headers ? { headers } : {});
+    const url = adminInvoicesResolveDispute.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 
   // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
+  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   forceResendWebhook(uuid: string, body: ForceResendWebhookBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/force-resend-webhook`, body, headers ? { headers } : {});
+    const url = adminInvoicesForceResendWebhook.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 
   // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
+  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
   addNote(uuid: string, body: AddNoteBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
       : undefined;
-    return this.http.post(`${BASE_URL}/${uuid}/add-note`, body, headers ? { headers } : {});
+    const url = adminInvoicesAddNote.PATH.replace('{uuid}', uuid);
+    return this.http.post(url, body, headers ? { headers } : {});
   }
 }

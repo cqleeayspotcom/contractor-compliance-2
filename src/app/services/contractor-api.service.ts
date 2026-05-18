@@ -1,24 +1,35 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { map, timeout } from 'rxjs/operators';
 import { MissionOffer } from '../models/mission-offer.model';
 import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
 import { dashboardIndex } from '../api/fn/dashboard/dashboard-index';
 import { profileBankDetailsUpdate } from '../api/fn/profile/profile-bank-details-update';
+import { documentsList } from '../api/fn/documents/documents-list';
+import { documentsUpload } from '../api/fn/documents/documents-upload';
+import { documentsDownload } from '../api/fn/documents/documents-download';
 import { documentsPurchase } from '../api/fn/documents/documents-purchase';
 import { documentsGet } from '../api/fn/documents/documents-get';
+import { kycChallenge } from '../api/fn/kyc/kyc-challenge';
+import { kycVideo } from '../api/fn/kyc/kyc-video';
 import { kycStatus } from '../api/fn/kyc/kyc-status';
 import { billingSubscription } from '../api/fn/billing/billing-subscription';
 import { billingSubscribe } from '../api/fn/billing/billing-subscribe';
 import { billingCancel } from '../api/fn/billing/billing-cancel';
 import { billingPaymentHistory } from '../api/fn/billing/billing-payment-history';
+import { invoicesList } from '../api/fn/invoices/invoices-list';
+import { invoicesUpload } from '../api/fn/invoices/invoices-upload';
+import { invoicesPdf } from '../api/fn/invoices/invoices-pdf';
 import { invoicesShow } from '../api/fn/invoices/invoices-show';
 import { invoicesTimeline } from '../api/fn/invoices/invoices-timeline';
 import { certificationQcmStart } from '../api/fn/certification/certification-qcm-start';
 import { certificationQcmHeartbeat } from '../api/fn/certification/certification-qcm-heartbeat';
 import { certificationQcmSubmit } from '../api/fn/certification/certification-qcm-submit';
 import { certificationStatus } from '../api/fn/certification/certification-status';
+import { missionsActive } from '../api/fn/missions/missions-active';
+import { missionsHistory } from '../api/fn/missions/missions-history';
 import { missionsShow } from '../api/fn/missions/missions-show';
 import { missionsOffers } from '../api/fn/missions/missions-offers';
 
@@ -294,7 +305,16 @@ export interface PaginatedResponse<T> {
 export class ContractorApiService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
-  private readonly baseUrl = '/contractor-compliance';
+  private readonly apiConfig = inject(ApiConfiguration);
+
+  /**
+   * Racine d'URL pour les exceptions a l'usage du SDK (upload multipart, blob
+   * binaire, polling) ou on garde HttpClient direct mais on construit l'URL
+   * via le `.PATH` du SDK pour qu'un renommage backend casse a la compilation.
+   */
+  private get rootUrl(): string {
+    return this.api.rootUrl ?? this.apiConfig.rootUrl ?? '';
+  }
 
   // --- Dashboard ---
 
@@ -333,15 +353,11 @@ export class ContractorApiService {
     type?: string;
     page?: number;
   }): Observable<PaginatedResponse<ContractorDocument>> {
-    let httpParams = new HttpParams();
-    if (params?.status) httpParams = httpParams.set('status', params.status);
-    if (params?.type) httpParams = httpParams.set('type', params.type);
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-
-    return this.http.get<PaginatedResponse<ContractorDocument>>(
-      `${this.baseUrl}/documents`,
-      { params: httpParams }
-    );
+    return documentsList(this.http, this.rootUrl, {
+      status: params?.status,
+      type: params?.type,
+      page: params?.page,
+    }).pipe(map((r) => r.body as unknown as PaginatedResponse<ContractorDocument>));
   }
 
   uploadDocument(file: File, type?: string): Observable<any> {
@@ -349,20 +365,20 @@ export class ContractorApiService {
     formData.append('file', file);
     if (type) formData.append('type', type);
 
-    // Endpoint synchrone (hardcode backend) : la reponse contient deja le
-    // verdict final (verified/rejected + failure_reason). On laisse 150 s
-    // pour couvrir les PDF lourds ; le spinner cote UI doit informer
-    // "jusqu'a 1 minute" pour caler les attentes.
-    return this.http.post(`${this.baseUrl}/documents/upload`, formData).pipe(
+    // Exception SDK : upload multipart synchrone (hardcode backend). On garde
+    // HttpClient direct pour pouvoir streamer le FormData natif + appliquer le
+    // `timeout()` cote rxjs. L'URL est derivee du PATH du SDK pour qu'un
+    // renommage backend casse a la compilation (cf. documentsUpload.PATH).
+    return this.http.post(`${this.rootUrl}${documentsUpload.PATH}`, formData).pipe(
       timeout(SYNC_UPLOAD_TIMEOUT_MS),
     );
   }
 
   /**
-   * Récupère l'état courant d'un document via GET /documents/:uuid. L'upload
-   * Tuita est synchrone (verdict final dans la réponse), mais cette méthode
-   * reste utile au polling défensif côté composants pour rafraîchir les
-   * statuts après navigation arrière ou refresh.
+   * Rï¿½cupï¿½re l'ï¿½tat courant d'un document via GET /documents/:uuid. L'upload
+   * Tuita est synchrone (verdict final dans la rï¿½ponse), mais cette mï¿½thode
+   * reste utile au polling dï¿½fensif cï¿½tï¿½ composants pour rafraï¿½chir les
+   * statuts aprï¿½s navigation arriï¿½re ou refresh.
    */
   getDocumentStatus(uuid: string): Observable<any> {
     return from(this.api.invoke(documentsGet, { uuid }));
@@ -378,11 +394,15 @@ export class ContractorApiService {
   }
 
   /**
-   * Télécharge le fichier source d'un document via `/documents/:uuid/file`
-   * (route officielle backend Tuita, qui retourne le blob signé HMAC).
+   * Tï¿½lï¿½charge le fichier source d'un document via `/documents/:uuid/file`
+   * (route officielle backend Tuita, qui retourne le blob signï¿½ HMAC).
    */
   downloadDocument(uuid: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/documents/${uuid}/file`, {
+    // Exception SDK : blob binaire (HttpClient gere `responseType: 'blob'`,
+    // pas le SDK invoke). URL derivee du PATH SDK pour rester aligne sur
+    // la spec en cas de rename.
+    const path = documentsDownload.PATH.replace('{uuid}', uuid);
+    return this.http.get(`${this.rootUrl}${path}`, {
       responseType: 'blob',
     });
   }
@@ -399,7 +419,9 @@ export class ContractorApiService {
     // ou camÃ©ra mobile), pas de QR-scan intermÃ©diaire. Sans ce flag, le backend
     // considÃ¨re que le desktop doit gÃ©nÃ©rer un QR (is_direct=false) et refuse
     // l'upload direct â†’ "Challenge token invalide".
-    return this.http.post<{ data: any }>(`${this.baseUrl}/kyc/challenge`, { mode: 'direct' }).pipe(
+    return from(
+      this.api.invoke(kycChallenge, { body: { mode: 'direct' } }) as Promise<{ data: any }>
+    ).pipe(
       map(res => {
         const d = res.data;
         // Chaque challenge a un label principal + un hint explicite ("votre
@@ -472,7 +494,9 @@ export class ContractorApiService {
     formData.append('video', video);
     formData.append('challenge_token', challengeToken);
 
-    return this.http.post(`${this.baseUrl}/kyc/video`, formData);
+    // Exception SDK : upload multipart binaire (video MediaRecorder). URL
+    // derivee du PATH SDK pour rester synchro avec un rename backend.
+    return this.http.post(`${this.rootUrl}${kycVideo.PATH}`, formData);
   }
 
   getKycStatus(): Observable<KycStatus> {
@@ -486,11 +510,11 @@ export class ContractorApiService {
   /**
    * Renvoie le plan courant du contractor + le catalogue des plans (free/paid).
    *
-   * Pourquoi le catalogue est codé ici : le backend Tuita expose uniquement
-   * `/billing/subscription` (plan courant) — il n'y a pas de catalogue dynamique
-   * à 2 entrées seulement (Freemium gratuit + Tuita Pro 99€/mois aligné sur
-   * `PLAN_PRICE_EUR`). Inliner évite un endpoint trivial et reste la source de
-   * vérité tant qu'il n'y a pas de tiers de prix supplémentaires.
+   * Pourquoi le catalogue est codï¿½ ici : le backend Tuita expose uniquement
+   * `/billing/subscription` (plan courant) ï¿½ il n'y a pas de catalogue dynamique
+   * ï¿½ 2 entrï¿½es seulement (Freemium gratuit + Tuita Pro 99ï¿½/mois alignï¿½ sur
+   * `PLAN_PRICE_EUR`). Inliner ï¿½vite un endpoint trivial et reste la source de
+   * vï¿½ritï¿½ tant qu'il n'y a pas de tiers de prix supplï¿½mentaires.
    */
   getBillingPlan(): Observable<{ current_plan: string; plans: BillingPlan[] }> {
     return from(
@@ -578,15 +602,11 @@ export class ContractorApiService {
     page?: number;
     per_page?: number;
   }): Observable<PaginatedResponse<any>> {
-    let httpParams = new HttpParams();
-    if (params?.status) httpParams = httpParams.set('status', params.status);
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-    if (params?.per_page) httpParams = httpParams.set('per_page', params.per_page.toString());
-
-    return this.http.get<PaginatedResponse<any>>(
-      `${this.baseUrl}/invoices`,
-      { params: httpParams }
-    );
+    return invoicesList(this.http, this.rootUrl, {
+      status: params?.status,
+      page: params?.page,
+      per_page: params?.per_page,
+    }).pipe(map((r) => r.body as unknown as PaginatedResponse<any>));
   }
 
   /**
@@ -604,32 +624,35 @@ export class ContractorApiService {
     formData.append('mission_ref', missionRef);
     formData.append('amount_ttc', amountTtc.toString());
 
-    // Endpoint synchrone (OCR Mistral + regles metier + cross-check mission
-    // snapshot executes inline). La reponse contient rejection_reason +
-    // rejection_details si la facture est rejetee.
-    return this.http.post(`${this.baseUrl}/invoices/upload`, formData).pipe(
+    // Exception SDK : upload multipart synchrone. La reponse contient
+    // rejection_reason + rejection_details si la facture est rejetee. URL
+    // derivee du PATH SDK pour suivre un rename backend.
+    return this.http.post(`${this.rootUrl}${invoicesUpload.PATH}`, formData).pipe(
       timeout(SYNC_UPLOAD_TIMEOUT_MS),
     );
   }
 
   /**
-   * Reupload d'une facture déjà rejetée : pas de route dédiée côté Tuita,
-   * on rejoue `POST /invoices/upload`. Le backend détecte le doublon sur la
-   * même mission et remplace la facture précédente. Le paramètre
-   * `invoiceUuid` est ignoré (conservé pour compatibilité composants).
+   * Reupload d'une facture dï¿½jï¿½ rejetï¿½e : pas de route dï¿½diï¿½e cï¿½tï¿½ Tuita,
+   * on rejoue `POST /invoices/upload`. Le backend dï¿½tecte le doublon sur la
+   * mï¿½me mission et remplace la facture prï¿½cï¿½dente. Le paramï¿½tre
+   * `invoiceUuid` est ignorï¿½ (conservï¿½ pour compatibilitï¿½ composants).
    */
   reuploadInvoice(_invoiceUuid: string, file: File, missionRef?: string, amountTtc?: number): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
     if (missionRef) formData.append('mission_ref', missionRef);
     if (amountTtc != null) formData.append('amount_ttc', String(amountTtc));
-    return this.http.post(`${this.baseUrl}/invoices/upload`, formData).pipe(
+    // Exception SDK : meme route que uploadInvoice (multipart synchrone).
+    return this.http.post(`${this.rootUrl}${invoicesUpload.PATH}`, formData).pipe(
       timeout(SYNC_UPLOAD_TIMEOUT_MS),
     );
   }
 
   downloadInvoicePdf(uuid: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/invoices/${uuid}/pdf`, {
+    // Exception SDK : blob binaire. URL derivee du PATH SDK.
+    const path = invoicesPdf.PATH.replace('{uuid}', uuid);
+    return this.http.get(`${this.rootUrl}${path}`, {
       responseType: 'blob',
     });
   }
@@ -640,10 +663,10 @@ export class ContractorApiService {
    * pages_count?, validator_summary, processing_elapsed_seconds, ... }.
    */
   /**
-   * Statut courant d'une facture. L'upload est synchrone côté Tuita
-   * (verdict dans la réponse de `/invoices/upload`) — on relit donc la
+   * Statut courant d'une facture. L'upload est synchrone cï¿½tï¿½ Tuita
+   * (verdict dans la rï¿½ponse de `/invoices/upload`) ï¿½ on relit donc la
    * timeline `/invoices/:uuid/timeline` qui expose `status` + `phase`
-   * pour les écrans qui rafraîchissent après navigation.
+   * pour les ï¿½crans qui rafraï¿½chissent aprï¿½s navigation.
    */
   getInvoiceStatus(uuid: string): Observable<any> {
     return from(this.api.invoke(invoicesTimeline, { uuid }));
@@ -655,8 +678,8 @@ export class ContractorApiService {
   //   - POST /certification/qcm/start
   //   - POST /certification/qcm/:attempt/heartbeat
   //   - POST /certification/qcm/:attempt/submit
-  // Pas de route séparée "save answers" : le draft est persisté localement
-  // côté composant, le submit final fait foi.
+  // Pas de route sï¿½parï¿½e "save answers" : le draft est persistï¿½ localement
+  // cï¿½tï¿½ composant, le submit final fait foi.
 
   startCertification(): Observable<{ attempt_uuid: string; attempt_number: number; started_at: string; partial_answers: Record<string, string> }> {
     return from(this.api.invoke(certificationQcmStart) as Promise<any>).pipe(
@@ -664,8 +687,8 @@ export class ContractorApiService {
     );
   }
 
-  // NOTE : le SDK type `attempt: number` mais l'identifiant côté backend
-  // est un UUID (string). On passe via cast — le request-builder sérialise
+  // NOTE : le SDK type `attempt: number` mais l'identifiant cï¿½tï¿½ backend
+  // est un UUID (string). On passe via cast ï¿½ le request-builder sï¿½rialise
   // la valeur telle quelle dans l'URL path.
   heartbeatCertification(attemptUuid: string): Observable<void> {
     return from(
@@ -701,36 +724,37 @@ export class ContractorApiService {
       ? { status: statusOrQuery }
       : (statusOrQuery ?? {});
 
-    let httpParams = new HttpParams();
-    if (query.status) httpParams = httpParams.set('status', query.status);
-    if (query.search) httpParams = httpParams.set('search', query.search);
-    if (query.invoice_status) {
-      const value = Array.isArray(query.invoice_status)
-        ? query.invoice_status.join(',')
-        : query.invoice_status;
-      if (value) httpParams = httpParams.set('invoice_status', value);
-    }
-    if (query.page != null) httpParams = httpParams.set('page', String(query.page));
-    if (query.per_page != null) httpParams = httpParams.set('per_page', String(query.per_page));
+    const invoiceStatusValue = query.invoice_status
+      ? (Array.isArray(query.invoice_status) ? query.invoice_status.join(',') : query.invoice_status)
+      : undefined;
 
-    // Backend Tuita : pas de route `/missions` agrégée. On route par défaut
+    const sdkParams = {
+      status: query.status,
+      search: query.search,
+      invoice_status: invoiceStatusValue,
+      page: query.page,
+      per_page: query.per_page,
+    };
+
+    // Backend Tuita : pas de route `/missions` agregee. On route par defaut
     // sur `/missions/active`, et `/missions/history` quand `status=history`.
-    const status = query.status;
-    const endpoint = status === 'history' ? 'history' : 'active';
-    return this.http.get<MissionsResponse>(`${this.baseUrl}/missions/${endpoint}`, { params: httpParams });
+    const fn = query.status === 'history' ? missionsHistory : missionsActive;
+    return fn(this.http, this.rootUrl, sdkParams).pipe(
+      map((r) => r.body as unknown as MissionsResponse),
+    );
   }
 
   getMission(mid: string): Observable<ContractorMission> {
-    // Backend Tuita : route paramétrée `/missions/:ref`.
+    // Backend Tuita : route paramï¿½trï¿½e `/missions/:ref`.
     return from(
       this.api.invoke(missionsShow, { ref: mid }) as Promise<{ data: ContractorMission }>
     ).pipe(map((res) => res.data));
   }
 
-  // Backend Tuita : seule la liste des offres est exposée via `/missions/offers`.
+  // Backend Tuita : seule la liste des offres est exposï¿½e via `/missions/offers`.
   // L'acceptation/refus d'une offre passe par le workflow backoffice Tuita
-  // (dispatch FOM) — pas de route contractor pour accepter/refuser une offre
-  // individuelle. La page de détail offre redirige donc vers la liste.
+  // (dispatch FOM) ï¿½ pas de route contractor pour accepter/refuser une offre
+  // individuelle. La page de dï¿½tail offre redirige donc vers la liste.
 
   listMissionOffers(): Observable<{ data: MissionOffer[]; can_accept?: boolean }> {
     return from(

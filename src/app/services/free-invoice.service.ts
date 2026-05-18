@@ -2,10 +2,13 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
 import { invoicesFreeGet } from '../api/fn/invoices-free/invoices-free-get';
 import { invoicesFreeCancel } from '../api/fn/invoices-free/invoices-free-cancel';
 import { invoicesFreeEligibleMissions } from '../api/fn/invoices-free/invoices-free-eligible-missions';
 import { invoicesFreeList } from '../api/fn/invoices-free/invoices-free-list';
+import { invoicesFreeRequest } from '../api/fn/invoices-free/invoices-free-request';
+import { invoicesFreeUpload } from '../api/fn/invoices-free/invoices-free-upload';
 
 // Routes backend Tuita : `/contractor-compliance/invoices/free*`. On passe
 // par le proxy Angular (pas d'environment.apiUrl ici, le SDK pose la base).
@@ -52,9 +55,7 @@ export interface EligibleMission {
 export class FreeInvoiceService {
   private http = inject(HttpClient);
   private api = inject(Api);
-  // POURQUOI : préfixe aligné sur le routing Laminas du module Tuita
-  // ContractorCompliance (cf. config/domains/06-invoices-free.config.php).
-  private base = '/contractor-compliance/invoices/free';
+  private apiConfig = inject(ApiConfiguration);
 
   list(page = 1): Observable<FreeInvoiceListResponse> {
     return from(
@@ -70,7 +71,8 @@ export class FreeInvoiceService {
   // avec subject + requested_amount_ttc + mission_ref + pdf; le SDK ne typifie
   // que `file?: Blob` côté body).
   create(formData: FormData): Observable<{ data: FreeInvoiceRequestSummary }> {
-    return this.http.post<{ data: FreeInvoiceRequestSummary }>(`${this.base}/request`, formData, { withCredentials: true });
+    const url = `${this.apiConfig.rootUrl}${invoicesFreeRequest.PATH}`;
+    return this.http.post<{ data: FreeInvoiceRequestSummary }>(url, formData, { withCredentials: true });
   }
 
   getEligibleMissions(): Observable<EligibleMission[]> {
@@ -87,8 +89,9 @@ export class FreeInvoiceService {
   upload(uuid: string, pdf: File): Observable<{ data: FreeInvoiceUploadResult }> {
     const fd = new FormData();
     fd.append('pdf', pdf);
+    const url = `${this.apiConfig.rootUrl}${invoicesFreeUpload.PATH.replace('{uuid}', encodeURIComponent(uuid))}`;
     return this.http.post<{ data: FreeInvoiceUploadResult }>(
-      `${this.base}/${uuid}/upload`,
+      url,
       fd,
       { withCredentials: true },
     );

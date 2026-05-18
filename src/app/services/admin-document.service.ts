@@ -4,6 +4,7 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { adminDocumentsShow } from '../api/fn/admin-documents/admin-documents-show';
+import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-file';
 
 /**
  * Admin Document Service
@@ -79,8 +80,6 @@ export interface DocumentDetail {
   superseded_by: DocumentSupersededBy | null;
 }
 
-const BASE_URL = '/contractor-compliance/admin/documents';
-
 @Injectable({ providedIn: 'root' })
 export class AdminDocumentService {
   private readonly http = inject(HttpClient);
@@ -105,8 +104,9 @@ export class AdminDocumentService {
    * query param `inline`.
    */
   downloadDocumentFile(uuid: string, inline = true): Observable<Blob> {
+    const url = adminDocumentsFile.PATH.replace('{uuid}', encodeURIComponent(uuid));
     const suffix = inline ? '?inline=1' : '';
-    return this.http.get(`${BASE_URL}/${uuid}/file${suffix}`, {
+    return this.http.get(`${url}${suffix}`, {
       responseType: 'blob',
     });
   }

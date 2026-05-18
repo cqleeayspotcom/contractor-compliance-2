@@ -226,6 +226,7 @@ components:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
 tags:
+  - name: Signup
   - name: Profile
   - name: Dashboard
   - name: Documents
@@ -254,6 +255,63 @@ paths:
   # ============================================================
   # Domaine 01 — Auth / profile / dashboard
   # ============================================================
+
+  # --- Signup public (pas d'auth) ---
+  /contractor-compliance/invitation-codes/check:
+    get:
+      tags: [Signup]
+      operationId: invitationCodesCheck
+      summary: Pré-validation d'un code d'invitation (lecture seule, ne consomme pas).
+      security: []
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9]{4}$'
+          description: Code d'invitation 4 caractères (alphabet `[A-HJ-NP-Z2-9]`).
+      responses:
+        '200':
+          description: Résultat de la vérification (200 même si invalide — voir `valid`).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid: { type: boolean }
+                  reason:
+                    type: string
+                    enum: [invalid_format, not_found, revoked, expired, exhausted]
+                    description: "Présent uniquement quand valid=false."
+        default: { $ref: '#/components/responses/JsonError' }
+
+  /contractor-compliance/signup:
+    post:
+      tags: [Signup]
+      operationId: signupCreate
+      summary: Inscription publique par code d'invitation. Pose le cookie `__contractor_ssid`.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, phone, email]
+              properties:
+                code: { type: string, pattern: '^[A-Za-z0-9]{4}$' }
+                phone: { type: string }
+                email: { type: string, format: email }
+                first_name: { type: string }
+                last_name: { type: string }
+                siren: { type: string }
+                company_name: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        default: { $ref: '#/components/responses/JsonError' }
+
   /contractor-compliance/profile/logout:
     post:
       tags: [Profile]
@@ -358,7 +416,7 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
-  /contractor-compliance/documents/{uuid}/download:
+  /contractor-compliance/documents/{uuid}/file:
     get:
       tags: [Documents]
       operationId: documentsDownload

@@ -2,6 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { UrgencyDialogService } from '../components/shared/urgency-dialog/urgency-dialog.service';
+import { ApiConfiguration } from '../api/api-configuration';
+import { invitationCodesCheck } from '../api/fn/signup/invitation-codes-check';
+import { signupCreate } from '../api/fn/signup/signup-create';
 
 export interface SignupPayload {
   code: string;
@@ -33,11 +36,6 @@ export interface SignupResponse {
   };
 }
 
-export interface SignupError {
-  success: false;
-  error: { code: string; message: string };
-}
-
 /**
  * Service d'inscription publique par code d'invitation. La réponse pose un
  * cookie `__contractor_ssid` côté serveur — le frontend doit ensuite naviguer
@@ -46,35 +44,39 @@ export interface SignupError {
  * Pas de header d'auth requis ici — c'est volontairement public, le code
  * d'invitation est la garde.
  */
+export type VerifyCodeReason =
+  | 'invalid_format'
+  | 'not_found'
+  | 'revoked'
+  | 'expired'
+  | 'exhausted';
+
 export interface VerifyCodeResponse {
-  success: boolean;
-  // `valid` peut �tre false : le backend `/invitation-codes/check` r�pond
-  // 200 + `valid: false` quand le code n'existe pas/est r�voqu� � la
-  // distinction passe par ce flag, pas par le code HTTP.
-  data: { valid: boolean; code: string };
+  valid: boolean;
+  code: string;
+  reason?: VerifyCodeReason;
 }
 
 @Injectable({ providedIn: 'root' })
 export class ContractorSignupService {
   private readonly http = inject(HttpClient);
+  private readonly apiConfig = inject(ApiConfiguration);
   private readonly urgencyDialogService = inject(UrgencyDialogService);
 
   /**
    * Pré-vérification du code (étape 1 du flow signup). Ne crée rien,
    * ne consomme pas le code. Permet à l'artisan de savoir tout de suite
    * si son code est bon avant de remplir 6 champs d'identité.
-   */
-  /**
-   * V�rifie un code d'invitation sans le consommer via la route d�di�e
-   * `GET /contractor-compliance/invitation-codes/check?code=XXXX`. Le code
-   * n'est consomm� que par `signup()` plus tard.
+   *
+   * Le backend répond 200 dans tous les cas — le flag `valid` discrimine,
+   * et `reason` (présent quand `valid: false`) donne la raison exacte.
    */
   verifyCode(code: string): Observable<VerifyCodeResponse> {
-    const url = `/contractor-compliance/invitation-codes/check?code=${encodeURIComponent(code)}`;
-    return this.http.get<{ data?: { valid?: boolean } }>(url).pipe(
+    return invitationCodesCheck(this.http, this.apiConfig.rootUrl, { code }).pipe(
       map((res) => ({
-        success: true,
-        data: { valid: res?.data?.valid === true, code },
+        valid: res.body.valid === true,
+        reason: res.body.reason,
+        code,
       })),
     );
   }
@@ -82,20 +84,27 @@ export class ContractorSignupService {
   signup(payload: SignupPayload): Observable<SignupResponse> {
     // withCredentials: true → le navigateur stocke le cookie Set-Cookie de la
     // réponse, indispensable pour les requêtes authentifiées suivantes.
-    return this.http
-      .post<SignupResponse>('/contractor-compliance/signup', payload, {
-        withCredentials: true,
-      })
-      .pipe(
-        // Marque le timestamp signup pour activer la période de grâce 24h du
-        // UrgencyDialogService — sinon un user fresh signup serait harcelé
-        // immédiatement par le modal "Ton dossier n'est pas complet" alors
-        // qu'il vient à peine d'arriver. Voir BUG-004 / FIX-003.
-        tap((response) => {
-          if (response?.success) {
-            this.urgencyDialogService.markSignupCompleted();
-          }
-        }),
-      );
+    return signupCreate(this.http, this.apiConfig.rootUrl, {
+      body: {
+        code: payload.code,
+        phone: payload.phone,
+        email: payload.email,
+        first_name: payload.first_name,
+        last_name: payload.last_name,
+        siren: payload.siren,
+        company_name: payload.company_name,
+      },
+    }).pipe(
+      map((res) => res.body as unknown as SignupResponse),
+      // Marque le timestamp signup pour activer la période de grâce 24h du
+      // UrgencyDialogService — sinon un user fresh signup serait harcelé
+      // immédiatement par le modal "Ton dossier n'est pas complet" alors
+      // qu'il vient à peine d'arriver. Voir BUG-004 / FIX-003.
+      tap((response) => {
+        if (response?.success) {
+          this.urgencyDialogService.markSignupCompleted();
+        }
+      }),
+    );
   }
 }

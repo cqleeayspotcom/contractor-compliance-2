@@ -122,13 +122,12 @@ export class ContractorSignupComponent {
       next: (res) => {
         this.isVerifyingCode.set(false);
         // Le backend `/invitation-codes/check` répond 200 même quand le code
-        // est invalide (flag `valid` à false). On bloque l'avancée si false
-        // et on remonte un message explicite.
-        if (!res.data.valid) {
-          this.errorMessage.set(this.fallbackMessageFor('invitation_code_invalid'));
+        // est invalide — `valid` discrimine, `reason` donne la cause exacte.
+        if (!res.valid) {
+          this.errorMessage.set(this.messageForVerifyReason(res.reason));
           return;
         }
-        this.code.set(res.data.code);
+        this.code.set(res.code);
         this.step.set('identity');
       },
       error: (err) => {
@@ -203,6 +202,25 @@ export class ContractorSignupComponent {
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
+
+  private messageForVerifyReason(
+    reason: 'invalid_format' | 'not_found' | 'revoked' | 'expired' | 'exhausted' | undefined,
+  ): string {
+    switch (reason) {
+      case 'invalid_format':
+        return 'Le code doit faire 4 caractères (lettres + chiffres, sans 0 ni 1).';
+      case 'not_found':
+        return 'Ce code n\'existe pas. Vérifie auprès de la personne qui te l\'a transmis.';
+      case 'revoked':
+        return 'Ce code a été révoqué. Demande un autre code.';
+      case 'expired':
+        return 'Ce code a expiré. Demande-en un nouveau.';
+      case 'exhausted':
+        return 'Ce code a atteint son nombre maximal d\'usages. Demande un autre code.';
+      default:
+        return 'Code invalide. Réessaie ou demande-en un nouveau.';
+    }
+  }
 
   private fallbackMessageFor(code: string | undefined): string {
     switch (code) {

@@ -4,11 +4,13 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { adminContractorsShow } from '../api/fn/admin-contractors/admin-contractors-show';
+import { adminContractorsList } from '../api/fn/admin-contractors/admin-contractors-list';
 import { adminContractorsDocuments } from '../api/fn/admin-contractors/admin-contractors-documents';
 import { adminContractorsKycSessions } from '../api/fn/admin-contractors/admin-contractors-kyc-sessions';
 import { adminContractorsInvoices } from '../api/fn/admin-contractors/admin-contractors-invoices';
 import { adminContractorsPurchases } from '../api/fn/admin-contractors/admin-contractors-purchases';
 import { adminContractorsMissions } from '../api/fn/admin-contractors/admin-contractors-missions';
+import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-file';
 
 /**
  * Admin Contractor Service
@@ -20,9 +22,11 @@ import { adminContractorsMissions } from '../api/fn/admin-contractors/admin-cont
  * admin-key.interceptor.ts. Les 401/403 sont gérés par contractorCookieInterceptor
  * (redirect /login).
  *
- * NOTE migration SDK : les endpoints GET sont branches via Api.invoke (cast
- * JsonObject -> shape typee). fetchDocumentBlob garde HttpClient car le SDK
- * fn `adminDocumentsFile` ne supporte pas le query param `inline`.
+ * Regle SDK first : toute route HTTP passe par le SDK genere
+ * (src/app/api/fn/...). Quand un param hors spec OpenAPI est requis
+ * (ex: include_old_versions, sort/dir, document_type, without_invoice...),
+ * on retombe sur HttpClient mais l'URL vient toujours de `<fn>.PATH`
+ * (jamais hardcodee). Idem pour le binaire blob (responseType).
  */
 
 // ---------- Summary ----------
@@ -271,6 +275,17 @@ export interface BrowseQuery {
   direction?: 'asc' | 'desc';
 }
 
+/**
+ * Keys exposed par le SDK fn adminContractorsList ET partages avec BrowseQuery
+ * sous le meme nom. BrowseQuery utilise `q`/`account_state` la ou le SDK
+ * attend `search`/`status`, donc seuls les 4 ci-dessous matchent sans mapping.
+ */
+const SDK_LIST_KEYS = ['page', 'per_page', 'sort', 'direction'] as const;
+/** Keys exposed by the SDK fns documents/invoices/missions. */
+const SDK_SUB_LIST_KEYS = ['page', 'per_page', 'status'] as const;
+/** Keys exposed by the SDK fns kyc-sessions/purchases (page/per_page only). */
+const SDK_MIN_LIST_KEYS = ['page', 'per_page'] as const;
+
 @Injectable({ providedIn: 'root' })
 export class AdminContractorService {
   private readonly http = inject(HttpClient);
@@ -288,18 +303,40 @@ export class AdminContractorService {
   }
 
   /**
+   * Renvoie `true` si `query` contient au moins une cle hors `allowed`
+   * (param hors spec OpenAPI -> on doit retomber sur HttpClient).
+   */
+  private hasExtraKeys(query: Record<string, unknown>, allowed: readonly string[]): boolean {
+    return Object.entries(query).some(
+      ([k, v]) =>
+        v !== undefined && v !== null && v !== '' && !allowed.includes(k),
+    );
+  }
+
+  /**
    * Browse pagine : liste tous les contractors avec filtres + facets.
    *
-   * NOTE : le SDK fn adminContractorsList ne declare pas de query params,
-   * mais le backend Tuita les accepte. En attendant la regeneration de
-   * l'OpenAPI on garde HttpClient pour preserver le contrat existant.
+   * BrowseQuery contient des filtres hors spec OpenAPI (q, account_state,
+   * kyc_status, compliance, has_active_invoice, etc.). Si l'un d'eux est
+   * present, on retombe sur HttpClient avec l'URL `adminContractorsList.PATH`
+   * (jamais hardcodee). Sinon on passe par le SDK.
    */
   list(query: BrowseQuery = {}): Observable<ContractorBrowseResponse> {
-    const params = this.toParams(query as unknown as ListQuery);
-    return this.http.get<ContractorBrowseResponse>(
-      '/contractor-compliance/admin/contractors',
-      params ? { params } : {},
-    );
+    if (this.hasExtraKeys(query, SDK_LIST_KEYS)) {
+      const params = this.toParams(query as unknown as ListQuery);
+      return this.http.get<ContractorBrowseResponse>(
+        adminContractorsList.PATH,
+        params ? { params } : {},
+      );
+    }
+    return from(
+      this.api.invoke(adminContractorsList, {
+        page: query.page,
+        per_page: query.per_page,
+        sort: query.sort,
+        direction: query.direction,
+      }),
+    ).pipe(map(r => r as unknown as ContractorBrowseResponse));
   }
 
   getContractor(phone: string): Observable<{ data: ContractorDetail }> {
@@ -309,70 +346,88 @@ export class AdminContractorService {
   }
 
   listDocuments(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorDocumentRow>> {
-    // SDK fn n'accepte pas de query params (page/per_page/include_old_versions);
-    // on garde HttpClient quand `query` est non-vide.
-    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
-    if (hasQuery) {
+    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
+      // include_old_versions / type / document_type / sort / dir / search :
+      // hors spec OpenAPI -> HttpClient + .PATH.replace.
       return this.http.get<Paginated<ContractorDocumentRow>>(
-        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/documents`,
+        adminContractorsDocuments.PATH.replace('{phone}', encodeURIComponent(phone)),
         { params: this.toParams(query) },
       );
     }
-    return from(this.api.invoke(adminContractorsDocuments, { phone })).pipe(
-      map(r => r as unknown as Paginated<ContractorDocumentRow>)
-    );
+    return from(
+      this.api.invoke(adminContractorsDocuments, {
+        phone,
+        page: query.page,
+        per_page: query.per_page,
+        status: query.status,
+      }),
+    ).pipe(map(r => r as unknown as Paginated<ContractorDocumentRow>));
   }
 
   listKycSessions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorKycRow>> {
-    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
-    if (hasQuery) {
+    if (this.hasExtraKeys(query, SDK_MIN_LIST_KEYS)) {
       return this.http.get<Paginated<ContractorKycRow>>(
-        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/kyc-sessions`,
+        adminContractorsKycSessions.PATH.replace('{phone}', encodeURIComponent(phone)),
         { params: this.toParams(query) },
       );
     }
-    return from(this.api.invoke(adminContractorsKycSessions, { phone })).pipe(
-      map(r => r as unknown as Paginated<ContractorKycRow>)
-    );
+    return from(
+      this.api.invoke(adminContractorsKycSessions, {
+        phone,
+        page: query.page,
+        per_page: query.per_page,
+      }),
+    ).pipe(map(r => r as unknown as Paginated<ContractorKycRow>));
   }
 
   listInvoices(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorInvoiceRow>> {
-    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
-    if (hasQuery) {
+    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
       return this.http.get<Paginated<ContractorInvoiceRow>>(
-        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/invoices`,
+        adminContractorsInvoices.PATH.replace('{phone}', encodeURIComponent(phone)),
         { params: this.toParams(query) },
       );
     }
-    return from(this.api.invoke(adminContractorsInvoices, { phone })).pipe(
-      map(r => r as unknown as Paginated<ContractorInvoiceRow>)
-    );
+    return from(
+      this.api.invoke(adminContractorsInvoices, {
+        phone,
+        page: query.page,
+        per_page: query.per_page,
+        status: query.status,
+      }),
+    ).pipe(map(r => r as unknown as Paginated<ContractorInvoiceRow>));
   }
 
   listPurchases(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorPurchaseRow>> {
-    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
-    if (hasQuery) {
+    if (this.hasExtraKeys(query, SDK_MIN_LIST_KEYS)) {
       return this.http.get<Paginated<ContractorPurchaseRow>>(
-        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/purchases`,
+        adminContractorsPurchases.PATH.replace('{phone}', encodeURIComponent(phone)),
         { params: this.toParams(query) },
       );
     }
-    return from(this.api.invoke(adminContractorsPurchases, { phone })).pipe(
-      map(r => r as unknown as Paginated<ContractorPurchaseRow>)
-    );
+    return from(
+      this.api.invoke(adminContractorsPurchases, {
+        phone,
+        page: query.page,
+        per_page: query.per_page,
+      }),
+    ).pipe(map(r => r as unknown as Paginated<ContractorPurchaseRow>));
   }
 
   listMissions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorMissionRow>> {
-    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
-    if (hasQuery) {
+    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
       return this.http.get<Paginated<ContractorMissionRow>>(
-        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/missions`,
+        adminContractorsMissions.PATH.replace('{phone}', encodeURIComponent(phone)),
         { params: this.toParams(query) },
       );
     }
-    return from(this.api.invoke(adminContractorsMissions, { phone })).pipe(
-      map(r => r as unknown as Paginated<ContractorMissionRow>)
-    );
+    return from(
+      this.api.invoke(adminContractorsMissions, {
+        phone,
+        page: query.page,
+        per_page: query.per_page,
+        status: query.status,
+      }),
+    ).pipe(map(r => r as unknown as Paginated<ContractorMissionRow>));
   }
 
   /**
@@ -380,14 +435,17 @@ export class AdminContractorService {
    * cross-origin si la cle n'est pas en query). On fetch en blob -> object URL,
    * que le composant peut donner a un <iframe> ou a un <a download>.
    *
-   * Garde HttpClient car le SDK fn adminDocumentsFile ne supporte pas le
-   * query param `inline`.
+   * Exception SDK : binaire (responseType: 'blob') -> on garde HttpClient,
+   * mais l'URL vient de `adminDocumentsFile.PATH` (jamais hardcodee).
    */
   fetchDocumentBlob(uuid: string, inline = true): Observable<Blob> {
     const params = inline ? new HttpParams().set('inline', '1') : undefined;
-    return this.http.get(`/contractor-compliance/admin/documents/${encodeURIComponent(uuid)}/file`, {
-      params,
-      responseType: 'blob',
-    });
+    return this.http.get(
+      adminDocumentsFile.PATH.replace('{uuid}', encodeURIComponent(uuid)),
+      {
+        params,
+        responseType: 'blob',
+      },
+    );
   }
 }

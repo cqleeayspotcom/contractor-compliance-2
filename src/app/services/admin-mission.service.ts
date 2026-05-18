@@ -1,6 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { ApiConfiguration } from '../api/api-configuration';
+import { adminMissionShow } from '../api/fn/admin/admin-mission-show';
 
 export type ValidatorType = 'compliance' | 'production' | 'accounting';
 export type ValidationStatus = 'approved' | 'rejected' | null;
@@ -59,18 +62,16 @@ export interface MissionDetail {
   invoices: MissionInvoice[];
 }
 
-const BASE_URL = '/contractor-compliance/admin/missions';
-
 @Injectable({ providedIn: 'root' })
 export class AdminMissionService {
   private readonly http = inject(HttpClient);
+  private readonly apiConfig = inject(ApiConfiguration);
 
-  // HttpClient direct : aucun groupe `admin-missions` n'est généré dans le SDK
-  // OpenAPI (route admin-only non spécifiée). Le header X-Tuita-Admin-Key est
-  // injecté globalement par admin-key.interceptor.ts — choix architectural assumé.
+  // SDK first : adminMissionShow encapsule l'appel REST. Le header
+  // X-Tuita-Admin-Key est injecté globalement par admin-key.interceptor.ts.
   getMissionDetail(missionRef: string): Observable<MissionDetail> {
-    return this.http.get<MissionDetail>(
-      `${BASE_URL}/${encodeURIComponent(missionRef)}`,
+    return adminMissionShow(this.http, this.apiConfig.rootUrl, { missionRef }).pipe(
+      map(r => r.body as unknown as MissionDetail),
     );
   }
 }

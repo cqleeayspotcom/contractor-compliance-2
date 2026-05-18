@@ -38,23 +38,39 @@ export class ProfileService {
   private readonly api = inject(Api);
 
   /**
-   * Récupère le profil contractor (identité + préférences notif email) en
-   * lisant le dashboard via le SDK généré : pas de route `/profile` séparée
-   * côté Tuita, le dashboard agrège déjà ces deux blocs (économie d'un
-   * endpoint qui aurait dupliqué les mêmes données).
+   * Rï¿½cupï¿½re le profil contractor (identitï¿½ + prï¿½fï¿½rences notif email) en
+   * lisant le dashboard via le SDK gï¿½nï¿½rï¿½ : pas de route `/profile` sï¿½parï¿½e
+   * cï¿½tï¿½ Tuita, le dashboard agrï¿½ge dï¿½jï¿½ ces deux blocs (ï¿½conomie d'un
+   * endpoint qui aurait dupliquï¿½ les mï¿½mes donnï¿½es).
    */
   async getProfile(): Promise<ContractorProfile> {
+    // Le dashboard backend renvoie le bloc `contractor` en camelCase :
+    //   { phone, firstName, lastName, companyName, siren }
+    // (cf. ContractorDashboardController::indexAction cÃ´tÃ© Laminas).
+    // L'interface frontend ProfileIdentity reste en snake_case par convention
+    // â€” on mappe ici. Avant ce mapping (avant 2026-05-18), c.first_name /
+    // c.company_name etaient toujours undefined -> le profil affichait "-"
+    // meme quand la session avait l'info.
     const r = await this.api.invoke(dashboardIndex) as {
-      data?: { contractor?: Partial<ProfileIdentity>; notifications?: Partial<NotificationPreferences> };
+      data?: {
+        contractor?: {
+          phone?: string | null;
+          firstName?: string | null;
+          lastName?: string | null;
+          companyName?: string | null;
+          siren?: string | null;
+        };
+        notifications?: Partial<NotificationPreferences>;
+      };
     };
     const c = r?.data?.contractor ?? {};
     const n = r?.data?.notifications ?? {};
     return {
       identity: {
         phone: c.phone ?? null,
-        first_name: c.first_name ?? null,
-        last_name: c.last_name ?? null,
-        company_name: c.company_name ?? null,
+        first_name: c.firstName ?? null,
+        last_name: c.lastName ?? null,
+        company_name: c.companyName ?? null,
         siren: c.siren ?? null,
       },
       notifications: {
@@ -66,9 +82,9 @@ export class ProfileService {
     };
   }
 
-  // Le SDK ne génère que le GET sur `/profile/notifications` ; pour le PATCH
+  // Le SDK ne gï¿½nï¿½re que le GET sur `/profile/notifications` ; pour le PATCH
   // backend on garde un HttpClient direct (le SDK courant ne couvre pas tous
-  // les verbes — à mettre à jour quand le générateur OpenAPI couvrira PATCH).
+  // les verbes ï¿½ ï¿½ mettre ï¿½ jour quand le gï¿½nï¿½rateur OpenAPI couvrira PATCH).
   updateNotifications(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
     return firstValueFrom(
       this.http
