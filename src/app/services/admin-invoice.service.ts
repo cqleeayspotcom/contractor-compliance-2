@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData, unwrapDataMeta } from '../api/unwrap';
+import { unwrapData, unwrapDataMeta } from '../core/api-envelope';
 import { adminInvoicesShow } from '../api/fn/admin-invoices/admin-invoices-show';
 import { adminInvoicesAuditTrail } from '../api/fn/admin-invoices/admin-invoices-audit-trail';
 import { adminInvoicesPendingValidation } from '../api/fn/admin-invoices/admin-invoices-pending-validation';
@@ -78,22 +78,22 @@ export interface InvoiceSearchFilters {
   amount_max?: number;
   date_from?: string;   // YYYY-MM-DD
   date_to?: string;
-  /** @deprecated pivot 2026-05-13 — usé plus, remplacé par missing_validations (count-based). */
+  /** @deprecated pivot 2026-05-13 â€” usÃ© plus, remplacÃ© par missing_validations (count-based). */
   validator_missing?: 'compliance' | 'production' | 'accounting';
-  /** Pivot 2026-05-13 — nombre d'approbations manquantes (1, 2 ou 3 = aucune). */
+  /** Pivot 2026-05-13 â€” nombre d'approbations manquantes (1, 2 ou 3 = aucune). */
   missing_validations?: 1 | 2 | 3;
-  /** Pivot 2026-05-13 — factures stuck depuis > N jours (basé sur created_at). */
+  /** Pivot 2026-05-13 â€” factures stuck depuis > N jours (basÃ© sur created_at). */
   stale_days?: number;
   plan?: 'free' | 'pro';
   paid_disputed?: boolean;
   stuck?: boolean;
   /**
-   * Tri server-side. Deux conventions supportées par le backend
+   * Tri server-side. Deux conventions supportÃ©es par le backend
    * (cf. WithAdminInvoiceFilters::applySort) :
    *  - Legacy : 'oldest' | 'newest' | 'amount_desc' | 'amount_asc'
-   *  - Standard : nom de colonne whitelistée ('created_at', 'updated_at',
-   *    'amount', 'status', 'number', 'mission_ref', 'paid_disputed_at') —
-   *    combiné à `direction`.
+   *  - Standard : nom de colonne whitelistÃ©e ('created_at', 'updated_at',
+   *    'amount', 'status', 'number', 'mission_ref', 'paid_disputed_at') â€”
+   *    combinÃ© Ã  `direction`.
    */
   sort?: string;
   direction?: 'asc' | 'desc';
@@ -126,7 +126,7 @@ export interface AdminInvoice {
     validated_by_email?: string | null;
     comment?: string | null;
   }>;
-  // NEW 2026-05-07 — search/list endpoint enrichment
+  // NEW 2026-05-07 â€” search/list endpoint enrichment
   rib?: Rib;
   contractor_status?: ContractorStatus;
   mission_snapshot?: MissionSnapshotInfo | null;
@@ -152,8 +152,8 @@ export interface PaginatedInvoices {
 }
 
 /**
- * Détail complet retourné par GET /admin/invoices/{uuid}.
- * Beaucoup plus riche que AdminInvoice (utilisé dans les listes).
+ * DÃ©tail complet retournÃ© par GET /admin/invoices/{uuid}.
+ * Beaucoup plus riche que AdminInvoice (utilisÃ© dans les listes).
  */
 export interface InvoiceDetail {
   invoice: {
@@ -199,7 +199,7 @@ export interface InvoiceDetail {
     uuid: string;
     status: 'approved' | 'rejected';
     source?: 'webhook' | 'admin_ui';
-    validator_type?: string | null; // legacy, peut être absent
+    validator_type?: string | null; // legacy, peut Ãªtre absent
     validated_by_email: string;
     validated_by_name: string;
     validated_at: string;
@@ -242,8 +242,8 @@ export interface InvoiceDetail {
     resolution?: string | null;
   } | null;
   /**
-   * Contexte 360° du contractor pour que les 3 validateurs voient toutes
-   * les infos métier réunies sans naviguer ailleurs.
+   * Contexte 360Â° du contractor pour que les 3 validateurs voient toutes
+   * les infos mÃ©tier rÃ©unies sans naviguer ailleurs.
    */
   contractor_context?: {
     identity: {
@@ -373,9 +373,9 @@ export class AdminInvoiceService {
   // ---------------------------------------------------------------------
 
   /**
-   * Reconstruit `{ data, meta }` (forme `PaginatedInvoices`) à partir de
+   * Reconstruit `{ data, meta }` (forme `PaginatedInvoices`) Ã  partir de
    * l'enveloppe `{ data, meta }` du backend via `unwrapDataMeta`. Signature
-   * publique préservée pour les composants consommateurs (qui lisent `.data`
+   * publique prÃ©servÃ©e pour les composants consommateurs (qui lisent `.data`
    * et `.meta`).
    */
   private listFromMeta(
@@ -411,7 +411,7 @@ export class AdminInvoiceService {
     );
   }
 
-  // Signature publique préservée : on rewrappe le payload dans `{ data }` pour
+  // Signature publique prÃ©servÃ©e : on rewrappe le payload dans `{ data }` pour
   // ne pas casser les consommateurs (cf. contractor-admin.component.ts qui lit `res.data`).
   getStuckCounts(): Observable<{ data: StuckCounts }> {
     return adminInvoicesStatsStuckCounts(this.http, this.apiConfig.rootUrl).pipe(
@@ -441,9 +441,9 @@ export class AdminInvoiceService {
 
   /**
    * Stream le PDF en blob (l'admin key passe par header donc impossible
-   * de mettre l'URL directe dans <iframe src> — il faut fetch + objectURL).
+   * de mettre l'URL directe dans <iframe src> â€” il faut fetch + objectURL).
    *
-   * Le SDK fn retourne déjà un Blob brut (pas d'enveloppe JSON) ; on extrait
+   * Le SDK fn retourne dÃ©jÃ  un Blob brut (pas d'enveloppe JSON) ; on extrait
    * juste `r.body`.
    */
   downloadInvoicePdf(uuid: string, inline = true): Observable<Blob> {
@@ -464,16 +464,16 @@ export class AdminInvoiceService {
   // ---------------------------------------------------------------------
 
   /**
-   * Endpoint unifié multi-statut avec recherche full-text + filtres riches.
+   * Endpoint unifiÃ© multi-statut avec recherche full-text + filtres riches.
    * NEW 2026-05-07.
    */
-  // HttpClient direct : `adminInvoicesList` ne déclare que status/search/stuck/
+  // HttpClient direct : `adminInvoicesList` ne dÃ©clare que status/search/stuck/
   // page/per_page/sort/direction ; les filtres riches du screen admin (q,
   // contractor_phone, contractor_siren, mission_ref, amount_min/max, date_from/to,
   // status[] multi-valeur, missing_validations, stale_days, plan, paid_disputed,
-  // validator_missing) ne sont pas exposés par le spec → choix architectural
-  // assumé de bypasser le SDK pour conserver l'intégralité des filtres.
-  // URL via `.PATH` du SDK pour éviter la désync si la spec OpenAPI bouge.
+  // validator_missing) ne sont pas exposÃ©s par le spec â†’ choix architectural
+  // assumÃ© de bypasser le SDK pour conserver l'intÃ©gralitÃ© des filtres.
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec OpenAPI bouge.
   searchInvoices(filters: InvoiceSearchFilters): Observable<PaginatedInvoices> {
     let params = new HttpParams();
     Object.entries(filters).forEach(([k, v]) => {
@@ -487,8 +487,8 @@ export class AdminInvoiceService {
     return this.http.get<PaginatedInvoices>(adminInvoicesList.PATH, { params });
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` (optimistic locking) non supporté
-  // via SDK invoke(). URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` (optimistic locking) non supportÃ©
+  // via SDK invoke(). URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
@@ -497,8 +497,8 @@ export class AdminInvoiceService {
     return this.http.post(url, body, headers ? { headers } : {});
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
-  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` non supportÃ© via SDK invoke().
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   markPaid(uuid: string, body: MarkPaidBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
@@ -507,8 +507,8 @@ export class AdminInvoiceService {
     return this.http.post(url, body, headers ? { headers } : {});
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
-  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` non supportÃ© via SDK invoke().
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   reopen(uuid: string, body: ReopenBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
@@ -517,8 +517,8 @@ export class AdminInvoiceService {
     return this.http.post(url, body, headers ? { headers } : {});
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
-  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` non supportÃ© via SDK invoke().
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   resolveDispute(uuid: string, body: ResolveDisputeBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
@@ -527,8 +527,8 @@ export class AdminInvoiceService {
     return this.http.post(url, body, headers ? { headers } : {});
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
-  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` non supportÃ© via SDK invoke().
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   forceResendWebhook(uuid: string, body: ForceResendWebhookBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
@@ -537,8 +537,8 @@ export class AdminInvoiceService {
     return this.http.post(url, body, headers ? { headers } : {});
   }
 
-  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
-  // URL via `.PATH` du SDK pour éviter la désync si la spec bouge.
+  // HttpClient direct : header `If-Unchanged-Since` non supportÃ© via SDK invoke().
+  // URL via `.PATH` du SDK pour Ã©viter la dÃ©sync si la spec bouge.
   addNote(uuid: string, body: AddNoteBody, ifUnchangedSince?: string): Observable<unknown> {
     const headers = ifUnchangedSince
       ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })

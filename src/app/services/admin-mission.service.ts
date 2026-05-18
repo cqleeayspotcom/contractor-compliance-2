@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
 import { adminMissionShow } from '../api/fn/admin/admin-mission-show';
-import { unwrapData } from '../api/unwrap';
+import { unwrapData } from '../core/api-envelope';
 
 export type ValidatorType = 'compliance' | 'production' | 'accounting';
 export type ValidationStatus = 'approved' | 'rejected' | null;
@@ -68,7 +68,7 @@ export class AdminMissionService {
   private readonly apiConfig = inject(ApiConfiguration);
 
   // SDK first : adminMissionShow encapsule l'appel REST. Le header
-  // X-Tuita-Admin-Key est injecté globalement par admin-key.interceptor.ts.
+  // X-Tuita-Admin-Key est injectÃ© globalement par admin-key.interceptor.ts.
   getMissionDetail(missionRef: string): Observable<MissionDetail> {
     return adminMissionShow(this.http, this.apiConfig.rootUrl, { missionRef }).pipe(
       unwrapData<MissionDetail>(),

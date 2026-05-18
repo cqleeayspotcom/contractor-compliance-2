@@ -1,6 +1,6 @@
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { StrictHttpResponse } from './strict-http-response';
+import { StrictHttpResponse } from '../api/strict-http-response';
 
 /**
  * Enveloppe canonique côté backend (cf. trait PHP `ApiEnvelope`).
@@ -10,6 +10,10 @@ import { StrictHttpResponse } from './strict-http-response';
  *
  * Ce module fournit les helpers RxJS pour déballer le payload côté frontend
  * SANS répéter `(res.body as { data: X }).data` dans chaque service.
+ *
+ * ATTENTION : ce fichier vit dans `src/app/core/` (PAS dans `src/app/api/`)
+ * parce que `src/app/api/` est régénéré par `npm run generate-api` avec
+ * `removeStaleFiles: true` — tout fichier non-généré y est supprimé.
  */
 
 export interface Envelope<T> {

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { UrgencyDialogService } from '../components/shared/urgency-dialog/urgency-dialog.service';
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData } from '../api/unwrap';
+import { unwrapData } from '../core/api-envelope';
 import { invitationCodesCheck } from '../api/fn/signup/invitation-codes-check';
 import { signupCreate } from '../api/fn/signup/signup-create';
 
@@ -11,9 +11,9 @@ export interface SignupPayload {
   code: string;
   phone: string;
   email: string;
-  // Champs optionnels — au signup l'artisan ne saisit que code + phone + email.
-  // Le reste est rempli automatiquement par OCR à l'upload des documents
-  // (CNI → first/last_name, KBIS → siren/company_name).
+  // Champs optionnels â€” au signup l'artisan ne saisit que code + phone + email.
+  // Le reste est rempli automatiquement par OCR Ã  l'upload des documents
+  // (CNI â†’ first/last_name, KBIS â†’ siren/company_name).
   first_name?: string;
   last_name?: string;
   siren?: string;
@@ -35,11 +35,11 @@ export interface SignupResponse {
 }
 
 /**
- * Service d'inscription publique par code d'invitation. La réponse pose un
- * cookie `__contractor_ssid` côté serveur — le frontend doit ensuite naviguer
- * vers `/dashboard` qui sera authentifié par ce cookie.
+ * Service d'inscription publique par code d'invitation. La rÃ©ponse pose un
+ * cookie `__contractor_ssid` cÃ´tÃ© serveur â€” le frontend doit ensuite naviguer
+ * vers `/dashboard` qui sera authentifiÃ© par ce cookie.
  *
- * Pas de header d'auth requis ici — c'est volontairement public, le code
+ * Pas de header d'auth requis ici â€” c'est volontairement public, le code
  * d'invitation est la garde.
  */
 export type VerifyCodeReason =
@@ -62,12 +62,12 @@ export class ContractorSignupService {
   private readonly urgencyDialogService = inject(UrgencyDialogService);
 
   /**
-   * Pré-vérification du code (étape 1 du flow signup). Ne crée rien,
-   * ne consomme pas le code. Permet à l'artisan de savoir tout de suite
-   * si son code est bon avant de remplir 6 champs d'identité.
+   * PrÃ©-vÃ©rification du code (Ã©tape 1 du flow signup). Ne crÃ©e rien,
+   * ne consomme pas le code. Permet Ã  l'artisan de savoir tout de suite
+   * si son code est bon avant de remplir 6 champs d'identitÃ©.
    *
-   * Le backend répond 200 dans tous les cas — le flag `valid` discrimine,
-   * et `reason` (présent quand `valid: false`) donne la raison exacte.
+   * Le backend rÃ©pond 200 dans tous les cas â€” le flag `valid` discrimine,
+   * et `reason` (prÃ©sent quand `valid: false`) donne la raison exacte.
    */
   verifyCode(code: string): Observable<VerifyCodeResponse> {
     return invitationCodesCheck(this.http, this.apiConfig.rootUrl, { code }).pipe(
@@ -89,10 +89,10 @@ export class ContractorSignupService {
       },
     }).pipe(
       unwrapData<SignupResponse>(),
-      // Marque le timestamp signup pour activer la période de grâce 24h du
-      // UrgencyDialogService — sinon un user fresh signup serait harcelé
-      // immédiatement par le modal "Ton dossier n'est pas complet" alors
-      // qu'il vient à peine d'arriver. Voir BUG-004 / FIX-003.
+      // Marque le timestamp signup pour activer la pÃ©riode de grÃ¢ce 24h du
+      // UrgencyDialogService â€” sinon un user fresh signup serait harcelÃ©
+      // immÃ©diatement par le modal "Ton dossier n'est pas complet" alors
+      // qu'il vient Ã  peine d'arriver. Voir BUG-004 / FIX-003.
       tap(() => this.urgencyDialogService.markSignupCompleted()),
     );
   }

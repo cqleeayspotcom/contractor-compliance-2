@@ -1,5 +1,6 @@
 {
   "$schema": "node_modules/ng-openapi-gen/ng-openapi-gen-schema.json",
+  "//": "Le helper d'unwrap est dans src/app/core/api-envelope.ts pour échapper à `removeStaleFiles` qui nettoie src/app/api/ à chaque régénération.",
   "input": "openapi/contractor-compliance.openapi.yaml",
   "output": "src/app/api",
   "ignoreUnusedModels": false,

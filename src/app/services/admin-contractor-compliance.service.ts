@@ -4,29 +4,29 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData } from '../api/unwrap';
+import { unwrapData } from '../core/api-envelope';
 import { adminContractorsComplianceSummary } from '../api/fn/admin-contractors/admin-contractors-compliance-summary';
 
 /**
- * Service d'accès au snapshot compliance d'un contractor (admin only).
+ * Service d'accÃ¨s au snapshot compliance d'un contractor (admin only).
  *
  * Pourquoi : alimente le composant `ContractorComplianceSummaryComponent` qui
- * sert à donner à l'admin tout le contexte nécessaire AVANT de prendre une
- * décision financière (approuver une facture libre, retry un achat, marquer
- * une facture payée). Cf. la docblock du composant pour le détail métier.
+ * sert Ã  donner Ã  l'admin tout le contexte nÃ©cessaire AVANT de prendre une
+ * dÃ©cision financiÃ¨re (approuver une facture libre, retry un achat, marquer
+ * une facture payÃ©e). Cf. la docblock du composant pour le dÃ©tail mÃ©tier.
  *
  * Endpoint backend :
  *   GET /contractor-compliance/admin/contractors/{phone}/compliance-summary
- *   Header X-Tuita-Admin-Key : injecté globalement (cf. interceptor admin) —
- *   plus géré ici depuis la migration SDK 2026-05-17.
+ *   Header X-Tuita-Admin-Key : injectÃ© globalement (cf. interceptor admin) â€”
+ *   plus gÃ©rÃ© ici depuis la migration SDK 2026-05-17.
  *
- * Format de retour : un payload plat, pré-mappé (libellés FR, badges déjà
- * calculés côté serveur) → le composant n'a rien à transformer.
+ * Format de retour : un payload plat, prÃ©-mappÃ© (libellÃ©s FR, badges dÃ©jÃ 
+ * calculÃ©s cÃ´tÃ© serveur) â†’ le composant n'a rien Ã  transformer.
  */
 
 /**
- * Code de statut retourné par le backend pour chaque "ligne" affichable
- * (KYC ou Document). Le mapping vers une icône Material est géré côté composant.
+ * Code de statut retournÃ© par le backend pour chaque "ligne" affichable
+ * (KYC ou Document). Le mapping vers une icÃ´ne Material est gÃ©rÃ© cÃ´tÃ© composant.
  */
 export type ComplianceBadge = 'ok' | 'pending' | 'ko' | 'expired' | 'missing' | 'unknown';
 

@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData, unwrapDataMeta } from '../api/unwrap';
+import { unwrapData, unwrapDataMeta } from '../core/api-envelope';
 import { adminInvitationCodesCreate } from '../api/fn/admin-invitation-codes/admin-invitation-codes-create';
 import { adminInvitationCodesShow } from '../api/fn/admin-invitation-codes/admin-invitation-codes-show';
 import { adminInvitationCodesRevoke } from '../api/fn/admin-invitation-codes/admin-invitation-codes-revoke';
@@ -82,7 +82,7 @@ export class AdminInvitationCodeService {
   }
 
   detail(uuid: string): Observable<{ data: InvitationCodeDetail }> {
-    // NOTE : le param OpenAPI s'appelle `code` mais sémantiquement le backend
+    // NOTE : le param OpenAPI s'appelle `code` mais sÃ©mantiquement le backend
     // accepte aussi l'uuid (les consommateurs passent row.uuid historiquement).
     return adminInvitationCodesShow(this.http, this.apiConfig.rootUrl, { code: uuid }).pipe(
       unwrapData<InvitationCodeDetail>(),

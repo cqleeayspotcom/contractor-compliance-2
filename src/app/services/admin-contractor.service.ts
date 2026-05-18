@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData, unwrapDataMeta } from '../api/unwrap';
+import { unwrapData, unwrapDataMeta } from '../core/api-envelope';
 import { adminContractorsShow } from '../api/fn/admin-contractors/admin-contractors-show';
 import { adminContractorsList } from '../api/fn/admin-contractors/admin-contractors-list';
 import { adminContractorsDocuments } from '../api/fn/admin-contractors/admin-contractors-documents';
@@ -19,8 +19,8 @@ import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-fi
  * Wraps GET /contractor-compliance/admin/contractors/{phone} (summary) +
  * /documents /kyc-sessions /invoices /purchases (paginated).
  *
- * Le header X-Tuita-Admin-Key est injecté globalement par
- * admin-key.interceptor.ts. Les 401/403 sont gérés par contractorCookieInterceptor
+ * Le header X-Tuita-Admin-Key est injectÃ© globalement par
+ * admin-key.interceptor.ts. Les 401/403 sont gÃ©rÃ©s par contractorCookieInterceptor
  * (redirect /login).
  *
  * Regle SDK first : toute route HTTP passe par le SDK genere
@@ -292,7 +292,7 @@ export class AdminContractorService {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfiguration);
 
-  /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) à partir d'une réponse SDK enveloppée. */
+  /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) Ã  partir d'une rÃ©ponse SDK enveloppÃ©e. */
   private toPaginated<T>(
     source$: Observable<import('../api/strict-http-response').StrictHttpResponse<unknown>>,
   ): Observable<Paginated<T>> {
@@ -317,8 +317,8 @@ export class AdminContractorService {
    * Renvoie `true` si `query` contient au moins une cle hors `allowed`
    * (param hors spec OpenAPI -> on doit retomber sur HttpClient).
    */
-  private hasExtraKeys(query: Record<string, unknown>, allowed: readonly string[]): boolean {
-    return Object.entries(query).some(
+  private hasExtraKeys(query: object, allowed: readonly string[]): boolean {
+    return Object.entries(query as Record<string, unknown>).some(
       ([k, v]) =>
         v !== undefined && v !== null && v !== '' && !allowed.includes(k),
     );

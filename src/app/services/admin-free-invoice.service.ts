@@ -4,7 +4,7 @@ import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData } from '../api/unwrap';
+import { unwrapData } from '../core/api-envelope';
 import { adminFreeInvoicesPending } from '../api/fn/admin-free-invoices/admin-free-invoices-pending';
 import { adminFreeInvoicesGet } from '../api/fn/admin-free-invoices/admin-free-invoices-get';
 import { adminFreeInvoicesReject } from '../api/fn/admin-free-invoices/admin-free-invoices-reject';
@@ -63,7 +63,7 @@ export class AdminFreeInvoiceService {
    *
    * Le SDK fn `adminFreeInvoicesAttachments` retourne la liste des attachments
    * (JsonObject) et n'expose pas l'endpoint indexe `/attachments/{index}` en
-   * blob — choix architectural assumé : HttpClient direct pour ce blob.
+   * blob â€” choix architectural assumÃ© : HttpClient direct pour ce blob.
    */
   fetchAttachmentBlob(uuid: string, index: number): Observable<Blob> {
     const base = adminFreeInvoicesAttachments.PATH.replace('{uuid}', encodeURIComponent(uuid));

@@ -128,7 +128,14 @@
         </p>
 
         <div class="qr-container">
-          <img [src]="qrCodeUrl()" alt="QR Code" class="qr-image" />
+          <qrcode
+            [qrdata]="mobileKycUrl()"
+            [width]="200"
+            [errorCorrectionLevel]="'M'"
+            [margin]="2"
+            alt="QR Code KYC mobile"
+            class="qr-image">
+          </qrcode>
         </div>
 
         <p class="qr-hint">

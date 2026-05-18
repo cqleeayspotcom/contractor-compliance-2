@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData } from '../api/unwrap';
+import { unwrapData } from '../core/api-envelope';
 import { adminDocumentsShow } from '../api/fn/admin-documents/admin-documents-show';
 import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-file';
 
@@ -13,7 +13,7 @@ import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-fi
  * Wraps GET /contractor-compliance/admin/documents/{uuid} endpoints. Le header
  * X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts.
  *
- * Read-only by design — no mutating endpoints. Politique zero-manuel.
+ * Read-only by design â€” no mutating endpoints. Politique zero-manuel.
  *
  * NOTE migration SDK : adminDocumentsShow est branche via Api.invoke (typage
  * JsonObject -> cast vers DocumentDetail). downloadDocumentFile garde
@@ -99,7 +99,7 @@ export class AdminDocumentService {
 
   /**
    * Stream le fichier dechiffre en blob (l'admin key passe par header donc
-   * impossible de mettre l'URL directe dans <iframe src> — il faut fetch +
+   * impossible de mettre l'URL directe dans <iframe src> â€” il faut fetch +
    * URL.createObjectURL). `inline=true` => Content-Disposition inline.
    *
    * Garde HttpClient car le SDK fn adminDocumentsFile ne supporte pas le

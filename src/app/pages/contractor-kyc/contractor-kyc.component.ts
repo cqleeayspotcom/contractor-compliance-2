@@ -9,6 +9,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { QRCodeComponent } from 'angularx-qrcode';
 import { KycTermsDialogComponent } from './kyc-terms-dialog.component';
 import { KycHelpDialogComponent } from './kyc-help-dialog.component';
 import { KycRedoConfirmDialogComponent } from './kyc-redo-confirm-dialog.component';
@@ -32,6 +33,7 @@ type KycState = 'verified_recap' | 'idle' | 'qr_code' | 'challenge_ready' | 'cou
     MatCheckboxModule,
     MatProgressSpinnerModule,
     MatDialogModule,
+    QRCodeComponent,
     OnboardingNextStepCtaComponent,
     KycProgressBarComponent,
   ],
@@ -131,18 +133,20 @@ export class ContractorKycComponent implements OnDestroy {
   private mirrorAnimationFrame: number | null = null;
   maxDuration = 10;
 
-  /** QR code data URL (generated via canvas) */
-  readonly qrCodeUrl = signal('');
+  /**
+   * URL du lien capability KYC mobile à encoder dans le QR. C'est CETTE
+   * URL qui est rendue en QR-code par le composant `<qrcode>` (dépendance
+   * `angularx-qrcode` déjà installée). Le rendu est 100% local — le token
+   * capability ne fuite JAMAIS vers un service tiers (auparavant on passait
+   * par api.qrserver.com, ce qui exposait l'URL d'auth mobile à un service
+   * externe — corrigé 2026-05-18).
+   */
+  readonly mobileKycUrl = signal('');
 
-  /** Generate QR code image from the mobile KYC URL */
+  /** Construit l'URL mobile à partir du token capability. */
   private generateQrCode(token: string): void {
-    // Build the mobile KYC URL
     const baseUrl = window.location.origin;
-    const mobileUrl = `${baseUrl}/kyc/mobile/${token}`;
-
-    // Use a simple QR code API (no dependency needed)
-    const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(mobileUrl)}`;
-    this.qrCodeUrl.set(qrApiUrl);
+    this.mobileKycUrl.set(`${baseUrl}/kyc/mobile/${token}`);
   }
 
   /** Current challenge index (0 ou 1) selon position dans la vidéo */
