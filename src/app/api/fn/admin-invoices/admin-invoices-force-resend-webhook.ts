@@ -11,12 +11,14 @@ import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvoicesForceResendWebhook$Params {
   uuid: string;
+      body: JsonObject
 }
 
 export function adminInvoicesForceResendWebhook(http: HttpClient, rootUrl: string, params: AdminInvoicesForceResendWebhook$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesForceResendWebhook.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

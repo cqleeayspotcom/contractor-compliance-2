@@ -1,4 +1,4 @@
-﻿import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom, map } from 'rxjs';
 
@@ -25,22 +25,16 @@ export interface BatchUpdateEntry {
   reason: string;
 }
 
-const ADMIN_KEY_STORAGE_KEY = 'tuita_admin_key';
 const BASE = '/contractor-compliance/admin/settings';
 
 @Injectable({ providedIn: 'root' })
 export class AdminSettingsService {
   private readonly http = inject(HttpClient);
 
-  private headers(): HttpHeaders {
-    const key = sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY) ?? '';
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': key });
-  }
-
   list(): Promise<PlatformSetting[]> {
     return firstValueFrom(
       this.http
-        .get<{ data: PlatformSetting[] }>(BASE, { headers: this.headers() })
+        .get<{ data: PlatformSetting[] }>(BASE)
         .pipe(map((r) => r.data ?? [])),
     );
   }
@@ -48,9 +42,7 @@ export class AdminSettingsService {
   show(key: string): Promise<PlatformSetting> {
     return firstValueFrom(
       this.http
-        .get<{ data: PlatformSetting }>(`${BASE}/${encodeURIComponent(key)}`, {
-          headers: this.headers(),
-        })
+        .get<{ data: PlatformSetting }>(`${BASE}/${encodeURIComponent(key)}`)
         .pipe(map((r) => r.data)),
     );
   }
@@ -58,9 +50,7 @@ export class AdminSettingsService {
   update(key: string, payload: UpdateSettingPayload): Promise<PlatformSetting> {
     return firstValueFrom(
       this.http
-        .put<{ data: PlatformSetting }>(`${BASE}/${encodeURIComponent(key)}`, payload, {
-          headers: this.headers(),
-        })
+        .put<{ data: PlatformSetting }>(`${BASE}/${encodeURIComponent(key)}`, payload)
         .pipe(map((r) => r.data)),
     );
   }
@@ -68,7 +58,7 @@ export class AdminSettingsService {
   batchUpdate(updates: BatchUpdateEntry[]): Promise<PlatformSetting[]> {
     return firstValueFrom(
       this.http
-        .patch<{ data: PlatformSetting[] }>(BASE, { updates }, { headers: this.headers() })
+        .patch<{ data: PlatformSetting[] }>(BASE, { updates })
         .pipe(map((r) => r.data ?? [])),
     );
   }
@@ -79,7 +69,6 @@ export class AdminSettingsService {
         .post<{ data: PlatformSetting }>(
           `${BASE}/${encodeURIComponent(key)}/reset`,
           { reason },
-          { headers: this.headers() },
         )
         .pipe(map((r) => r.data)),
     );

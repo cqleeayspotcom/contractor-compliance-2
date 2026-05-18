@@ -132,7 +132,7 @@ export class AdminDocumentDetailDialogComponent implements OnInit, OnDestroy {
           err?.error?.error?.message ??
           (err?.status === 404
             ? 'Document introuvable.'
-            : err?.message === 'admin_api_key_missing'
+            : err?.status === 401 || err?.status === 403
               ? "Clé d'administration manquante. Reconnectez-vous."
               : 'Erreur lors du chargement du document.');
         this.loadError.set(msg);

@@ -1,6 +1,14 @@
-﻿import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { Api } from '../api/api';
+import { adminContractorsShow } from '../api/fn/admin-contractors/admin-contractors-show';
+import { adminContractorsDocuments } from '../api/fn/admin-contractors/admin-contractors-documents';
+import { adminContractorsKycSessions } from '../api/fn/admin-contractors/admin-contractors-kyc-sessions';
+import { adminContractorsInvoices } from '../api/fn/admin-contractors/admin-contractors-invoices';
+import { adminContractorsPurchases } from '../api/fn/admin-contractors/admin-contractors-purchases';
+import { adminContractorsMissions } from '../api/fn/admin-contractors/admin-contractors-missions';
 
 /**
  * Admin Contractor Service
@@ -8,9 +16,13 @@ import { Observable, throwError } from 'rxjs';
  * Wraps GET /contractor-compliance/admin/contractors/{phone} (summary) +
  * /documents /kyc-sessions /invoices /purchases (paginated).
  *
- * X-Tuita-Admin-Key header read from sessionStorage. safeHeaders() retourne
- * null si la clÃ© manque (le caller doit rediriger /admin). 401/403 sont Ã 
- * intercepter par le composant pour clear sessionStorage.
+ * Le header X-Tuita-Admin-Key est injecté globalement par
+ * admin-key.interceptor.ts. Les 401/403 sont gérés par contractorCookieInterceptor
+ * (redirect /login).
+ *
+ * NOTE migration SDK : les endpoints GET sont branches via Api.invoke (cast
+ * JsonObject -> shape typee). fetchDocumentBlob garde HttpClient car le SDK
+ * fn `adminDocumentsFile` ne supporte pas le query param `inline`.
  */
 
 // ---------- Summary ----------
@@ -198,7 +210,7 @@ export interface ListQuery {
   dir?: 'asc' | 'desc';
   /**
    * Inclure les anciennes versions des documents (re-uploads, renouvellements).
-   * MappÃ© vers `?include_old_versions=1` cÃ´tÃ© backend
+   * Mappe vers `?include_old_versions=1` cote backend
    * (cf. AdminContractorController::documents).
    */
   include_old_versions?: boolean | number;
@@ -259,112 +271,122 @@ export interface BrowseQuery {
   direction?: 'asc' | 'desc';
 }
 
-const BASE_URL = '/contractor-compliance/admin/contractors';
-const SESSION_KEY = 'tuita_admin_key';
-
 @Injectable({ providedIn: 'root' })
 export class AdminContractorService {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(Api);
 
-  private headers(): HttpHeaders {
-    const key = sessionStorage.getItem(SESSION_KEY);
-    if (!key) {
-      throw new Error('admin_api_key_missing');
-    }
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': key });
-  }
-
-  private safeOpts(query?: ListQuery): { headers: HttpHeaders; params?: HttpParams } | null {
-    let headers: HttpHeaders;
-    try {
-      headers = this.headers();
-    } catch {
-      return null;
-    }
-    if (!query) return { headers };
+  private toParams(query?: ListQuery): HttpParams | undefined {
+    if (!query) return undefined;
     let params = new HttpParams();
     for (const [k, v] of Object.entries(query)) {
       if (v !== undefined && v !== null && v !== '') {
         params = params.set(k, String(v));
       }
     }
-    return { headers, params };
+    return params;
   }
 
   /**
-   * Browse paginÃ© : liste tous les contractors avec filtres + facets.
+   * Browse pagine : liste tous les contractors avec filtres + facets.
+   *
+   * NOTE : le SDK fn adminContractorsList ne declare pas de query params,
+   * mais le backend Tuita les accepte. En attendant la regeneration de
+   * l'OpenAPI on garde HttpClient pour preserver le contrat existant.
    */
   list(query: BrowseQuery = {}): Observable<ContractorBrowseResponse> {
-    const opts = this.safeOpts(query as unknown as ListQuery);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<ContractorBrowseResponse>(BASE_URL, opts);
+    const params = this.toParams(query as unknown as ListQuery);
+    return this.http.get<ContractorBrowseResponse>(
+      '/contractor-compliance/admin/contractors',
+      params ? { params } : {},
+    );
   }
 
   getContractor(phone: string): Observable<{ data: ContractorDetail }> {
-    const opts = this.safeOpts();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: ContractorDetail }>(
-      `${BASE_URL}/${encodeURIComponent(phone)}`,
-      opts,
+    return from(this.api.invoke(adminContractorsShow, { phone })).pipe(
+      map(r => r as unknown as { data: ContractorDetail })
     );
   }
 
   listDocuments(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorDocumentRow>> {
-    const opts = this.safeOpts(query);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<Paginated<ContractorDocumentRow>>(
-      `${BASE_URL}/${encodeURIComponent(phone)}/documents`,
-      opts,
+    // SDK fn n'accepte pas de query params (page/per_page/include_old_versions);
+    // on garde HttpClient quand `query` est non-vide.
+    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
+    if (hasQuery) {
+      return this.http.get<Paginated<ContractorDocumentRow>>(
+        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/documents`,
+        { params: this.toParams(query) },
+      );
+    }
+    return from(this.api.invoke(adminContractorsDocuments, { phone })).pipe(
+      map(r => r as unknown as Paginated<ContractorDocumentRow>)
     );
   }
 
   listKycSessions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorKycRow>> {
-    const opts = this.safeOpts(query);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<Paginated<ContractorKycRow>>(
-      `${BASE_URL}/${encodeURIComponent(phone)}/kyc-sessions`,
-      opts,
+    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
+    if (hasQuery) {
+      return this.http.get<Paginated<ContractorKycRow>>(
+        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/kyc-sessions`,
+        { params: this.toParams(query) },
+      );
+    }
+    return from(this.api.invoke(adminContractorsKycSessions, { phone })).pipe(
+      map(r => r as unknown as Paginated<ContractorKycRow>)
     );
   }
 
   listInvoices(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorInvoiceRow>> {
-    const opts = this.safeOpts(query);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<Paginated<ContractorInvoiceRow>>(
-      `${BASE_URL}/${encodeURIComponent(phone)}/invoices`,
-      opts,
+    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
+    if (hasQuery) {
+      return this.http.get<Paginated<ContractorInvoiceRow>>(
+        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/invoices`,
+        { params: this.toParams(query) },
+      );
+    }
+    return from(this.api.invoke(adminContractorsInvoices, { phone })).pipe(
+      map(r => r as unknown as Paginated<ContractorInvoiceRow>)
     );
   }
 
   listPurchases(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorPurchaseRow>> {
-    const opts = this.safeOpts(query);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<Paginated<ContractorPurchaseRow>>(
-      `${BASE_URL}/${encodeURIComponent(phone)}/purchases`,
-      opts,
+    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
+    if (hasQuery) {
+      return this.http.get<Paginated<ContractorPurchaseRow>>(
+        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/purchases`,
+        { params: this.toParams(query) },
+      );
+    }
+    return from(this.api.invoke(adminContractorsPurchases, { phone })).pipe(
+      map(r => r as unknown as Paginated<ContractorPurchaseRow>)
     );
   }
 
   listMissions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorMissionRow>> {
-    const opts = this.safeOpts(query);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<Paginated<ContractorMissionRow>>(
-      `${BASE_URL}/${encodeURIComponent(phone)}/missions`,
-      opts,
+    const hasQuery = Object.values(query).some(v => v !== undefined && v !== null && v !== '');
+    if (hasQuery) {
+      return this.http.get<Paginated<ContractorMissionRow>>(
+        `/contractor-compliance/admin/contractors/${encodeURIComponent(phone)}/missions`,
+        { params: this.toParams(query) },
+      );
+    }
+    return from(this.api.invoke(adminContractorsMissions, { phone })).pipe(
+      map(r => r as unknown as Paginated<ContractorMissionRow>)
     );
   }
 
   /**
    * Stream un document via X-Tuita-Admin-Key (impossible avec un simple <iframe>
-   * cross-origin si la clÃ© n'est pas en query). On fetch en blob â†’ object URL,
-   * que le composant peut donner Ã  un <iframe> ou Ã  un <a download>.
+   * cross-origin si la cle n'est pas en query). On fetch en blob -> object URL,
+   * que le composant peut donner a un <iframe> ou a un <a download>.
+   *
+   * Garde HttpClient car le SDK fn adminDocumentsFile ne supporte pas le
+   * query param `inline`.
    */
   fetchDocumentBlob(uuid: string, inline = true): Observable<Blob> {
-    const opts = this.safeOpts({ ...(inline ? { inline: '1' } : {}) } as unknown as ListQuery);
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
+    const params = inline ? new HttpParams().set('inline', '1') : undefined;
     return this.http.get(`/contractor-compliance/admin/documents/${encodeURIComponent(uuid)}/file`, {
-      headers: opts.headers,
-      params: opts.params,
+      params,
       responseType: 'blob',
     });
   }

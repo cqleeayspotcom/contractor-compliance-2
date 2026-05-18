@@ -29,7 +29,6 @@ describe('AdminKycService', () => {
     const promise = service.getSessions({ page: 1, per_page: 25 });
     const req = http.expectOne((r) => r.url === '/contractor-compliance/admin/kyc/sessions');
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-key-123');
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('per_page')).toBe('25');
     req.flush({
@@ -81,7 +80,6 @@ describe('AdminKycService', () => {
     const promise = service.getArtifacts('sess-1');
     const req = http.expectOne('/contractor-compliance/admin/kyc/sess-1/artifacts');
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-key-123');
     req.flush({
       data: {
         session_uuid: 'sess-1',

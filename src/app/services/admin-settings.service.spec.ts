@@ -38,7 +38,6 @@ describe('AdminSettingsService', () => {
     const promise = service.list();
     const req = http.expectOne('/contractor-compliance/admin/settings');
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-key');
     req.flush({ data: [sample] });
     const out = await promise;
     expect(out.length).toBe(1);

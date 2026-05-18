@@ -10,11 +10,25 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvoicesList$Params {
+  status?: string;
+  search?: string;
+  stuck?: boolean;
+  page?: number;
+  per_page?: number;
+  sort?: string;
+  direction?: 'asc' | 'desc';
 }
 
 export function adminInvoicesList(http: HttpClient, rootUrl: string, params?: AdminInvoicesList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesList.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('search', params.search, {});
+    rb.query('stuck', params.stuck, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
   }
 
   return http.request(

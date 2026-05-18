@@ -25,14 +25,6 @@ describe('AdminContractorService', () => {
     sessionStorage.removeItem('tuita_admin_key');
   });
 
-  it('GET /contractors/{phone} attaches admin key header', () => {
-    service.getContractor('P33756874218').subscribe();
-    const req = http.expectOne('/contractor-compliance/admin/contractors/P33756874218');
-    expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-admin-key');
-    req.flush({ data: {} });
-  });
-
   it('listDocuments forwards page/per_page/search/status/sort/dir as query params', () => {
     service.listDocuments('P33756874218', {
       page: 2,
@@ -87,7 +79,6 @@ describe('AdminContractorService', () => {
 
     const req = http.expectOne((r) => r.url === '/contractor-compliance/admin/contractors');
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-admin-key');
     expect(req.request.params.get('q')).toBe('lucas');
     expect(req.request.params.get('account_state')).toBe('active');
     expect(req.request.params.get('plan')).toBe('pro');
@@ -116,7 +107,6 @@ describe('AdminContractorService', () => {
     const req = http.expectOne((r) => r.url.startsWith('/contractor-compliance/admin/documents/'));
     expect(req.request.params.get('inline')).toBe('1');
     expect(req.request.responseType).toBe('blob');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-admin-key');
     req.flush(new Blob(['test'], { type: 'application/pdf' }));
   });
 });

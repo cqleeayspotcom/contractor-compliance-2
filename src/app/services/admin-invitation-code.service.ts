@@ -1,8 +1,12 @@
-﻿import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
 
-const BASE_URL = '/contractor-compliance/admin/invitation-codes';
+import { Api } from '../api/api';
+import { adminInvitationCodesCreate } from '../api/fn/admin-invitation-codes/admin-invitation-codes-create';
+import { adminInvitationCodesShow } from '../api/fn/admin-invitation-codes/admin-invitation-codes-show';
+import { adminInvitationCodesRevoke } from '../api/fn/admin-invitation-codes/admin-invitation-codes-revoke';
+import { adminInvitationCodesUpdateNote } from '../api/fn/admin-invitation-codes/admin-invitation-codes-update-note';
+import { adminInvitationCodesList } from '../api/fn/admin-invitation-codes/admin-invitation-codes-list';
 
 export interface InvitationCodeFirstUse {
   phone: string;
@@ -15,22 +19,13 @@ export interface InvitationCodeRow {
   uuid: string;
   code: string;
   generated_by_admin_id: number | null;
-  /**
-   * Identifiant libre de l'admin Tuita qui a gÃ©nÃ©rÃ© le code (email ou nom).
-   */
   generated_by_label: string | null;
   expires_at: string;
   max_uses: number | null;
   uses_count: number;
   revoked_at: string | null;
   note: string | null;
-  /** Premier inscrit avec ce code (chronologique). Null si pas encore consommÃ©. */
   first_use: InvitationCodeFirstUse | null;
-  /**
-   * Heuristique cohÃ©rence note â†” 1er inscrit. true = match probable,
-   * false = mismatch (code redistribuÃ© ou fuite ?), null = pas de signal
-   * (note vide ou pas encore consommÃ©).
-   */
   note_matches_first_use: boolean | null;
   is_consumable: boolean;
   created_at: string | null;
@@ -61,19 +56,12 @@ export interface InvitationCodeListResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AdminInvitationCodeService {
-  private readonly http = inject(HttpClient);
-
-  private headers(): HttpHeaders {
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': sessionStorage.getItem('tuita_admin_key') ?? '' });
-  }
+  private readonly api = inject(Api);
 
   list(params: { status?: string; per_page?: number; sort?: string; direction?: 'asc' | 'desc' } = {}): Observable<InvitationCodeListResponse> {
-    let httpParams = new HttpParams();
-    if (params.status) httpParams = httpParams.set('status', params.status);
-    if (params.per_page) httpParams = httpParams.set('per_page', String(params.per_page));
-    if (params.sort) httpParams = httpParams.set('sort', params.sort);
-    if (params.direction) httpParams = httpParams.set('direction', params.direction);
-    return this.http.get<InvitationCodeListResponse>(BASE_URL, { headers: this.headers(), params: httpParams });
+    return from(
+      this.api.invoke(adminInvitationCodesList, params),
+    ) as Observable<InvitationCodeListResponse>;
   }
 
   create(body: {
@@ -82,22 +70,28 @@ export class AdminInvitationCodeService {
     note: string;
     generated_by_label: string;
   }): Observable<{ data: InvitationCodeRow }> {
-    return this.http.post<{ data: InvitationCodeRow }>(BASE_URL, body, { headers: this.headers() });
+    return from(
+      this.api.invoke(adminInvitationCodesCreate, { body }),
+    ) as Observable<{ data: InvitationCodeRow }>;
   }
 
   detail(uuid: string): Observable<{ data: InvitationCodeDetail }> {
-    return this.http.get<{ data: InvitationCodeDetail }>(`${BASE_URL}/${uuid}`, { headers: this.headers() });
+    // NOTE : le param OpenAPI s'appelle `code` mais sémantiquement le backend
+    // accepte aussi l'uuid (les consommateurs passent row.uuid historiquement).
+    return from(
+      this.api.invoke(adminInvitationCodesShow, { code: uuid }),
+    ) as Observable<{ data: InvitationCodeDetail }>;
   }
 
   revoke(uuid: string): Observable<{ data: InvitationCodeRow }> {
-    return this.http.post<{ data: InvitationCodeRow }>(`${BASE_URL}/${uuid}/revoke`, {}, { headers: this.headers() });
+    return from(
+      this.api.invoke(adminInvitationCodesRevoke, { code: uuid }),
+    ) as Observable<{ data: InvitationCodeRow }>;
   }
 
   updateNote(uuid: string, note: string): Observable<{ data: InvitationCodeRow }> {
-    return this.http.patch<{ data: InvitationCodeRow }>(
-      `${BASE_URL}/${uuid}/note`,
-      { note },
-      { headers: this.headers() },
-    );
+    return from(
+      this.api.invoke(adminInvitationCodesUpdateNote, { code: uuid, body: { note } }),
+    ) as Observable<{ data: InvitationCodeRow }>;
   }
 }

@@ -106,6 +106,13 @@ h1 {
   ::ng-deep .mat-mdc-progress-spinner circle {
     stroke: #ffffff !important;
   }
+
+  ::ng-deep .mdc-button__label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
 }
 
 .link-btn {

@@ -10,11 +10,17 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface InvoicesList$Params {
+  status?: string;
+  page?: number;
+  per_page?: number;
 }
 
 export function invoicesList(http: HttpClient, rootUrl: string, params?: InvoicesList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, invoicesList.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Component,
   ChangeDetectionStrategy,
   signal,
@@ -152,8 +152,8 @@ export class AdminContractorComponent implements OnInit {
   readonly missionsWithoutInvoice = signal<boolean>(false);
 
   // Documents-specific filter: include all historical versions (re-uploads,
-  // renouvellements, anciennes versions superseded). Permet Ã  l'admin de
-  // tracer l'historique complet des fichiers du contractor â€” RGPD-friendly.
+  // renouvellements, anciennes versions superseded). Permet à l'admin de
+  // tracer l'historique complet des fichiers du contractor — RGPD-friendly.
   readonly documentsIncludeOldVersions = signal<boolean>(false);
 
   // Debounced search
@@ -203,7 +203,7 @@ export class AdminContractorComponent implements OnInit {
   fetchSummary(): void {
     const phone = this.phone();
     if (!phone) {
-      this.errorMsg.set('TÃ©lÃ©phone manquant dans l\'URL.');
+      this.errorMsg.set('Téléphone manquant dans l\'URL.');
       return;
     }
 
@@ -310,14 +310,14 @@ export class AdminContractorComponent implements OnInit {
   }
 
   private handleAuthError(err: { status?: number; message?: string }): void {
-    if (err.message === 'admin_api_key_missing' || err.status === 401 || err.status === 403) {
+    if (err.status === 401 || err.status === 403) {
       sessionStorage.removeItem('tuita_admin_key');
-      this.snackBar.open('Session admin expirÃ©e. Reconnectez-vous.', 'OK', { duration: 4000 });
+      this.snackBar.open('Session admin expirée. Reconnectez-vous.', 'OK', { duration: 4000 });
       this.router.navigate(['/admin']);
       return;
     }
     if (err.status === 404) {
-      this.errorMsg.set('Aucun contractor trouvÃ© avec ce tÃ©lÃ©phone.');
+      this.errorMsg.set('Aucun contractor trouvé avec ce téléphone.');
       return;
     }
     this.snackBar.open('Erreur de chargement.', 'OK', { duration: 3000 });
@@ -442,7 +442,7 @@ export class AdminContractorComponent implements OnInit {
   }
 
   formatDate(iso: string | null | undefined): string {
-    if (!iso) return 'â€”';
+    if (!iso) return '—';
     try {
       return new Date(iso).toLocaleString('fr-FR', {
         day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
@@ -453,7 +453,7 @@ export class AdminContractorComponent implements OnInit {
   }
 
   formatDateOnly(iso: string | null | undefined): string {
-    if (!iso) return 'â€”';
+    if (!iso) return '—';
     try {
       return new Date(iso).toLocaleDateString('fr-FR');
     } catch {
@@ -475,13 +475,13 @@ export class AdminContractorComponent implements OnInit {
   invoiceStatusLabel(status: string | null): string {
     if (!status) return 'Sans facture';
     const map: Record<string, string> = {
-      validating: 'En vÃ©rification OCR',
+      validating: 'En vérification OCR',
       pending_payment_validation: 'En attente validations',
       ready_to_pay: 'Bon pour paiement',
       payment_in_progress: 'Virement en cours',
-      paid: 'PayÃ©e',
-      rejected: 'RejetÃ©e',
-      cancelled: 'AnnulÃ©e',
+      paid: 'Payée',
+      rejected: 'Rejetée',
+      cancelled: 'Annulée',
       draft: 'Brouillon',
     };
     return map[status] ?? status;
@@ -496,26 +496,26 @@ export class AdminContractorComponent implements OnInit {
   }
 
   formatAmount(value: number | null | undefined): string {
-    if (value === null || value === undefined) return 'â€”';
+    if (value === null || value === undefined) return '—';
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'EUR',
     }).format(value);
   }
 
-  /** Customer-safe label â€” n'expose JAMAIS "Pappers" cÃ´tÃ© UI. */
+  /** Customer-safe label — n'expose JAMAIS "Pappers" côté UI. */
   sourceLabel(source: string | null | undefined): string {
-    if (!source) return 'â€”';
+    if (!source) return '—';
     return source.toLowerCase() === 'pappers' ? 'officiel' : source;
   }
 
   documentTypeLabel(type: string | null | undefined): string {
-    if (!type) return 'â€”';
+    if (!type) return '—';
     const map: Record<string, string> = {
       cni: 'CNI',
       passport: 'Passeport',
       passeport: 'Passeport',
-      titre_sejour: 'Titre de sÃ©jour',
+      titre_sejour: 'Titre de séjour',
       kbis: 'KBIS',
       extrait_inpi: 'Extrait INPI',
       avis_sirene: 'Avis SIRENE',
@@ -523,7 +523,7 @@ export class AdminContractorComponent implements OnInit {
       urssaf: 'URSSAF',
       rc: 'RC Pro',
       rib: 'RIB',
-      assurance_decennale: 'DÃ©cennale',
+      assurance_decennale: 'Décennale',
       assurance_do: 'Dommages-ouvrage',
     };
     return map[type] ?? type;

@@ -10,16 +10,22 @@ import { RequestBuilder } from '../../request-builder';
 
 export interface AdminInvoicesPdf$Params {
   uuid: string;
+
+/**
+ * Si `true`, force `Content-Disposition: inline` pour preview navigateur.
+ */
+  inline?: boolean;
 }
 
 export function adminInvoicesPdf(http: HttpClient, rootUrl: string, params: AdminInvoicesPdf$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesPdf.PATH, 'get');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.query('inline', params.inline, {});
   }
 
   return http.request(
-    rb.build({ responseType: 'blob', accept: 'application/pdf', context })
+    rb.build({ responseType: 'blob', accept: 'application/octet-stream', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {

@@ -1,6 +1,6 @@
-﻿import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable } from 'rxjs';
 
 export type ValidatorType = 'compliance' | 'production' | 'accounting';
 export type ValidationStatus = 'approved' | 'rejected' | null;
@@ -60,34 +60,17 @@ export interface MissionDetail {
 }
 
 const BASE_URL = '/contractor-compliance/admin/missions';
-const SESSION_KEY = 'tuita_admin_key';
 
 @Injectable({ providedIn: 'root' })
 export class AdminMissionService {
   private readonly http = inject(HttpClient);
 
-  private headers(): HttpHeaders {
-    const key = sessionStorage.getItem(SESSION_KEY);
-    if (!key) {
-      throw new Error('admin_api_key_missing');
-    }
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': key });
-  }
-
-  private safeHeaders(): { headers: HttpHeaders } | null {
-    try {
-      return { headers: this.headers() };
-    } catch {
-      return null;
-    }
-  }
-
+  // HttpClient direct : aucun groupe `admin-missions` n'est généré dans le SDK
+  // OpenAPI (route admin-only non spécifiée). Le header X-Tuita-Admin-Key est
+  // injecté globalement par admin-key.interceptor.ts — choix architectural assumé.
   getMissionDetail(missionRef: string): Observable<MissionDetail> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     return this.http.get<MissionDetail>(
       `${BASE_URL}/${encodeURIComponent(missionRef)}`,
-      opts,
     );
   }
 }

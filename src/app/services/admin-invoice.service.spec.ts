@@ -1,4 +1,4 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminInvoiceService } from './admin-invoice.service';
@@ -26,37 +26,19 @@ describe('AdminInvoiceService', () => {
   });
 
   // ---------------------------------------------------------------------
-  // Auth header
+  // List endpoints
   // ---------------------------------------------------------------------
 
-  it('attaches X-Tuita-Admin-Key header to every request', () => {
+  it('GET /pending-validation forwards page/per_page params', () => {
     service.listPendingValidation(1, 20).subscribe();
     const req = http.expectOne(r =>
       r.url === '/contractor-compliance/admin/invoices/pending-validation',
     );
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-admin-key');
     expect(req.request.method).toBe('GET');
     expect(req.request.params.get('page')).toBe('1');
     expect(req.request.params.get('per_page')).toBe('20');
     req.flush({ data: [], meta: { total: 0 } });
   });
-
-  it('errors immediately if no admin key in sessionStorage', () => {
-    sessionStorage.removeItem('tuita_admin_key');
-    return new Promise<void>((resolve, reject) => {
-      service.listReadyToPay().subscribe({
-        next: () => reject(new Error('should have errored')),
-        error: (err: Error) => {
-          expect(err.message).toBe('admin_api_key_missing');
-          resolve();
-        },
-      });
-    });
-  });
-
-  // ---------------------------------------------------------------------
-  // List endpoints
-  // ---------------------------------------------------------------------
 
   it('GET /pending-validation returns paginated list', () => {
     let captured: unknown;
@@ -88,9 +70,9 @@ describe('AdminInvoiceService', () => {
     req.flush({ data: [] });
   });
 
-  it('GET /stuck/counts', () => {
+  it('GET /stuck-counts', () => {
     service.getStuckCounts().subscribe();
-    const req = http.expectOne('/contractor-compliance/admin/invoices/stuck/counts');
+    const req = http.expectOne('/contractor-compliance/admin/invoices/stuck-counts');
     req.flush({ data: { validating: 3 } });
   });
 
@@ -154,9 +136,9 @@ describe('AdminInvoiceService', () => {
   });
 
   it('POST /{uuid}/reopen sends reason', () => {
-    service.reopen('uuid-1', { reason: 'rejet erronÃ©, contractor a corrigÃ©' }).subscribe();
+    service.reopen('uuid-1', { reason: 'rejet erroné, contractor a corrigé' }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/reopen');
-    expect(req.request.body.reason).toBe('rejet erronÃ©, contractor a corrigÃ©');
+    expect(req.request.body.reason).toBe('rejet erroné, contractor a corrigé');
     req.flush({});
   });
 
@@ -168,9 +150,9 @@ describe('AdminInvoiceService', () => {
   });
 
   it('POST /{uuid}/force-resend-webhook sends event_type + reason', () => {
-    service.forceResendWebhook('uuid-1', { event_type: 'paid', reason: 'tuita.fr a manquÃ© le webhook' }).subscribe();
+    service.forceResendWebhook('uuid-1', { event_type: 'paid', reason: 'tuita.fr a manqué le webhook' }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/force-resend-webhook');
-    expect(req.request.body).toEqual({ event_type: 'paid', reason: 'tuita.fr a manquÃ© le webhook' });
+    expect(req.request.body).toEqual({ event_type: 'paid', reason: 'tuita.fr a manqué le webhook' });
     req.flush({});
   });
 

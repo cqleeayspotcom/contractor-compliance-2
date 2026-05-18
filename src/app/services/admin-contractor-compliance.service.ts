@@ -1,33 +1,29 @@
-﻿import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { Observable, from } from 'rxjs';
+
+import { Api } from '../api/api';
+import { adminContractorsComplianceSummary } from '../api/fn/admin-contractors/admin-contractors-compliance-summary';
 
 /**
- * Service d'accÃ¨s au snapshot compliance d'un contractor (admin only).
+ * Service d'accès au snapshot compliance d'un contractor (admin only).
  *
  * Pourquoi : alimente le composant `ContractorComplianceSummaryComponent` qui
- * sert Ã  donner Ã  l'admin tout le contexte nÃ©cessaire AVANT de prendre une
- * dÃ©cision financiÃ¨re (approuver une facture libre, retry un achat, marquer
- * une facture payÃ©e). Cf. la docblock du composant pour le dÃ©tail mÃ©tier.
+ * sert à donner à l'admin tout le contexte nécessaire AVANT de prendre une
+ * décision financière (approuver une facture libre, retry un achat, marquer
+ * une facture payée). Cf. la docblock du composant pour le détail métier.
  *
  * Endpoint backend :
  *   GET /contractor-compliance/admin/contractors/{phone}/compliance-summary
- *   Header : X-Tuita-Admin-Key (lu depuis sessionStorage Ã  chaque requÃªte)
+ *   Header X-Tuita-Admin-Key : injecté globalement (cf. interceptor admin) —
+ *   plus géré ici depuis la migration SDK 2026-05-17.
  *
- * Format de retour : un payload plat, prÃ©-mappÃ© (libellÃ©s FR, badges dÃ©jÃ 
- * calculÃ©s cÃ´tÃ© serveur) â†’ le composant n'a rien Ã  transformer.
+ * Format de retour : un payload plat, pré-mappé (libellés FR, badges déjà
+ * calculés côté serveur) → le composant n'a rien à transformer.
  */
 
 /**
- * Code de statut retournÃ© par le backend pour chaque "ligne" affichable
- * (KYC ou Document). Le mapping vers une icÃ´ne Material est gÃ©rÃ© cÃ´tÃ© composant.
- *  - ok       : tout va bien (KYC approuvÃ© / doc verified non expirÃ©)
- *  - pending  : en attente (KYC processing / doc pending review)
- *  - ko       : rejetÃ© dÃ©finitivement (KYC rejected / doc rejected)
- *  - expired  : KYC ou doc qui Ã©tait valide mais a expirÃ© (URSSAF > 6 mois etc.)
- *  - missing  : jamais effectuÃ© / jamais uploadÃ© (cas le plus risquÃ© cÃ´tÃ© BTP)
- *  - unknown  : valeur inattendue cÃ´tÃ© backend, fallback (ne devrait jamais arriver)
+ * Code de statut retourné par le backend pour chaque "ligne" affichable
+ * (KYC ou Document). Le mapping vers une icône Material est géré côté composant.
  */
 export type ComplianceBadge = 'ok' | 'pending' | 'ko' | 'expired' | 'missing' | 'unknown';
 
@@ -78,19 +74,11 @@ export interface ComplianceSummary {
 
 @Injectable({ providedIn: 'root' })
 export class AdminContractorComplianceService {
-  private http = inject(HttpClient);
-  private base = `${environment.apiUrl}/contractor/admin`;
-
-  private get adminHeaders(): HttpHeaders {
-    return new HttpHeaders({
-      'X-Tuita-Admin-Key': sessionStorage.getItem('tuita_admin_key') ?? '',
-    });
-  }
+  private readonly api = inject(Api);
 
   summary(phone: string): Observable<{ data: ComplianceSummary }> {
-    return this.http.get<{ data: ComplianceSummary }>(
-      `${this.base}/contractors/${encodeURIComponent(phone)}/compliance-summary`,
-      { headers: this.adminHeaders, withCredentials: true },
-    );
+    return from(
+      this.api.invoke(adminContractorsComplianceSummary, { phone }),
+    ) as Observable<{ data: ComplianceSummary }>;
   }
 }

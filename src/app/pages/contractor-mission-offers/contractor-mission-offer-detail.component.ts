@@ -67,19 +67,25 @@ export class ContractorMissionOfferDetailComponent implements OnInit {
   }
 
   private load(ref: string): void {
+    // Le backend Tuita n'expose pas le détail d'une offre individuelle —
+    // on lit donc la liste complète des offres et on filtre côté client.
+    // Acceptation/refus restent indisponibles (workflow backoffice ops).
     this.state.set({ kind: 'loading' });
-    this.api.getMissionOffer(ref).subscribe({
-      next: (res) => this.state.set({
-        kind: 'ready',
-        offer: res.data,
-        canAccept: res.can_accept ?? true,
-      }),
-      error: (err) => {
-        const message = err.status === 404
-          ? "Cette offre n'existe plus."
-          : "Impossible de charger l'offre.";
-        this.state.set({ kind: 'error', message });
+    this.api.listMissionOffers().subscribe({
+      next: (res) => {
+        const offer = (res.data ?? []).find((o) => o.mission_ref === ref);
+        if (!offer) {
+          this.state.set({ kind: 'error', message: "Cette offre n'existe plus." });
+          return;
+        }
+        this.state.set({
+          kind: 'ready',
+          offer,
+          // Acceptation par cet écran indisponible côté Tuita (workflow ops).
+          canAccept: false,
+        });
       },
+      error: () => this.state.set({ kind: 'error', message: "Impossible de charger l'offre." }),
     });
   }
 
@@ -105,40 +111,22 @@ export class ContractorMissionOfferDetailComponent implements OnInit {
   }
 
   confirmAccept(): void {
-    const offer = this.offer();
-    if (!offer || this.busy()) return;
-    this.busy.set(true);
-
-    this.api.acceptMissionOffer(offer.mission_ref).subscribe({
-      next: () => {
-        this.snack.open('Mission acceptée ✓ Elle apparaîtra dans tes interventions sous peu.', 'OK', { duration: 5000, panelClass: ['tuita-snackbar', 'snack-success'] });
-        this.router.navigateByUrl('/interventions');
-      },
-      error: (err) => {
-        this.busy.set(false);
-        const msg = err.status === 409
-          ? "Cette offre vient d'être prise par quelqu'un d'autre."
-          : "Impossible d'accepter l'offre. Réessaie.";
-        this.snack.open(msg, 'OK', { duration: 5000, panelClass: ['tuita-snackbar'] });
-      },
-    });
+    // Acceptation indisponible côté Tuita (workflow backoffice ops).
+    // On informe le contractor que l'acceptation se fait via le manager FOM.
+    this.snack.open(
+      "L'acceptation d'offre passe par ton manager terrain — contacte-le directement.",
+      'OK',
+      { duration: 6000, panelClass: ['tuita-snackbar'] },
+    );
   }
 
   confirmDecline(): void {
-    const offer = this.offer();
-    if (!offer || this.busy()) return;
-    this.busy.set(true);
-
-    this.api.declineMissionOffer(offer.mission_ref, this.declineReason() || undefined).subscribe({
-      next: () => {
-        this.snack.open('Offre déclinée.', 'OK', { duration: 3000, panelClass: ['tuita-snackbar'] });
-        this.router.navigateByUrl('/missions');
-      },
-      error: () => {
-        this.busy.set(false);
-        this.snack.open('Impossible de décliner. Réessaie.', 'OK', { duration: 5000, panelClass: ['tuita-snackbar'] });
-      },
-    });
+    // Pas de route decline côté Tuita non plus — mêmes raisons.
+    this.snack.open(
+      "Pour décliner, contacte ton manager terrain.",
+      'OK',
+      { duration: 6000, panelClass: ['tuita-snackbar'] },
+    );
   }
 
   formatDate(iso: string): string {

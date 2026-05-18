@@ -21,6 +21,8 @@ export type { DocumentsList$Params as DocumentsList$Params } from './fn/document
 export { documentsList as documentsList } from './fn/documents/documents-list';
 export type { DocumentsGet$Params as DocumentsGet$Params } from './fn/documents/documents-get';
 export { documentsGet as documentsGet } from './fn/documents/documents-get';
+export type { DocumentsDownload$Params as DocumentsDownload$Params } from './fn/documents/documents-download';
+export { documentsDownload as documentsDownload } from './fn/documents/documents-download';
 export type { DocumentsPurchase$Params as DocumentsPurchase$Params } from './fn/documents/documents-purchase';
 export { documentsPurchase as documentsPurchase } from './fn/documents/documents-purchase';
 export type { BillingSubscription$Params as BillingSubscription$Params } from './fn/billing/billing-subscription';
@@ -47,6 +49,8 @@ export type { InvoicesUpload$Params as InvoicesUpload$Params } from './fn/invoic
 export { invoicesUpload as invoicesUpload } from './fn/invoices/invoices-upload';
 export type { InvoicesList$Params as InvoicesList$Params } from './fn/invoices/invoices-list';
 export { invoicesList as invoicesList } from './fn/invoices/invoices-list';
+export type { InvoicesPdf$Params as InvoicesPdf$Params } from './fn/invoices/invoices-pdf';
+export { invoicesPdf as invoicesPdf } from './fn/invoices/invoices-pdf';
 export type { InvoicesTimeline$Params as InvoicesTimeline$Params } from './fn/invoices/invoices-timeline';
 export { invoicesTimeline as invoicesTimeline } from './fn/invoices/invoices-timeline';
 export type { InvoicesShow$Params as InvoicesShow$Params } from './fn/invoices/invoices-show';
@@ -229,6 +233,8 @@ export type { AdminKycRejections$Params as AdminKycRejections$Params } from './f
 export { adminKycRejections as adminKycRejections } from './fn/admin-kyc/admin-kyc-rejections';
 export type { AdminKycShow$Params as AdminKycShow$Params } from './fn/admin-kyc/admin-kyc-show';
 export { adminKycShow as adminKycShow } from './fn/admin-kyc/admin-kyc-show';
+export type { AdminKycArtifactsList$Params as AdminKycArtifactsList$Params } from './fn/admin-kyc/admin-kyc-artifacts-list';
+export { adminKycArtifactsList as adminKycArtifactsList } from './fn/admin-kyc/admin-kyc-artifacts-list';
 export type { AdminKycArtifactsView$Params as AdminKycArtifactsView$Params } from './fn/admin-kyc/admin-kyc-artifacts-view';
 export { adminKycArtifactsView as adminKycArtifactsView } from './fn/admin-kyc/admin-kyc-artifacts-view';
 export type { AdminKycReplay$Params as AdminKycReplay$Params } from './fn/admin-kyc/admin-kyc-replay';

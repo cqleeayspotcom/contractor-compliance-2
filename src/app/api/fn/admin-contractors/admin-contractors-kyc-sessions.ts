@@ -15,12 +15,16 @@ export interface AdminContractorsKycSessions$Params {
  * Identifiant contractor format `P<digits>` (Tuita phone-keyed).
  */
   phone: string;
+  page?: number;
+  per_page?: number;
 }
 
 export function adminContractorsKycSessions(http: HttpClient, rootUrl: string, params: AdminContractorsKycSessions$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminContractorsKycSessions.PATH, 'get');
   if (params) {
     rb.path('phone', params.phone, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

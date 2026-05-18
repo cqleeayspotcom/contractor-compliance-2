@@ -10,11 +10,21 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface MissionsHistory$Params {
+  status?: string;
+  search?: string;
+  invoice_status?: string;
+  page?: number;
+  per_page?: number;
 }
 
 export function missionsHistory(http: HttpClient, rootUrl: string, params?: MissionsHistory$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, missionsHistory.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('search', params.search, {});
+    rb.query('invoice_status', params.invoice_status, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

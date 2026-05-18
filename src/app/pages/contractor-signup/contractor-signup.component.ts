@@ -15,6 +15,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ContractorSignupService } from '../../services/contractor-signup.service';
+import { isValidTuitaPhoneP33, toTuitaPhoneP33 } from '../../utils/phone-normalizer';
 
 const CODE_REGEX = /^[A-HJ-NP-Z2-9]{4}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -77,30 +78,16 @@ export class ContractorSignupComponent {
    * espaces, points, etc.) vers le format Tuita `P33XXXXXXXXX`. Mêmes règles
    * que le backend `ContractorSignupController::normalizeFrenchPhone`.
    */
-  readonly normalizedPhone = computed<string>(() => {
-    const raw = this.phoneRaw().trim();
-    if (raw === '') return '';
-
-    // Garde uniquement chiffres + P (uppercase)
-    let cleaned = raw.toUpperCase().replace(/[^0-9P]/g, '');
-
-    // Retire le P éventuel en tête (on le re-préfixe à la fin)
-    if (cleaned.startsWith('P')) cleaned = cleaned.slice(1);
-
-    // Conversion 0XX → 33XX (national français)
-    if (cleaned.startsWith('0')) cleaned = '33' + cleaned.slice(1);
-
-    if (cleaned === '') return '';
-    return 'P' + cleaned;
-  });
+  // Délégation au helper partagé (login + signup) — même règle de
+  // normalisation que ContractorSignupController::normalizeFrenchPhone côté
+  // backend, pour éviter toute divergence silencieuse entre les deux flows.
+  readonly normalizedPhone = computed<string>(() => toTuitaPhoneP33(this.phoneRaw()));
 
   /**
    * Validation du téléphone normalisé : format Tuita strict après conversion.
    * Ce signal alimente la couleur du champ et l'enable du bouton.
    */
-  readonly isPhoneValid = computed<boolean>(() => {
-    return /^P\d{10,15}$/.test(this.normalizedPhone());
-  });
+  readonly isPhoneValid = computed<boolean>(() => isValidTuitaPhoneP33(this.normalizedPhone()));
 
   // ── Validations dérivées ────────────────────────────────────────────────
 
@@ -134,6 +121,13 @@ export class ContractorSignupComponent {
     this.api.verifyCode(this.code()).subscribe({
       next: (res) => {
         this.isVerifyingCode.set(false);
+        // Le backend `/invitation-codes/check` répond 200 même quand le code
+        // est invalide (flag `valid` à false). On bloque l'avancée si false
+        // et on remonte un message explicite.
+        if (!res.data.valid) {
+          this.errorMessage.set(this.fallbackMessageFor('invitation_code_invalid'));
+          return;
+        }
         this.code.set(res.data.code);
         this.step.set('identity');
       },

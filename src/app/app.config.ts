@@ -14,6 +14,7 @@ import { loadingInterceptor } from './interceptors/loading.interceptor';
 import { errorInterceptor } from './interceptors/error.interceptor';
 import { loggingInterceptor } from './interceptors/logging.interceptor';
 import { featureFlagInterceptor } from './interceptors/feature-flag.interceptor';
+import { adminKeyInterceptor } from './interceptors/admin-key.interceptor';
 import { LoadingService } from './services/loading.service';
 import { ContractorSessionService } from './services/contractor-session.service';
 import { PricingService } from './services/pricing.service';
@@ -77,6 +78,10 @@ export const appConfig: ApplicationConfig = {
         // /contractor-compliance/* quand le flag est OFF, AVANT que loading
         // ou cookie n'agissent dessus.
         featureFlagInterceptor,
+        // Doit s'exécuter AVANT contractorCookieInterceptor pour que le
+        // header X-Tuita-Admin-Key soit déjà posé quand withCredentials
+        // est ajouté. Inactif sur les routes non-admin.
+        adminKeyInterceptor,
         loadingInterceptor,
         contractorCookieInterceptor,
         errorInterceptor,

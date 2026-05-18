@@ -10,11 +10,17 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface DocumentsList$Params {
+  status?: string;
+  type?: string;
+  page?: number;
 }
 
 export function documentsList(http: HttpClient, rootUrl: string, params?: DocumentsList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, documentsList.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('type', params.type, {});
+    rb.query('page', params.page, {});
   }
 
   return http.request(

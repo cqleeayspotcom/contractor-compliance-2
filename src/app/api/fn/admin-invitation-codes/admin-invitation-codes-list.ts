@@ -10,11 +10,21 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvitationCodesList$Params {
+  status?: string;
+  per_page?: number;
+  page?: number;
+  sort?: string;
+  direction?: 'asc' | 'desc';
 }
 
 export function adminInvitationCodesList(http: HttpClient, rootUrl: string, params?: AdminInvitationCodesList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvitationCodesList.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('per_page', params.per_page, {});
+    rb.query('page', params.page, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
   }
 
   return http.request(

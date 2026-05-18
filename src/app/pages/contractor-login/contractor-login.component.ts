@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { isValidTuitaPhoneP33, toTuitaPhoneP33, toTuitaPhonePlus } from '../../utils/phone-normalizer';
 
 type Step = 'phone' | 'code';
 
@@ -43,18 +44,13 @@ export class ContractorLoginComponent {
   readonly code = signal('');
   readonly loading = signal(false);
 
-  // Normalisation FR → P33 (même logique que le signup et le backend).
-  readonly normalizedPhone = computed<string>(() => {
-    const raw = this.phoneRaw().trim();
-    if (raw === '') return '';
-    let cleaned = raw.toUpperCase().replace(/[^0-9P]/g, '');
-    if (cleaned.startsWith('P')) cleaned = cleaned.slice(1);
-    if (cleaned.startsWith('0')) cleaned = '33' + cleaned.slice(1);
-    if (cleaned === '') return '';
-    return 'P' + cleaned;
-  });
-
-  readonly isPhoneValid = computed<boolean>(() => /^P\d{10,15}$/.test(this.normalizedPhone()));
+  // Normalisation FR → P33 (forme canonique partagée avec le signup).
+  // POURQUOI deux dérivés : la forme P33 sert à l'affichage et à la
+  // validation ; la forme +33 (Tuita natif) est envoyée à /contractor/auth/*
+  // car ContractorOauthWrapper::sendSmsPassword attend explicitement le `+`.
+  readonly normalizedPhone = computed<string>(() => toTuitaPhoneP33(this.phoneRaw()));
+  readonly phonePlus = computed<string>(() => toTuitaPhonePlus(this.phoneRaw()));
+  readonly isPhoneValid = computed<boolean>(() => isValidTuitaPhoneP33(this.normalizedPhone()));
 
   async submitPhone(): Promise<void> {
     if (!this.isPhoneValid()) {
@@ -67,7 +63,9 @@ export class ContractorLoginComponent {
       // Envoie le SMS contenant le PIN (ContractorOauthWrapper::sendSmsPassword).
       await firstValueFrom(
         this.http.post(`${environment.apiUrl}/contractor/auth/pin`,
-          { smsphone: this.normalizedPhone() },
+          // Format Tuita natif strict : +33XXXXXXXXX (cf. ContractorModule
+          // CLAUDE.md — Utils::toIntlMobileNotation attend le `+`).
+          { smsphone: this.phonePlus() },
           { withCredentials: true })
       );
       this.step.set('code');
@@ -100,17 +98,28 @@ export class ContractorLoginComponent {
     try {
       // Tuita monolithe : POST /contractor/auth/login avec { smsphone, pincode }.
       // Pose le cookie __contractor_ssid (ContractorOauthWrapper::contractorLogin).
-      await firstValueFrom(
-        this.http.post(`${environment.apiUrl}/contractor/auth/login`,
-          { smsphone: this.normalizedPhone(), pincode: this.code() },
+      // ATTENTION : le backend renvoie TOUJOURS 200, le succès se lit dans
+      // la réponse JSON (`connected: true` / `error: ...`). Un mauvais PIN
+      // ne lève PAS d'HttpErrorResponse — il faut inspecter le body.
+      const resp = await firstValueFrom(
+        this.http.post<{ connected?: boolean; error?: string }>(
+          `${environment.apiUrl}/contractor/auth/login`,
+          // Même format strict +33 — un mismatch entre /pin et /login
+          // empêcherait la résolution du contractor (lookup sur smsphone).
+          { smsphone: this.phonePlus(), pincode: this.code() },
           { withCredentials: true })
       );
+      if (!resp || resp.connected !== true) {
+        this.snack.open('Code incorrect.', 'OK', { duration: 3000 });
+        return;
+      }
       // Recharge la session avec le cookie fraîchement posé avant de naviguer :
       // sinon le dashboard lit l'`error$` "Session expirée" laissé par
       // APP_INITIALIZER (qui avait échoué en 401 faute de cookie).
       await firstValueFrom(this.session.loadDashboard()).catch(() => {});
       void this.router.navigate(['/dashboard']);
-    } catch {
+    } catch (err: unknown) {
+      console.error('[login] /contractor/auth/login failed', err);
       this.snack.open('Code incorrect.', 'OK', { duration: 3000 });
     } finally {
       this.loading.set(false);

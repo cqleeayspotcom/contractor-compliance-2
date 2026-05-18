@@ -1,17 +1,25 @@
-﻿import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, from } from 'rxjs';
+
+import { Api } from '../api/api';
+import { adminInvoicesShow } from '../api/fn/admin-invoices/admin-invoices-show';
+import { adminInvoicesAuditTrail } from '../api/fn/admin-invoices/admin-invoices-audit-trail';
+import { adminInvoicesPendingValidation } from '../api/fn/admin-invoices/admin-invoices-pending-validation';
+import { adminInvoicesReadyToPay } from '../api/fn/admin-invoices/admin-invoices-ready-to-pay';
+import { adminInvoicesPaymentInProgress } from '../api/fn/admin-invoices/admin-invoices-payment-in-progress';
+import { adminInvoicesPaidDisputed } from '../api/fn/admin-invoices/admin-invoices-paid-disputed';
+import { adminInvoicesStatsStuckCounts } from '../api/fn/admin-invoices/admin-invoices-stats-stuck-counts';
+import { adminInvoicesPdf } from '../api/fn/admin-invoices/admin-invoices-pdf';
 
 /**
  * Admin Invoice Service
  *
- * Wraps the /contractor-compliance/admin/invoices/* endpoints with the
- * X-Tuita-Admin-Key header read from sessionStorage (key 'tuita_admin_key',
- * same convention as ContractorAdminComponent).
- *
- * Each method returns an Observable to fit the consumer's preferred
- * subscription pattern. The consumer is responsible for handling 401/403
- * (the spec says: clear sessionStorage + redirect to /admin).
+ * Wraps the /contractor-compliance/admin/invoices/* endpoints. Le header
+ * X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts
+ * (cf. app.config.ts) depuis sessionStorage['tuita_admin_key']. Si la cle
+ * manque, l'appel part sans header -> 401/403 -> redirect /login via
+ * contractorCookieInterceptor.
  */
 
 export type InvoiceStatus =
@@ -61,22 +69,22 @@ export interface InvoiceSearchFilters {
   amount_max?: number;
   date_from?: string;   // YYYY-MM-DD
   date_to?: string;
-  /** @deprecated pivot 2026-05-13 â€” usÃ© plus, remplacÃ© par missing_validations (count-based). */
+  /** @deprecated pivot 2026-05-13 — usé plus, remplacé par missing_validations (count-based). */
   validator_missing?: 'compliance' | 'production' | 'accounting';
-  /** Pivot 2026-05-13 â€” nombre d'approbations manquantes (1, 2 ou 3 = aucune). */
+  /** Pivot 2026-05-13 — nombre d'approbations manquantes (1, 2 ou 3 = aucune). */
   missing_validations?: 1 | 2 | 3;
-  /** Pivot 2026-05-13 â€” factures stuck depuis > N jours (basÃ© sur created_at). */
+  /** Pivot 2026-05-13 — factures stuck depuis > N jours (basé sur created_at). */
   stale_days?: number;
   plan?: 'free' | 'pro';
   paid_disputed?: boolean;
   stuck?: boolean;
   /**
-   * Tri server-side. Deux conventions supportÃ©es par le backend
+   * Tri server-side. Deux conventions supportées par le backend
    * (cf. WithAdminInvoiceFilters::applySort) :
    *  - Legacy : 'oldest' | 'newest' | 'amount_desc' | 'amount_asc'
-   *  - Standard : nom de colonne whitelistÃ©e ('created_at', 'updated_at',
-   *    'amount', 'status', 'number', 'mission_ref', 'paid_disputed_at') â€”
-   *    combinÃ© Ã  `direction`.
+   *  - Standard : nom de colonne whitelistée ('created_at', 'updated_at',
+   *    'amount', 'status', 'number', 'mission_ref', 'paid_disputed_at') —
+   *    combiné à `direction`.
    */
   sort?: string;
   direction?: 'asc' | 'desc';
@@ -109,7 +117,7 @@ export interface AdminInvoice {
     validated_by_email?: string | null;
     comment?: string | null;
   }>;
-  // NEW 2026-05-07 â€” search/list endpoint enrichment
+  // NEW 2026-05-07 — search/list endpoint enrichment
   rib?: Rib;
   contractor_status?: ContractorStatus;
   mission_snapshot?: MissionSnapshotInfo | null;
@@ -135,8 +143,8 @@ export interface PaginatedInvoices {
 }
 
 /**
- * DÃ©tail complet retournÃ© par GET /admin/invoices/{uuid}.
- * Beaucoup plus riche que AdminInvoice (utilisÃ© dans les listes).
+ * Détail complet retourné par GET /admin/invoices/{uuid}.
+ * Beaucoup plus riche que AdminInvoice (utilisé dans les listes).
  */
 export interface InvoiceDetail {
   invoice: {
@@ -182,7 +190,7 @@ export interface InvoiceDetail {
     uuid: string;
     status: 'approved' | 'rejected';
     source?: 'webhook' | 'admin_ui';
-    validator_type?: string | null; // legacy, peut Ãªtre absent
+    validator_type?: string | null; // legacy, peut être absent
     validated_by_email: string;
     validated_by_name: string;
     validated_at: string;
@@ -225,8 +233,8 @@ export interface InvoiceDetail {
     resolution?: string | null;
   } | null;
   /**
-   * Contexte 360Â° du contractor pour que les 3 validateurs voient toutes
-   * les infos mÃ©tier rÃ©unies sans naviguer ailleurs.
+   * Contexte 360° du contractor pour que les 3 validateurs voient toutes
+   * les infos métier réunies sans naviguer ailleurs.
    */
   contractor_context?: {
     identity: {
@@ -347,80 +355,42 @@ export interface AddNoteBody {
 }
 
 const BASE_URL = '/contractor-compliance/admin/invoices';
-const SESSION_KEY = 'tuita_admin_key';
 
 @Injectable({ providedIn: 'root' })
 export class AdminInvoiceService {
   private readonly http = inject(HttpClient);
-
-  private headers(): HttpHeaders {
-    const key = sessionStorage.getItem(SESSION_KEY);
-    if (!key) {
-      // Surface explicit error -- caller should redirect to /admin
-      throw new Error('admin_api_key_missing');
-    }
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': key });
-  }
-
-  /**
-   * Wrap a synchronous-throwing headers() call into an Observable error so
-   * subscribers can route the missing-key case through their normal error
-   * channel.
-   */
-  private safeHeaders(): { headers: HttpHeaders } | null {
-    try {
-      return { headers: this.headers() };
-    } catch {
-      return null;
-    }
-  }
+  private readonly api = inject(Api);
 
   // ---------------------------------------------------------------------
   // Lists
   // ---------------------------------------------------------------------
 
   listPendingValidation(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return this.list('/pending-validation', page, perPage, opts);
+    return from(
+      this.api.invoke(adminInvoicesPendingValidation, { page, per_page: perPage, stuck: opts.stuck }),
+    ) as Observable<PaginatedInvoices>;
   }
 
   listReadyToPay(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return this.list('/ready-to-pay', page, perPage, opts);
+    return from(
+      this.api.invoke(adminInvoicesReadyToPay, { page, per_page: perPage, stuck: opts.stuck }),
+    ) as Observable<PaginatedInvoices>;
   }
 
   listPaymentInProgress(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return this.list('/payment-in-progress', page, perPage, opts);
+    return from(
+      this.api.invoke(adminInvoicesPaymentInProgress, { page, per_page: perPage, stuck: opts.stuck }),
+    ) as Observable<PaginatedInvoices>;
   }
 
   listPaidDisputed(page = 1, perPage = 20): Observable<PaginatedInvoices> {
-    return this.list('/paid-disputed', page, perPage);
-  }
-
-  /**
-   * "Tout" tab -- the backend has no dedicated /all endpoint, so we
-   * issue the same call to /pending-validation by default and let
-   * the caller switch to other endpoints if needed. The component
-   * uses a different strategy (concatenated calls); this method is
-   * kept for completeness but unused on the "all" tab.
-   */
-  list(path: string, page = 1, perPage = 20, extra: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    let params = new HttpParams()
-      .set('page', String(page))
-      .set('per_page', String(perPage));
-    if (extra.stuck) {
-      params = params.set('stuck', '1');
-    }
-    return this.http.get<PaginatedInvoices>(`${BASE_URL}${path}`, {
-      ...opts,
-      params,
-    });
+    return from(
+      this.api.invoke(adminInvoicesPaidDisputed, { page, per_page: perPage }),
+    ) as Observable<PaginatedInvoices>;
   }
 
   getStuckCounts(): Observable<{ data: StuckCounts }> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: StuckCounts }>(`${BASE_URL}/stuck/counts`, opts);
+    return from(this.api.invoke(adminInvoicesStatsStuckCounts)) as Observable<{ data: StuckCounts }>;
   }
 
   // ---------------------------------------------------------------------
@@ -428,39 +398,30 @@ export class AdminInvoiceService {
   // ---------------------------------------------------------------------
 
   getInvoice(uuid: string): Observable<{ data: AdminInvoice }> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: AdminInvoice }>(`${BASE_URL}/${uuid}`, opts);
+    return from(
+      this.api.invoke(adminInvoicesShow, { uuid }),
+    ) as Observable<{ data: AdminInvoice }>;
   }
 
   /** Vue super-admin : invoice + relations + validations + items + webhooks + mission_snapshot + dispute. */
   getInvoiceDetail(uuid: string): Observable<{ data: InvoiceDetail }> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: InvoiceDetail }>(`${BASE_URL}/${uuid}`, opts);
+    return from(
+      this.api.invoke(adminInvoicesShow, { uuid }),
+    ) as Observable<{ data: InvoiceDetail }>;
   }
 
   /**
    * Stream le PDF en blob (l'admin key passe par header donc impossible
-   * de mettre l'URL directe dans <iframe src> â€” il faut fetch + objectURL).
+   * de mettre l'URL directe dans <iframe src> — il faut fetch + objectURL).
    */
   downloadInvoicePdf(uuid: string, inline = true): Observable<Blob> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    const suffix = inline ? '?inline=1' : '';
-    return this.http.get(`${BASE_URL}/${uuid}/pdf${suffix}`, {
-      ...opts,
-      responseType: 'blob',
-    });
+    return from(this.api.invoke(adminInvoicesPdf, { uuid, inline })) as Observable<Blob>;
   }
 
   getAuditTrail(uuid: string): Observable<{ data: AuditTrailDetail }> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: AuditTrailDetail }>(
-      `${BASE_URL}/${uuid}/audit-trail`,
-      opts,
-    );
+    return from(
+      this.api.invoke(adminInvoicesAuditTrail, { uuid }),
+    ) as Observable<{ data: AuditTrailDetail }>;
   }
 
   // ---------------------------------------------------------------------
@@ -468,12 +429,16 @@ export class AdminInvoiceService {
   // ---------------------------------------------------------------------
 
   /**
-   * Endpoint unifiÃ© multi-statut avec recherche full-text + filtres riches.
+   * Endpoint unifié multi-statut avec recherche full-text + filtres riches.
    * NEW 2026-05-07.
    */
+  // HttpClient direct : `adminInvoicesList` ne déclare que status/search/stuck/
+  // page/per_page/sort/direction ; les filtres riches du screen admin (q,
+  // contractor_phone, contractor_siren, mission_ref, amount_min/max, date_from/to,
+  // status[] multi-valeur, missing_validations, stale_days, plan, paid_disputed,
+  // validator_missing) ne sont pas exposés par le spec → choix architectural
+  // assumé de bypasser le SDK pour conserver l'intégralité des filtres.
   searchInvoices(filters: InvoiceSearchFilters): Observable<PaginatedInvoices> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     let params = new HttpParams();
     Object.entries(filters).forEach(([k, v]) => {
       if (v === null || v === undefined || v === '') return;
@@ -483,60 +448,56 @@ export class AdminInvoiceService {
         params = params.set(k, String(v));
       }
     });
-    return this.http.get<PaginatedInvoices>(BASE_URL, { ...opts, params });
+    return this.http.get<PaginatedInvoices>(BASE_URL, { params });
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` (optimistic locking) non supporté
+  // via SDK invoke(). Le body est désormais déclaré côté SDK mais l'API du service
+  // expose ifUnchangedSince donc on reste cohérent avec mark-paid/reopen/etc.
   markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/mark-payment-in-progress`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/mark-payment-in-progress`, body, headers ? { headers } : {});
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
   markPaid(uuid: string, body: MarkPaidBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/mark-paid`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/mark-paid`, body, headers ? { headers } : {});
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
   reopen(uuid: string, body: ReopenBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/reopen`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/reopen`, body, headers ? { headers } : {});
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
   resolveDispute(uuid: string, body: ResolveDisputeBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/resolve-dispute`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/resolve-dispute`, body, headers ? { headers } : {});
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
   forceResendWebhook(uuid: string, body: ForceResendWebhookBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/force-resend-webhook`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/force-resend-webhook`, body, headers ? { headers } : {});
   }
 
+  // HttpClient direct : header `If-Unchanged-Since` non supporté via SDK invoke().
   addNote(uuid: string, body: AddNoteBody, ifUnchangedSince?: string): Observable<unknown> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const headers = ifUnchangedSince
-      ? opts.headers.set('If-Unchanged-Since', ifUnchangedSince)
-      : opts.headers;
-    return this.http.post(`${BASE_URL}/${uuid}/add-note`, body, { headers });
+      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
+      : undefined;
+    return this.http.post(`${BASE_URL}/${uuid}/add-note`, body, headers ? { headers } : {});
   }
 }

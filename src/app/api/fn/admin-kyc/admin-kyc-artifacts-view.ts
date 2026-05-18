@@ -7,24 +7,29 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 
 export interface AdminKycArtifactsView$Params {
   uuid: string;
+
+/**
+ * Chemin relatif de l'artifact KYC à streamer (.webm, .jpg…).
+ */
+  path: string;
 }
 
-export function adminKycArtifactsView(http: HttpClient, rootUrl: string, params: AdminKycArtifactsView$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminKycArtifactsView(http: HttpClient, rootUrl: string, params: AdminKycArtifactsView$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
   const rb = new RequestBuilder(rootUrl, adminKycArtifactsView.PATH, 'get');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.query('path', params.path, {});
   }
 
   return http.request(
-    rb.build({ responseType: 'json', accept: 'application/json', context })
+    rb.build({ responseType: 'blob', accept: 'application/octet-stream', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<Blob>;
     })
   );
 }

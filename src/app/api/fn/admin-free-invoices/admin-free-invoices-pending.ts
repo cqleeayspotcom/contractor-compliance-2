@@ -10,11 +10,15 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminFreeInvoicesPending$Params {
+  page?: number;
+  per_page?: number;
 }
 
 export function adminFreeInvoicesPending(http: HttpClient, rootUrl: string, params?: AdminFreeInvoicesPending$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminFreeInvoicesPending.PATH, 'get');
   if (params) {
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

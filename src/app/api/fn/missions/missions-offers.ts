@@ -10,11 +10,19 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface MissionsOffers$Params {
+  status?: string;
+  search?: string;
+  page?: number;
+  per_page?: number;
 }
 
 export function missionsOffers(http: HttpClient, rootUrl: string, params?: MissionsOffers$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, missionsOffers.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('search', params.search, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

@@ -1,15 +1,22 @@
-﻿import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, throwError } from 'rxjs';
+import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { Api } from '../api/api';
+import { adminDocumentsShow } from '../api/fn/admin-documents/admin-documents-show';
 
 /**
  * Admin Document Service
  *
- * Wraps GET /contractor-compliance/admin/documents/{uuid} endpoints with the
- * X-Tuita-Admin-Key header read from sessionStorage (key 'tuita_admin_key',
- * same convention as AdminInvoiceService).
+ * Wraps GET /contractor-compliance/admin/documents/{uuid} endpoints. Le header
+ * X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts.
  *
- * Read-only by design â€” no mutating endpoints. Politique zero-manuel.
+ * Read-only by design — no mutating endpoints. Politique zero-manuel.
+ *
+ * NOTE migration SDK : adminDocumentsShow est branche via Api.invoke (typage
+ * JsonObject -> cast vers DocumentDetail). downloadDocumentFile garde
+ * HttpClient car le SDK fn `adminDocumentsFile` ne supporte pas le query
+ * param `?inline=1`.
  */
 
 export type DocumentStatus =
@@ -73,49 +80,33 @@ export interface DocumentDetail {
 }
 
 const BASE_URL = '/contractor-compliance/admin/documents';
-const SESSION_KEY = 'tuita_admin_key';
 
 @Injectable({ providedIn: 'root' })
 export class AdminDocumentService {
   private readonly http = inject(HttpClient);
-
-  private headers(): HttpHeaders {
-    const key = sessionStorage.getItem(SESSION_KEY);
-    if (!key) {
-      throw new Error('admin_api_key_missing');
-    }
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': key });
-  }
-
-  private safeHeaders(): { headers: HttpHeaders } | null {
-    try {
-      return { headers: this.headers() };
-    } catch {
-      return null;
-    }
-  }
+  private readonly api = inject(Api);
 
   /**
    * Vue admin (read-only) d'un document : metadata + OCR fields + version
-   * history. Pas d'action exposÃ©e.
+   * history. Pas d'action exposee.
    */
   getDocument(uuid: string): Observable<{ data: DocumentDetail }> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
-    return this.http.get<{ data: DocumentDetail }>(`${BASE_URL}/${uuid}`, opts);
+    return from(this.api.invoke(adminDocumentsShow, { uuid })).pipe(
+      map(r => r as unknown as { data: DocumentDetail })
+    );
   }
 
   /**
-   * Stream le fichier dÃ©chiffrÃ© en blob (l'admin key passe par header donc
-   * impossible de mettre l'URL directe dans <iframe src> â€” il faut fetch +
+   * Stream le fichier dechiffre en blob (l'admin key passe par header donc
+   * impossible de mettre l'URL directe dans <iframe src> — il faut fetch +
    * URL.createObjectURL). `inline=true` => Content-Disposition inline.
+   *
+   * Garde HttpClient car le SDK fn adminDocumentsFile ne supporte pas le
+   * query param `inline`.
    */
   downloadDocumentFile(uuid: string, inline = true): Observable<Blob> {
-    const opts = this.safeHeaders();
-    if (!opts) return throwError(() => new Error('admin_api_key_missing'));
     const suffix = inline ? '?inline=1' : '';
     return this.http.get(`${BASE_URL}/${uuid}/file${suffix}`, {
-      ...opts,
       responseType: 'blob',
     });
   }

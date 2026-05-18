@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EMPTY, Subject, Subscription, interval } from 'rxjs';
-import { catchError, debounceTime, switchMap } from 'rxjs/operators';
+import { catchError, switchMap } from 'rxjs/operators';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -461,16 +461,10 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
       },
     });
 
-    // Pipeline de sauvegarde debouncée du brouillon (1,2 s après le dernier clic).
-    this.partialSave$.pipe(
-      takeUntilDestroyed(this.destroyRef),
-      debounceTime(1_200),
-      switchMap(() => {
-        if (!this.attemptUuid) return EMPTY;
-        return this.api.saveCertificationAnswers(this.attemptUuid, this.answers())
-          .pipe(catchError(() => EMPTY));
-      }),
-    ).subscribe();
+    // Pas de save-draft serveur côté Tuita (le backend `submit` final fait
+    // foi). Les réponses restent dans le signal `answers()` côté composant ;
+    // le `Subject<void>` `partialSave$` n'a plus de subscriber mais reste
+    // déclaré pour ne pas casser les `.next()` côté UI (no-op silencieux).
   }
 
   /** Convertit le payload serveur (clés string) en Record<number, string>. */

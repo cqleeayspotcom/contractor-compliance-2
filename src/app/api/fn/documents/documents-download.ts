@@ -8,7 +8,7 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 
-export interface AdminDocumentsFile$Params {
+export interface DocumentsDownload$Params {
   uuid: string;
 
 /**
@@ -17,8 +17,8 @@ export interface AdminDocumentsFile$Params {
   inline?: boolean;
 }
 
-export function adminDocumentsFile(http: HttpClient, rootUrl: string, params: AdminDocumentsFile$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
-  const rb = new RequestBuilder(rootUrl, adminDocumentsFile.PATH, 'get');
+export function documentsDownload(http: HttpClient, rootUrl: string, params: DocumentsDownload$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
+  const rb = new RequestBuilder(rootUrl, documentsDownload.PATH, 'get');
   if (params) {
     rb.path('uuid', params.uuid, {});
     rb.query('inline', params.inline, {});
@@ -34,4 +34,4 @@ export function adminDocumentsFile(http: HttpClient, rootUrl: string, params: Ad
   );
 }
 
-adminDocumentsFile.PATH = '/contractor-compliance/admin/documents/{uuid}/file';
+documentsDownload.PATH = '/contractor-compliance/documents/{uuid}/download';

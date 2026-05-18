@@ -11,12 +11,14 @@ import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvoicesReopen$Params {
   uuid: string;
+      body: JsonObject
 }
 
 export function adminInvoicesReopen(http: HttpClient, rootUrl: string, params: AdminInvoicesReopen$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesReopen.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

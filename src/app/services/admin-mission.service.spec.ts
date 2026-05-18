@@ -1,4 +1,4 @@
-﻿import { TestBed } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { AdminMissionService, MissionDetail } from './admin-mission.service';
@@ -29,7 +29,6 @@ describe('AdminMissionService', () => {
     service.getMissionDetail('M-2026-001').subscribe();
     const req = http.expectOne('/contractor-compliance/admin/missions/M-2026-001');
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('X-Tuita-Admin-Key')).toBe('test-admin-key');
     req.flush({ mission_ref: 'M-2026-001' });
   });
 
@@ -47,7 +46,7 @@ describe('AdminMissionService', () => {
     const payload: MissionDetail = {
       mission_ref: 'M-2026-001',
       snapshot: {
-        mission_title: 'RÃ©paration chaudiÃ¨re',
+        mission_title: 'Réparation chaudière',
         operation_type: 'depannage',
         city: 'Paris',
         expected_amount_ttc: 500,

@@ -76,11 +76,15 @@ function isOnSelfServedAuthPage(): boolean {
  * composant (snackbar « code invalide »).
  */
 function isAuthEndpoint(url: string): boolean {
+  // POURQUOI : sur ces endpoints, un 401 = code invalide. Pas de redirect,
+  // le composant gère (snackbar). Couvre legacy + Tuita natif (PIN SMS).
   return (
     url.includes('/auth/request-code') ||
     url.includes('/auth/verify-code') ||
     url.includes('/signup/verify-code') ||
-    url.endsWith('/signup')
+    url.endsWith('/signup') ||
+    url.includes('/contractor/auth/pin') ||
+    url.includes('/contractor/auth/login')
   );
 }
 

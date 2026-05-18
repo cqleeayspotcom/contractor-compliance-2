@@ -10,11 +10,23 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminKycSessions$Params {
+  page?: number;
+  per_page?: number;
+  phone?: string;
+  failure_reason?: string;
+  sort?: string;
+  direction?: 'asc' | 'desc';
 }
 
 export function adminKycSessions(http: HttpClient, rootUrl: string, params?: AdminKycSessions$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminKycSessions.PATH, 'get');
   if (params) {
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
+    rb.query('phone', params.phone, {});
+    rb.query('failure_reason', params.failure_reason, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
   }
 
   return http.request(

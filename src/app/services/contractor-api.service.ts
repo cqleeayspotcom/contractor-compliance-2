@@ -1,15 +1,33 @@
-﻿import { Injectable, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, from } from 'rxjs';
 import { map, timeout } from 'rxjs/operators';
 import { MissionOffer } from '../models/mission-offer.model';
+import { Api } from '../api/api';
+import { dashboardIndex } from '../api/fn/dashboard/dashboard-index';
+import { profileBankDetailsUpdate } from '../api/fn/profile/profile-bank-details-update';
+import { documentsPurchase } from '../api/fn/documents/documents-purchase';
+import { documentsGet } from '../api/fn/documents/documents-get';
+import { kycStatus } from '../api/fn/kyc/kyc-status';
+import { billingSubscription } from '../api/fn/billing/billing-subscription';
+import { billingSubscribe } from '../api/fn/billing/billing-subscribe';
+import { billingCancel } from '../api/fn/billing/billing-cancel';
+import { billingPaymentHistory } from '../api/fn/billing/billing-payment-history';
+import { invoicesShow } from '../api/fn/invoices/invoices-show';
+import { invoicesTimeline } from '../api/fn/invoices/invoices-timeline';
+import { certificationQcmStart } from '../api/fn/certification/certification-qcm-start';
+import { certificationQcmHeartbeat } from '../api/fn/certification/certification-qcm-heartbeat';
+import { certificationQcmSubmit } from '../api/fn/certification/certification-qcm-submit';
+import { certificationStatus } from '../api/fn/certification/certification-status';
+import { missionsShow } from '../api/fn/missions/missions-show';
+import { missionsOffers } from '../api/fn/missions/missions-offers';
 
 export type { MissionOffer } from '../models/mission-offer.model';
 
 /**
  * Timeout HTTP pour les uploads (documents admin + factures freemium).
  *
- * Upload synchrone en prod (hardcode 2026-04-24 â€” cf. backend/config/compliance.php) :
+ * Upload synchrone en prod (hardcode 2026-04-24 — cf. backend/config/compliance.php) :
  * l'endpoint execute l'OCR 2 passes + les regles metier + cross-check mission
  * INLINE dans la requete et retourne 200 OK avec le verdict final. Typique
  * 10-40 s, jusqu'a ~120 s pour un PDF lourd sur connexion mobile 3G chantier.
@@ -38,12 +56,12 @@ export interface ContractorDashboard {
     can_upgrade: boolean;
   };
   /**
-   * CoordonnÃ©es bancaires saisies manuellement par le contractor (cf.
+   * Coordonnées bancaires saisies manuellement par le contractor (cf.
    * `PATCH /contractor-compliance/profile/bank-details`). Remplace l'ancien upload
-   * de RIB qui passait par le pipeline OCR. Toutes les clÃ©s peuvent Ãªtre
-   * null tant que le contractor n'a pas validÃ© son formulaire. Optionnel
-   * dans l'interface pour rester rÃ©trocompatible avec les fixtures de tests
-   * qui prÃ©dÃ©dent l'ajout du champ.
+   * de RIB qui passait par le pipeline OCR. Toutes les clés peuvent être
+   * null tant que le contractor n'a pas validé son formulaire. Optionnel
+   * dans l'interface pour rester rétrocompatible avec les fixtures de tests
+   * qui prédédent l'ajout du champ.
    */
   bank_details?: ContractorBankDetails;
   documents: {
@@ -62,7 +80,7 @@ export interface ContractorDashboard {
      * true si la CNI ou le passeport du contractor est uploade ET VERIFIED.
      * Pre-requis obligatoire pour demarrer la video KYC (le face matching
      * compare la frame video a la photo du visage extraite par l'OCR de la
-     * piece d'identite â€” sans VERIFIED, pas de face photo).
+     * piece d'identite — sans VERIFIED, pas de face photo).
      */
     identity_doc_verified: boolean;
     last_attempt_at: string | null;
@@ -105,16 +123,16 @@ export interface DocumentRequirement {
   purchase_price_eur: number | null;
   document_uuid: string | null;
   /**
-   * `true` pour les documents non exigÃ©s mais qui boostent le score s'ils
-   * sont uploadÃ©s (ex: assurance_decennale). Ces items apparaissent dans
+   * `true` pour les documents non exigés mais qui boostent le score s'ils
+   * sont uploadés (ex: assurance_decennale). Ces items apparaissent dans
    * la liste mais ne comptent pas dans `total_required` / `missing`.
    */
   is_bonus?: boolean;
   /**
-   * `true` quand ce document a Ã©tÃ© auto-crÃ©Ã© Ã  partir d'une RC Pro
-   * `rc_complete` (RC + DÃ©cennale combinÃ©es dans un mÃªme PDF). Utile au
-   * stepper pour afficher Â« Incluse dans votre RC Pro âœ“ Â» au lieu de
-   * Â« AjoutÃ©e âœ“ Â».
+   * `true` quand ce document a été auto-créé à partir d'une RC Pro
+   * `rc_complete` (RC + Décennale combinées dans un même PDF). Utile au
+   * stepper pour afficher « Incluse dans votre RC Pro ✓ » au lieu de
+   * « Ajoutée ✓ ».
    */
   derived_from_rc_complete?: boolean;
   /** UUID du document source (la RC Pro) quand `derived_from_rc_complete=true`. */
@@ -126,9 +144,9 @@ export interface ContractorDocument {
   type: string;
   status: string;
   /**
-   * `true` quand ce document est une dÃ©cennale auto-dÃ©rivÃ©e d'une RC Pro
-   * `rc_complete` â€” le PDF est partagÃ© avec la RC source. Le frontend
-   * affiche une mention Â« Incluse dans votre attestation RC Pro Â».
+   * `true` quand ce document est une décennale auto-dérivée d'une RC Pro
+   * `rc_complete` — le PDF est partagé avec la RC source. Le frontend
+   * affiche une mention « Incluse dans votre attestation RC Pro ».
    */
   derived_from_rc_complete?: boolean;
   source_document_uuid?: string | null;
@@ -196,17 +214,17 @@ export interface ContractorMission {
   canRun: boolean;
   invoice_status:
     | 'none'
-    | 'validating'            // freemium : OCR en cours (quasi jamais vu cÃ´tÃ© UI depuis sync upload)
-    | 'pending_validation'    // pipeline unifiÃ© : triple validation Tuita en cours
-    | 'ready_to_pay'          // les 3 validateurs OK, drapeau "Ã  payer"
-    | 'paying'                // virement lancÃ© par la compta Tuita
-    | 'paid'                  // virement confirmÃ© cÃ´tÃ© banque (terminal)
-    | 'uploaded'              // freemium gÃ©nÃ©rique (statuts legacy)
-    | 'auto_generated'        // Pro gÃ©nÃ©rique (statuts legacy)
+    | 'validating'            // freemium : OCR en cours (quasi jamais vu côté UI depuis sync upload)
+    | 'pending_validation'    // pipeline unifié : triple validation Tuita en cours
+    | 'ready_to_pay'          // les 3 validateurs OK, drapeau "à payer"
+    | 'paying'                // virement lancé par la compta Tuita
+    | 'paid'                  // virement confirmé côté banque (terminal)
+    | 'uploaded'              // freemium générique (statuts legacy)
+    | 'auto_generated'        // Pro générique (statuts legacy)
     | 'rejected';
-  // RenseignÃ©s par le backend uniquement lorsqu'une facture existe pour cette
+  // Renseignés par le backend uniquement lorsqu'une facture existe pour cette
   // mission (cf. ContractorMissionController::enrichInvoiceStatus). Permettent
-  // d'ouvrir le panel latÃ©ral de visualisation sans appel supplÃ©mentaire.
+  // d'ouvrir le panel latéral de visualisation sans appel supplémentaire.
   invoice_uuid?: string;
   invoice_number?: string | null;
 }
@@ -260,20 +278,6 @@ export interface PaymentRecord {
   invoice_pdf?: string;
 }
 
-export interface PurchasableDocument {
-  document_type: string;
-  label: string;
-  price_eur: number;
-  source: string;
-  description: string;
-}
-
-export interface PurchasableCatalog {
-  documents: PurchasableDocument[];
-  payment_method: string;
-  currency: string;
-}
-
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
@@ -286,67 +290,40 @@ export interface PaginatedResponse<T> {
   };
 }
 
-/** Historique d'achats â€” ligne de liste (customer-facing, pas d'infos internes). */
-export interface ContractorPurchase {
-  uuid: string;
-  created_at: string;
-  completed_at: string | null;
-  document_type: string;
-  label: string;
-  siren: string;
-  status: 'pending' | 'completed' | 'failed';
-  status_label: string;
-  price_eur: number;
-  document_uuid: string | null;
-  document_download_url: string | null;
-  stripe_receipt_url: string | null;
-}
-
-/** DÃ©tail d'un achat avec timeline humaine. */
-export interface ContractorPurchaseDetail extends ContractorPurchase {
-  timeline: Array<{
-    step: string;
-    label: string;
-    description: string;
-    at: string | null;
-    state: 'done' | 'in_progress' | 'error';
-  }>;
-}
-
 @Injectable({ providedIn: 'root' })
 export class ContractorApiService {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(Api);
   private readonly baseUrl = '/contractor-compliance';
 
   // --- Dashboard ---
 
   getDashboard(): Observable<ContractorDashboard> {
-    return this.http.get<{ data: ContractorDashboard }>(`${this.baseUrl}/dashboard`).pipe(
-      map(res => res.data)
-    );
+    return from(
+      this.api.invoke(dashboardIndex) as Promise<{ data: ContractorDashboard }>
+    ).pipe(map((res) => res.data));
   }
 
   /**
-   * Sauvegarde les coordonnÃ©es bancaires saisies manuellement dans
+   * Sauvegarde les coordonnées bancaires saisies manuellement dans
    * l'onboarding (Titulaire / IBAN / BIC). Le backend valide :
    *  - IBAN FR + checksum mod-97
-   *  - BIC format 8 ou 11 caractÃ¨res
-   *  - Titulaire â‰ˆ identitÃ© contractor (anti-fraude virement vers un tiers).
+   *  - BIC format 8 ou 11 caractères
+   *  - Titulaire ≈ identité contractor (anti-fraude virement vers un tiers).
    *
    * En cas d'erreur, l'API renvoie un 422 avec `errors.account_holder|iban|bic`
-   * â€” l'UI affiche le message du champ correspondant.
+   * — l'UI affiche le message du champ correspondant.
    */
   updateBankDetails(payload: {
     account_holder: string;
     iban: string;
     bic: string;
   }): Observable<ContractorBankDetails> {
-    return this.http
-      .patch<{ data: { bank_details: ContractorBankDetails } }>(
-        `${this.baseUrl}/profile/bank-details`,
-        payload,
-      )
-      .pipe(map((res) => res.data.bank_details));
+    return from(
+      this.api.invoke(profileBankDetailsUpdate, { body: payload as any }) as Promise<{
+        data: { bank_details: ContractorBankDetails };
+      }>
+    ).pipe(map((res) => res.data.bank_details));
   }
 
   // --- Documents ---
@@ -381,73 +358,33 @@ export class ContractorApiService {
     );
   }
 
+  /**
+   * R�cup�re l'�tat courant d'un document via GET /documents/:uuid. L'upload
+   * Tuita est synchrone (verdict final dans la r�ponse), mais cette m�thode
+   * reste utile au polling d�fensif c�t� composants pour rafra�chir les
+   * statuts apr�s navigation arri�re ou refresh.
+   */
   getDocumentStatus(uuid: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/documents/${uuid}/status`);
-  }
-
-  /** Catalogue des documents achetables via Pappers (types + prix). */
-  getPurchasableCatalog(): Observable<PurchasableCatalog> {
-    return this.http.get<{ data: PurchasableCatalog }>(
-      `${this.baseUrl}/documents/purchasable`
-    ).pipe(map(res => res.data));
+    return from(this.api.invoke(documentsGet, { uuid }));
   }
 
   /** Achat unitaire d'un document Pappers (KBIS, URSSAF, fiscale, statuts). */
   purchaseDocument(documentType: string, siren: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/documents/purchase`, {
-      document_type: documentType,
-      siren,
-    });
-  }
-
-  /** Achat groupe de plusieurs documents en un seul paiement Stripe. */
-  purchaseBundle(documentTypes: string[], siren: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/documents/purchase-bundle`, {
-      documents: documentTypes,
-      siren,
-    });
-  }
-
-  /** Telecharger un document dechiffre (PDF stream). */
-  downloadDocument(uuid: string): Observable<Blob> {
-    return this.http.get(`${this.baseUrl}/documents/${uuid}/download`, {
-      responseType: 'blob',
-    });
-  }
-
-  // --- Historique des achats officiels (read-only, contractor-scoped) ---
-
-  getPurchaseHistory(params?: {
-    status?: 'pending' | 'completed' | 'failed';
-    document_type?: string;
-    since?: string;
-    per_page?: number;
-    page?: number;
-  }): Observable<PaginatedResponse<ContractorPurchase>> {
-    let httpParams = new HttpParams();
-    if (params?.status) httpParams = httpParams.set('status', params.status);
-    if (params?.document_type) httpParams = httpParams.set('document_type', params.document_type);
-    if (params?.since) httpParams = httpParams.set('since', params.since);
-    if (params?.per_page) httpParams = httpParams.set('per_page', params.per_page.toString());
-    if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-
-    return this.http.get<PaginatedResponse<ContractorPurchase>>(
-      `${this.baseUrl}/documents/purchases`,
-      { params: httpParams }
+    return from(
+      this.api.invoke(documentsPurchase, {
+        body: { document_type: documentType, siren } as any,
+      })
     );
   }
 
-  getPurchaseDetail(uuid: string): Observable<ContractorPurchaseDetail> {
-    return this.http.get<{ data: ContractorPurchaseDetail }>(
-      `${this.baseUrl}/documents/purchases/${uuid}`
-    ).pipe(map(res => res.data));
-  }
-
-  contactPurchaseSupport(uuid: string, message?: string): Observable<{ status: string; message: string }> {
-    return this.http.post<{ data: { status: string; message: string } }>(
-      `${this.baseUrl}/documents/purchases/${uuid}/contact-support`,
-      { message: message ?? null }
-    ).pipe(map(res => res.data));
+  /**
+   * T�l�charge le fichier source d'un document via `/documents/:uuid/file`
+   * (route officielle backend Tuita, qui retourne le blob sign� HMAC).
+   */
+  downloadDocument(uuid: string): Observable<Blob> {
+    return this.http.get(`${this.baseUrl}/documents/${uuid}/file`, {
+      responseType: 'blob',
+    });
   }
 
   /** @deprecated Utiliser purchaseDocument('kbis', siren). */
@@ -455,40 +392,32 @@ export class ContractorApiService {
     return this.purchaseDocument('kbis', siren);
   }
 
-  purchaseCni(firstName: string, lastName: string, birthDate: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/documents/purchase-cni`, {
-      first_name: firstName,
-      last_name: lastName,
-      birth_date: birthDate,
-    });
-  }
-
   // --- KYC ---
 
   generateChallenge(): Observable<KycChallenge> {
-    // mode=direct : on enregistre la vidÃ©o depuis le mÃªme device (webcam desktop
-    // ou camÃ©ra mobile), pas de QR-scan intermÃ©diaire. Sans ce flag, le backend
-    // considÃ¨re que le desktop doit gÃ©nÃ©rer un QR (is_direct=false) et refuse
-    // l'upload direct â†’ "Challenge token invalide".
+    // mode=direct : on enregistre la vidéo depuis le même device (webcam desktop
+    // ou caméra mobile), pas de QR-scan intermédiaire. Sans ce flag, le backend
+    // considère que le desktop doit générer un QR (is_direct=false) et refuse
+    // l'upload direct → "Challenge token invalide".
     return this.http.post<{ data: any }>(`${this.baseUrl}/kyc/challenge`, { mode: 'direct' }).pipe(
       map(res => {
         const d = res.data;
         // Chaque challenge a un label principal + un hint explicite ("votre
-        // gauche" = ta gauche Ã  toi, pas celle de l'observateur) + une icone
-        // Material. Le systÃ¨me de validation MediaPipe Face Mesh est exigeant :
-        // un mouvement timide n'est pas dÃ©tectÃ©, il faut le geste franc.
-        // Consignes ultra courtes, style chantier â€” artisans BTP pressÃ©s, lues
-        // d'un coup d'Å“il sur un mobile ou Ã©cran de bureau. RÃ¨gle : 3 mots max
+        // gauche" = ta gauche à toi, pas celle de l'observateur) + une icone
+        // Material. Le système de validation MediaPipe Face Mesh est exigeant :
+        // un mouvement timide n'est pas détecté, il faut le geste franc.
+        // Consignes ultra courtes, style chantier — artisans BTP pressés, lues
+        // d'un coup d'œil sur un mobile ou écran de bureau. Règle : 3 mots max
         // sur le label, une mini-consigne tactique d'une ligne. Pas de prose.
         const challengeMeta: Record<string, { label: string; hint: string; icon: string }> = {
           turn_left: {
-            label: 'TÃªte Ã  gauche',
-            hint: 'Tournez franchement, comme si on vous appelait Ã  votre gauche',
+            label: 'Tête à gauche',
+            hint: 'Tournez franchement, comme si on vous appelait à votre gauche',
             icon: 'keyboard_arrow_left',
           },
           turn_right: {
-            label: 'TÃªte Ã  droite',
-            hint: 'Tournez franchement, comme si on vous appelait Ã  votre droite',
+            label: 'Tête à droite',
+            hint: 'Tournez franchement, comme si on vous appelait à votre droite',
             icon: 'keyboard_arrow_right',
           },
           look_up: {
@@ -502,8 +431,8 @@ export class ContractorApiService {
             icon: 'keyboard_arrow_down',
           },
           nod: {
-            label: 'Hochez la tÃªte',
-            hint: 'Un Â« oui Â» franc : haut, bas',
+            label: 'Hochez la tête',
+            hint: 'Un « oui » franc : haut, bas',
             icon: 'swap_vert',
           },
           smile: {
@@ -518,7 +447,7 @@ export class ContractorApiService {
           },
           open_mouth: {
             label: 'Ouvrez la bouche',
-            hint: 'Grand Â« Ah Â», pas juste entrouvrir',
+            hint: 'Grand « Ah », pas juste entrouvrir',
             icon: 'record_voice_over',
           },
         };
@@ -547,42 +476,56 @@ export class ContractorApiService {
   }
 
   getKycStatus(): Observable<KycStatus> {
-    return this.http.get<{ data: KycStatus }>(`${this.baseUrl}/kyc/status`).pipe(
-      map(res => res.data)
-    );
+    return from(
+      this.api.invoke(kycStatus) as Promise<{ data: KycStatus }>
+    ).pipe(map((res) => res.data));
   }
 
   // --- Billing ---
 
+  /**
+   * Renvoie le plan courant du contractor + le catalogue des plans (free/paid).
+   *
+   * Pourquoi le catalogue est cod� ici : le backend Tuita expose uniquement
+   * `/billing/subscription` (plan courant) � il n'y a pas de catalogue dynamique
+   * � 2 entr�es seulement (Freemium gratuit + Tuita Pro 99�/mois align� sur
+   * `PLAN_PRICE_EUR`). Inliner �vite un endpoint trivial et reste la source de
+   * v�rit� tant qu'il n'y a pas de tiers de prix suppl�mentaires.
+   */
   getBillingPlan(): Observable<{ current_plan: string; plans: BillingPlan[] }> {
-    // Le backend retourne `price_eur`, on normalise en `price_eur_month` cote front.
-    return this.http.get<{ data: { current_plan: string; plans: Array<BillingPlan & { price_eur?: number }> } }>(
-      `${this.baseUrl}/billing/plan`
-    ).pipe(map(res => ({
-      current_plan: res.data.current_plan,
-      plans: res.data.plans.map(p => ({
-        ...p,
-        price_eur_month: p.price_eur_month ?? p.price_eur ?? 0,
-      })),
-    })));
+    return from(
+      this.api.invoke(billingSubscription) as Promise<{
+        data: { plan?: string; current_plan?: string };
+      }>
+    ).pipe(
+      map((res) => {
+        const currentPlan = res.data?.current_plan ?? res.data?.plan ?? 'free';
+        const plans: BillingPlan[] = [
+          { code: 'free', label: 'Freemium', price_eur_month: 0 } as unknown as BillingPlan,
+          { code: 'paid', label: 'Tuita Pro', price_eur_month: 99 } as unknown as BillingPlan,
+        ];
+        return { current_plan: currentPlan, plans };
+      }),
+    );
   }
 
   /**
-   * Souscrit un plan (actuellement `paid` â†’ Tuita Pro 99â‚¬/mois).
+   * Souscrit un plan (actuellement `paid` → Tuita Pro 99€/mois).
    *
-   * Backend renvoie dÃ©sormais `embedded_checkout: { client_secret, publishable_key }`
-   * â€” le frontend ouvre un MatDialog contenant Stripe Embedded Checkout au
+   * Backend renvoie désormais `embedded_checkout: { client_secret, publishable_key }`
+   * — le frontend ouvre un MatDialog contenant Stripe Embedded Checkout au
    * lieu de rediriger vers le hosted-page Stripe.
    */
   subscribe(plan: string): Observable<{
     embedded_checkout?: { client_secret: string; publishable_key: string };
   }> {
-    return this.http.post<{ data: {
-      embedded_checkout?: { client_secret: string; publishable_key: string };
-    } }>(
-      `${this.baseUrl}/billing/subscribe`,
-      { plan }
-    ).pipe(map(res => res.data));
+    return from(
+      this.api.invoke(billingSubscribe, { body: { plan } as any }) as Promise<{
+        data: {
+          embedded_checkout?: { client_secret: string; publishable_key: string };
+        };
+      }>
+    ).pipe(map((res) => res.data));
   }
 
   getPaymentHistory(): Observable<{
@@ -594,17 +537,20 @@ export class ContractorApiService {
       current_plan: string;
     };
   }> {
-    return this.http.get<{ data: {
-      payments: PaymentRecord[];
-      summary: {
-        total_spent_eur: number;
-        subscriptions_eur: number;
-        purchases_eur: number;
-        current_plan: string;
-      };
-    } }>(
-      `${this.baseUrl}/billing/payments`
-    ).pipe(map(res => res.data));
+    return from(
+      // Route backend Tuita : `/billing/payment-history` (cf. domaine 02-documents).
+      this.api.invoke(billingPaymentHistory) as Promise<{
+        data: {
+          payments: PaymentRecord[];
+          summary: {
+            total_spent_eur: number;
+            subscriptions_eur: number;
+            purchases_eur: number;
+            current_plan: string;
+          };
+        };
+      }>
+    ).pipe(map((res) => res.data));
   }
 
   cancelSubscription(): Observable<{
@@ -613,15 +559,16 @@ export class ContractorApiService {
     cancellation_scheduled?: boolean;
     message: string;
   }> {
-    return this.http.post<{ data: {
-      plan: string;
-      effective_at: string;
-      cancellation_scheduled?: boolean;
-      message: string;
-    } }>(
-      `${this.baseUrl}/billing/cancel`,
-      {}
-    ).pipe(map(res => res.data));
+    return from(
+      this.api.invoke(billingCancel) as Promise<{
+        data: {
+          plan: string;
+          effective_at: string;
+          cancellation_scheduled?: boolean;
+          message: string;
+        };
+      }>
+    ).pipe(map((res) => res.data));
   }
 
   // --- Invoices ---
@@ -646,8 +593,8 @@ export class ContractorApiService {
    * Detail facture (pipeline + timeline). Backend: GET /invoices/{uuid}.
    */
   getInvoice(uuid: string): Observable<any> {
-    return this.http.get<{ data: any }>(`${this.baseUrl}/invoices/${uuid}`).pipe(
-      map(res => res?.data ?? res),
+    return from(this.api.invoke(invoicesShow, { uuid }) as Promise<any>).pipe(
+      map((res: any) => res?.data ?? res),
     );
   }
 
@@ -665,12 +612,18 @@ export class ContractorApiService {
     );
   }
 
-  reuploadInvoice(invoiceUuid: string, file: File): Observable<any> {
+  /**
+   * Reupload d'une facture d�j� rejet�e : pas de route d�di�e c�t� Tuita,
+   * on rejoue `POST /invoices/upload`. Le backend d�tecte le doublon sur la
+   * m�me mission et remplace la facture pr�c�dente. Le param�tre
+   * `invoiceUuid` est ignor� (conserv� pour compatibilit� composants).
+   */
+  reuploadInvoice(_invoiceUuid: string, file: File, missionRef?: string, amountTtc?: number): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-
-    // Reupload synchrone aussi (meme pipeline que upload).
-    return this.http.post(`${this.baseUrl}/invoices/${invoiceUuid}/reupload`, formData).pipe(
+    if (missionRef) formData.append('mission_ref', missionRef);
+    if (amountTtc != null) formData.append('amount_ttc', String(amountTtc));
+    return this.http.post(`${this.baseUrl}/invoices/upload`, formData).pipe(
       timeout(SYNC_UPLOAD_TIMEOUT_MS),
     );
   }
@@ -686,38 +639,47 @@ export class ContractorApiService {
    * Retourne { status, phase, rejection_reason?, rejection_details?,
    * pages_count?, validator_summary, processing_elapsed_seconds, ... }.
    */
+  /**
+   * Statut courant d'une facture. L'upload est synchrone c�t� Tuita
+   * (verdict dans la r�ponse de `/invoices/upload`) � on relit donc la
+   * timeline `/invoices/:uuid/timeline` qui expose `status` + `phase`
+   * pour les �crans qui rafra�chissent apr�s navigation.
+   */
   getInvoiceStatus(uuid: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/invoices/${uuid}/status`);
+    return from(this.api.invoke(invoicesTimeline, { uuid }));
   }
 
   // --- Certification ---
+  //
+  // Backend Tuita : routes sous `/certification/qcm/*` :
+  //   - POST /certification/qcm/start
+  //   - POST /certification/qcm/:attempt/heartbeat
+  //   - POST /certification/qcm/:attempt/submit
+  // Pas de route s�par�e "save answers" : le draft est persist� localement
+  // c�t� composant, le submit final fait foi.
 
   startCertification(): Observable<{ attempt_uuid: string; attempt_number: number; started_at: string; partial_answers: Record<string, string> }> {
-    return this.http.post<any>(`${this.baseUrl}/certification/start`, {}).pipe(
-      map(res => res.data)
+    return from(this.api.invoke(certificationQcmStart) as Promise<any>).pipe(
+      map((res) => res.data),
     );
   }
 
+  // NOTE : le SDK type `attempt: number` mais l'identifiant c�t� backend
+  // est un UUID (string). On passe via cast � le request-builder s�rialise
+  // la valeur telle quelle dans l'URL path.
   heartbeatCertification(attemptUuid: string): Observable<void> {
-    return this.http.post<void>(`${this.baseUrl}/certification/heartbeat`, { attempt_uuid: attemptUuid });
-  }
-
-  /**
-   * Sauvegarde le brouillon des rÃ©ponses du QCM. DebouncÃ© cÃ´tÃ© composant.
-   * Le serveur ne calcule jamais le score sur ce payload â€” c'est strictement
-   * de la persistance UI pour permettre la reprise (refresh, autre device).
-   */
-  saveCertificationAnswers(attemptUuid: string, answers: Record<number, string>): Observable<void> {
-    return this.http.patch<void>(`${this.baseUrl}/certification/answers`, {
-      attempt_uuid: attemptUuid,
-      answers,
-    });
+    return from(
+      this.api.invoke(certificationQcmHeartbeat, { attempt: attemptUuid as unknown as number }) as unknown as Promise<void>
+    );
   }
 
   completeCertification(attemptUuid: string, answers: Record<number, string>): Observable<{ score: number; passed: boolean; total?: number; wrong_questions?: number[] }> {
-    return this.http.post<any>(`${this.baseUrl}/certification/complete`, { attempt_uuid: attemptUuid, answers }).pipe(
-      map(res => res.data)
-    );
+    return from(
+      this.api.invoke(certificationQcmSubmit, {
+        attempt: attemptUuid as unknown as number,
+        body: { answers } as any,
+      }) as Promise<any>
+    ).pipe(map((res) => res.data));
   }
 
   getCertificationStatus(): Observable<{
@@ -727,8 +689,8 @@ export class ContractorApiService {
     attempt_count?: number;
     last_attempt?: { uuid: string; started_at: string; completed_at: string | null; abandoned_at: string | null; score: number | null; passed: boolean | null } | null;
   }> {
-    return this.http.get<any>(`${this.baseUrl}/certification/status`).pipe(
-      map(res => res.data)
+    return from(this.api.invoke(certificationStatus) as Promise<any>).pipe(
+      map((res) => res.data),
     );
   }
 
@@ -751,37 +713,28 @@ export class ContractorApiService {
     if (query.page != null) httpParams = httpParams.set('page', String(query.page));
     if (query.per_page != null) httpParams = httpParams.set('per_page', String(query.per_page));
 
-    return this.http.get<MissionsResponse>(`${this.baseUrl}/missions`, { params: httpParams });
+    // Backend Tuita : pas de route `/missions` agr�g�e. On route par d�faut
+    // sur `/missions/active`, et `/missions/history` quand `status=history`.
+    const status = query.status;
+    const endpoint = status === 'history' ? 'history' : 'active';
+    return this.http.get<MissionsResponse>(`${this.baseUrl}/missions/${endpoint}`, { params: httpParams });
   }
 
   getMission(mid: string): Observable<ContractorMission> {
-    return this.http.get<{ data: ContractorMission }>(`${this.baseUrl}/missions/${mid}`).pipe(
-      map(res => res.data)
-    );
+    // Backend Tuita : route param�tr�e `/missions/:ref`.
+    return from(
+      this.api.invoke(missionsShow, { ref: mid }) as Promise<{ data: ContractorMission }>
+    ).pipe(map((res) => res.data));
   }
 
-  simulateMissionComplete(mid: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/missions/${mid}/simulate-complete`, {});
-  }
+  // Backend Tuita : seule la liste des offres est expos�e via `/missions/offers`.
+  // L'acceptation/refus d'une offre passe par le workflow backoffice Tuita
+  // (dispatch FOM) � pas de route contractor pour accepter/refuser une offre
+  // individuelle. La page de d�tail offre redirige donc vers la liste.
 
   listMissionOffers(): Observable<{ data: MissionOffer[]; can_accept?: boolean }> {
-    return this.http.get<{ data: MissionOffer[]; can_accept?: boolean }>(`${this.baseUrl}/mission-offers`);
-  }
-
-  getMissionOffer(ref: string): Observable<{ data: MissionOffer; can_accept?: boolean }> {
-    return this.http.get<{ data: MissionOffer; can_accept?: boolean }>(`${this.baseUrl}/mission-offers/${encodeURIComponent(ref)}`);
-  }
-
-  acceptMissionOffer(ref: string): Observable<{ data: { ok: boolean; mission_ref?: string } }> {
-    return this.http.post<{ data: { ok: boolean; mission_ref?: string } }>(
-      `${this.baseUrl}/mission-offers/${encodeURIComponent(ref)}/accept`, {}
-    );
-  }
-
-  declineMissionOffer(ref: string, reason?: string): Observable<{ data: { ok: boolean } }> {
-    return this.http.post<{ data: { ok: boolean } }>(
-      `${this.baseUrl}/mission-offers/${encodeURIComponent(ref)}/decline`,
-      reason ? { reason } : {}
+    return from(
+      this.api.invoke(missionsOffers) as Promise<{ data: MissionOffer[]; can_accept?: boolean }>
     );
   }
 }

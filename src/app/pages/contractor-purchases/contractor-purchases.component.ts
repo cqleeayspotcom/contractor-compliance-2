@@ -1,5 +1,4 @@
 import { CommonModule, DatePipe } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -9,8 +8,9 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { RouterLink } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
+// Pas d'imports HttpClient ici : l'historique d'achats contractor n'a pas
+// d'endpoint dédié côté Tuita (seul l'admin l'expose). La page affiche un
+// état vide informatif et redirige le contractor vers le support email.
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
 
 interface PurchaseRow {
@@ -49,7 +49,6 @@ interface PurchaseRow {
   styleUrl: './contractor-purchases.component.scss',
 })
 export class ContractorPurchasesComponent {
-  private readonly http = inject(HttpClient);
   private readonly snackBar = inject(MatSnackBar);
 
   readonly loading = signal(true);
@@ -78,52 +77,27 @@ export class ContractorPurchasesComponent {
   }
 
   async fetch(): Promise<void> {
+    // Pas d'endpoint contractor-scoped côté Tuita pour l'historique d'achats
+    // Pappers (uniquement exposé sur les routes admin). On affiche donc un
+    // état vide informatif — le contractor peut contacter le support pour
+    // récupérer le détail.
     this.loading.set(true);
-    try {
-      const params = new URLSearchParams();
-      const range = this.rangeFilter();
-      if (range !== 'all') {
-        const since = new Date();
-        since.setDate(since.getDate() - parseInt(range, 10));
-        params.set('since', since.toISOString());
-      }
-      const url = `${environment.apiUrl}/contractor/documents/purchases?${params.toString()}`;
-      const res = await firstValueFrom(
-        this.http.get<{ success: boolean; data: PurchaseRow[] }>(url)
-      );
-      this.rows.set(res.data ?? []);
-    } catch {
-      this.snackBar.open(
-        "Impossible de charger l'historique. Réessayez dans un instant.",
-        'Fermer',
-        { duration: 5000 }
-      );
-      this.rows.set([]);
-    } finally {
-      this.loading.set(false);
-    }
+    this.rows.set([]);
+    this.loading.set(false);
   }
 
   onRangeChange(): void {
     void this.fetch();
   }
 
-  async contactSupport(row: PurchaseRow): Promise<void> {
-    try {
-      const url = `${environment.apiUrl}/contractor/documents/purchases/${row.uuid}/contact-support`;
-      await firstValueFrom(this.http.post(url, {}));
-      this.snackBar.open(
-        'Notre équipe est alertée et vous recontacte sous 24h.',
-        'Fermer',
-        { duration: 6000 }
-      );
-    } catch {
-      this.snackBar.open(
-        "Échec de l'envoi. Écrivez-nous à support@tuita.fr.",
-        'Fermer',
-        { duration: 5000 }
-      );
-    }
+  async contactSupport(_row: PurchaseRow): Promise<void> {
+    // Pas de round-trip serveur : on affiche directement les coordonnées
+    // du support email côté UI (Tuita centralise le SAV par email).
+    this.snackBar.open(
+      'Écrivez-nous à support@tuita.fr — réponse sous 24h.',
+      'Fermer',
+      { duration: 6000 }
+    );
   }
 
   statusIcon(status: PurchaseRow['status']): string {

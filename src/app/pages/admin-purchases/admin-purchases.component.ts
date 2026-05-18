@@ -1,4 +1,4 @@
-﻿import {
+import {
   Component,
   ChangeDetectionStrategy,
   signal,
@@ -161,7 +161,7 @@ export class AdminPurchasesComponent implements OnInit {
     return this.pricing.priceLabelFor('extrait_inpi');
   }
 
-  /** Quand true, ne montre que les achats "stuck" (crÃ©Ã©s depuis > 10 min). ActivÃ© via ?stuck=1. */
+  /** Quand true, ne montre que les achats "stuck" (créés depuis > 10 min). Activé via ?stuck=1. */
   readonly stuckOnly = signal(false);
 
   // -- Auth ------------------------------------------------------------------
@@ -171,9 +171,9 @@ export class AdminPurchasesComponent implements OnInit {
 
   // -- Data ------------------------------------------------------------------
   readonly purchases = signal<PurchaseRow[]>([]);
-  // Tri server-side : `sort` + `direction` envoyÃ©s au backend, qui applique
-  // l'orderBy avant pagination â†’ couvre toutes les pages (pas juste la page
-  // courante). Whitelist alignÃ©e avec AdminPurchaseController::index.
+  // Tri server-side : `sort` + `direction` envoyés au backend, qui applique
+  // l'orderBy avant pagination → couvre toutes les pages (pas juste la page
+  // courante). Whitelist alignée avec AdminPurchaseController::index.
   readonly sort = signal<string>('created_at');
   readonly direction = signal<'asc' | 'desc'>('desc');
   readonly stats = signal<PurchaseStats | null>(null);
@@ -206,7 +206,7 @@ export class AdminPurchasesComponent implements OnInit {
 
   // -- Lifecycle -------------------------------------------------------------
   ngOnInit(): void {
-    // PrÃ©-filtre depuis les query params (deep-link depuis le dashboard admin).
+    // Pré-filtre depuis les query params (deep-link depuis le dashboard admin).
     const qp = this.route.snapshot.queryParamMap;
     const status = qp.get('status');
     if (status && ['pending', 'processing', 'completed', 'failed', 'refunded'].includes(status)) {
@@ -367,11 +367,11 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   /**
-   * TÃ©lÃ©charge l'export CSV des achats (compta) en respectant les filtres
+   * Télécharge l'export CSV des achats (compta) en respectant les filtres
    * courants (statut / type / depuis / jusqu'au).
    *
-   * Pas de pÃ©riode â†’ backend prend les 30 derniers jours par dÃ©faut.
-   * Statut â†’ si l'admin n'a pas filtrÃ©, le backend exporte completed+refunded.
+   * Pas de période → backend prend les 30 derniers jours par défaut.
+   * Statut → si l'admin n'a pas filtré, le backend exporte completed+refunded.
    */
   exportCsv(): void {
     const params = new URLSearchParams();
@@ -405,7 +405,7 @@ export class AdminPurchasesComponent implements OnInit {
         a.remove();
         window.URL.revokeObjectURL(objectUrl);
 
-        this.snack.open('Export CSV tÃ©lÃ©chargÃ©', 'OK', { duration: 4000 });
+        this.snack.open('Export CSV téléchargé', 'OK', { duration: 4000 });
       })
       .catch(err => {
         if (err?.message?.includes('401') || err?.message?.includes('403')) {
@@ -414,13 +414,13 @@ export class AdminPurchasesComponent implements OnInit {
           this.error.set('Cle admin invalide');
           return;
         }
-        this.snack.open("Ã‰chec de l'export CSV", 'OK', { duration: 6000 });
+        this.snack.open("Échec de l'export CSV", 'OK', { duration: 6000 });
         console.error('[admin-purchases] export', err);
       });
   }
 
   formatDuration(seconds: number | null): string {
-    if (seconds === null) return 'â€”';
+    if (seconds === null) return '—';
     if (seconds < 60) return `${Math.round(seconds)} s`;
     const m = Math.floor(seconds / 60);
     const s = Math.round(seconds % 60);

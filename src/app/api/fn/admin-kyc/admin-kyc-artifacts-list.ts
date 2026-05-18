@@ -9,18 +9,14 @@ import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
 
-export interface AdminInvoicesPaidDisputed$Params {
-  stuck?: boolean;
-  page?: number;
-  per_page?: number;
+export interface AdminKycArtifactsList$Params {
+  uuid: string;
 }
 
-export function adminInvoicesPaidDisputed(http: HttpClient, rootUrl: string, params?: AdminInvoicesPaidDisputed$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
-  const rb = new RequestBuilder(rootUrl, adminInvoicesPaidDisputed.PATH, 'get');
+export function adminKycArtifactsList(http: HttpClient, rootUrl: string, params: AdminKycArtifactsList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+  const rb = new RequestBuilder(rootUrl, adminKycArtifactsList.PATH, 'get');
   if (params) {
-    rb.query('stuck', params.stuck, {});
-    rb.query('page', params.page, {});
-    rb.query('per_page', params.per_page, {});
+    rb.path('uuid', params.uuid, {});
   }
 
   return http.request(
@@ -33,4 +29,4 @@ export function adminInvoicesPaidDisputed(http: HttpClient, rootUrl: string, par
   );
 }
 
-adminInvoicesPaidDisputed.PATH = '/contractor-compliance/admin/invoices/paid-disputed';
+adminKycArtifactsList.PATH = '/contractor-compliance/admin/kyc/sessions/{uuid}/artifacts';

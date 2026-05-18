@@ -10,11 +10,15 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface KycChallenge$Params {
+      body: {
+'mode'?: 'direct' | 'mobile';
+}
 }
 
-export function kycChallenge(http: HttpClient, rootUrl: string, params?: KycChallenge$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
-  const rb = new RequestBuilder(rootUrl, kycChallenge.PATH, 'get');
+export function kycChallenge(http: HttpClient, rootUrl: string, params: KycChallenge$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+  const rb = new RequestBuilder(rootUrl, kycChallenge.PATH, 'post');
   if (params) {
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

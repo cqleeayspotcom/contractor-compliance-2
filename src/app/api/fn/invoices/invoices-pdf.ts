@@ -8,7 +8,7 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 
-export interface AdminDocumentsFile$Params {
+export interface InvoicesPdf$Params {
   uuid: string;
 
 /**
@@ -17,8 +17,8 @@ export interface AdminDocumentsFile$Params {
   inline?: boolean;
 }
 
-export function adminDocumentsFile(http: HttpClient, rootUrl: string, params: AdminDocumentsFile$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
-  const rb = new RequestBuilder(rootUrl, adminDocumentsFile.PATH, 'get');
+export function invoicesPdf(http: HttpClient, rootUrl: string, params: InvoicesPdf$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
+  const rb = new RequestBuilder(rootUrl, invoicesPdf.PATH, 'get');
   if (params) {
     rb.path('uuid', params.uuid, {});
     rb.query('inline', params.inline, {});
@@ -34,4 +34,4 @@ export function adminDocumentsFile(http: HttpClient, rootUrl: string, params: Ad
   );
 }
 
-adminDocumentsFile.PATH = '/contractor-compliance/admin/documents/{uuid}/file';
+invoicesPdf.PATH = '/contractor-compliance/invoices/{uuid}/pdf';

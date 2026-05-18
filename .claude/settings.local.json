@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls c:/Users/MSA/Desktop/code/platform-backend/module/ 2>&1)",
+      "Read(//c/Users/MSA/Desktop/code/platform-backend/module/**)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\MSA\\Desktop\\code\\platform-backend\\module\\ContractorComplianceBridge\\config",
+      "c:\\Users\\MSA\\Desktop\\code\\platform-backend\\module\\ContractorCompliance\\src\\Factory\\Controller"
+    ]
+  }
+}

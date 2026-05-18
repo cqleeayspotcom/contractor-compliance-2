@@ -10,11 +10,15 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface InvoicesFreeList$Params {
+  page?: number;
+  per_page?: number;
 }
 
 export function invoicesFreeList(http: HttpClient, rootUrl: string, params?: InvoicesFreeList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, invoicesFreeList.PATH, 'get');
   if (params) {
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

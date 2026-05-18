@@ -1,4 +1,4 @@
-﻿import {
+import {
   Component,
   ChangeDetectionStrategy,
   ViewEncapsulation,
@@ -123,18 +123,18 @@ interface DialogField {
   templateUrl: './admin-invoices.component.html',
   styleUrl: './admin-invoices.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // Encapsulation None : le modal dÃ©tail est ouvert via MatDialog avec un
-  // TemplateRef et montÃ© dans cdk-overlay-container au niveau <body>. Les
-  // styles component-scoped (Emulated) ne suivent pas â€” les sÃ©lecteurs
+  // Encapsulation None : le modal détail est ouvert via MatDialog avec un
+  // TemplateRef et monté dans cdk-overlay-container au niveau <body>. Les
+  // styles component-scoped (Emulated) ne suivent pas — les sélecteurs
   // .info-card / .info-grid / .timeline / etc. ne matchent rien et le contenu
-  // s'affiche brut. En passant en None, les rÃ¨gles deviennent globales.
+  // s'affiche brut. En passant en None, les règles deviennent globales.
   // Safe : les autres composants qui utilisent .info-card ont leurs propres
-  // styles scopÃ©s (spÃ©cificitÃ© [_ngcontent-xxx] > sÃ©lecteur global) â†’ ils
+  // styles scopés (spécificité [_ngcontent-xxx] > sélecteur global) → ils
   // gagnent sur leur propre DOM, on ne pollue que le contenu sans scope.
   encapsulation: ViewEncapsulation.None,
 })
 export class AdminInvoicesComponent implements OnInit, OnDestroy {
-  // â”€â”€ Polling silencieux â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Polling silencieux ────────────────────────────────────────────────
   readonly lastSyncedAt = signal<Date | null>(null);
   readonly pollingActive = signal<boolean>(true);
 
@@ -150,8 +150,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
   private readonly adminDialog = inject(AdminDialogService);
 
-  // â”€â”€ Ã‰tat du modal DÃ©tail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // Signaux dÃ©diÃ©s pour ne pas polluer dialogCtx (et permettre OnPush refresh).
+  // ── État du modal Détail ────────────────────────────────────────────────
+  // Signaux dédiés pour ne pas polluer dialogCtx (et permettre OnPush refresh).
   readonly detailData = signal<InvoiceDetail | null>(null);
   readonly detailAudit = signal<AuditTrailDetail | null>(null);
   readonly auditDialogData = signal<AuditTrailDetail | null>(null);
@@ -182,10 +182,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     all: signal<TabState>(this.emptyState()),
   };
 
-  // Filter passed via query param (?filter=stuck) â€” applied at fetch time
+  // Filter passed via query param (?filter=stuck) — applied at fetch time
   readonly stuckFilter = signal<boolean>(false);
 
-  // Split view : sÃ©lection courante + PDF dans le pane
+  // Split view : sélection courante + PDF dans le pane
   readonly selectedInvoice = signal<AdminInvoice | null>(null);
   readonly selectedInvoiceIndex = computed<number>(() => {
     const sel = this.selectedInvoice();
@@ -204,7 +204,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     pending: {}, ready: {}, inprogress: {}, disputed: {}, all: {},
   });
 
-  // Tri server-side par tab : `sort` (column) + `direction` envoyÃ©s au
+  // Tri server-side par tab : `sort` (column) + `direction` envoyés au
   // backend (cf. AdminInvoicePaymentController + WithAdminInvoiceFilters
   // applySort). Le tri couvre TOUTES les pages, pas juste la page courante.
   // Mapping template -> backend : 'date' -> 'created_at'.
@@ -266,10 +266,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   // Dialog state (shared by the inline templates)
   dialogCtx: DialogContext = this.emptyDialogCtx();
   private dialogRef: MatDialogRef<unknown> | null = null;
-  // Ref dÃ©diÃ©e au detail dialog : lui doit survivre quand un confirm dialog
+  // Ref dédiée au detail dialog : lui doit survivre quand un confirm dialog
   // d'action s'ouvre par-dessus (mark-paid, mark-payment-in-progress, etc.).
-  // Sans Ã§a, `dialogRef` se fait Ã©craser par l'action dialog et la dÃ©tection
-  // Â« detail ouvert ? Â» casse.
+  // Sans ça, `dialogRef` se fait écraser par l'action dialog et la détection
+  // « detail ouvert ? » casse.
   private detailDialogRef: MatDialogRef<unknown> | null = null;
   private pendingAction: ((ctx: DialogContext) => void) | null = null;
 
@@ -288,25 +288,25 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.initialTabIndex.set(order.indexOf(initial));
     this.loadTab(initial);
 
-    // Polling : visibilitÃ© de la page
+    // Polling : visibilité de la page
     this.visibilitySub = fromEvent(document, 'visibilitychange').subscribe(() => {
       this.pollingActive.set(document.visibilityState === 'visible');
     });
 
-    // Polling liste â€” toutes les 30s
+    // Polling liste — toutes les 30s
     this.listPollSub = interval(30_000).subscribe(() => {
       if (!this.pollingActive()) return;
-      if (this.dialogRef) return; // sub-dialog d'action ouvert : on n'Ã©crase pas la saisie
+      if (this.dialogRef) return; // sub-dialog d'action ouvert : on n'écrase pas la saisie
       const tab = this.activeTab();
       const state = this.tabs[tab]();
       if (state.loading) return; // anti-stampede
       this.silentReloadList(tab);
     });
 
-    // Polling dÃ©tail / pane â€” toutes les 10s
+    // Polling détail / pane — toutes les 10s
     this.detailPollSub = interval(10_000).subscribe(() => {
       if (!this.pollingActive()) return;
-      if (this.dialogRef) return; // sub-dialog d'action ouvert : on n'Ã©crase pas la saisie
+      if (this.dialogRef) return; // sub-dialog d'action ouvert : on n'écrase pas la saisie
       const detailInv = this.dialogCtx.invoice;
       if (this.isDetailDialogOpen() && detailInv) {
         this.silentReloadDetail(detailInv);
@@ -364,7 +364,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Refetch le dÃ©tail courant du modal sans flicker. */
+  /** Refetch le détail courant du modal sans flicker. */
   private silentReloadDetail(inv: AdminInvoice): void {
     this.api.getInvoiceDetail(inv.uuid).subscribe({
       next: res => {
@@ -379,9 +379,9 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Refetch la facture sÃ©lectionnÃ©e du pane (sans recharger PDF).
+  /** Refetch la facture sélectionnée du pane (sans recharger PDF).
    *  On passe par le reload de la liste : `/admin/invoices/{uuid}` est l'endpoint
-   *  de dÃ©tail (shape `{ invoice: {...}, items: [...], ... }`) et n'expose pas la
+   *  de détail (shape `{ invoice: {...}, items: [...], ... }`) et n'expose pas la
    *  forme plate `AdminInvoice` (contractor_phone, validations_received, rib, ...). */
   private silentReloadSelectedFromList(_inv: AdminInvoice): void {
     this.silentReloadList(this.activeTab());
@@ -400,7 +400,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     if (this.tabs[next]().rows.length === 0) {
       this.loadTab(next);
     } else {
-      // Auto-sÃ©lectionne la 1Ã¨re ligne dÃ©jÃ  chargÃ©e
+      // Auto-sélectionne la 1ère ligne déjà chargée
       const firstRow = this.tabs[next]().rows[0];
       if (firstRow) this.selectInvoice(firstRow);
     }
@@ -431,7 +431,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     filters.sort = this.tabSort[tab]();
     filters.direction = this.tabDirection[tab]();
 
-    // Forcer les statuts selon l'onglet (sauf onglet 'all' qui garde la sÃ©lection user)
+    // Forcer les statuts selon l'onglet (sauf onglet 'all' qui garde la sélection user)
     const tabStatusMap: Record<TabKey, string[] | null> = {
       pending: ['pending_payment_validation'],
       ready: ['ready_to_pay'],
@@ -468,8 +468,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * DÃ©tecte un 409 INVOICE_STALE (conflit multi-admin) et reload la liste.
-   * Pour tout autre erreur, dÃ©lÃ¨gue au handler standard.
+   * Détecte un 409 INVOICE_STALE (conflit multi-admin) et reload la liste.
+   * Pour tout autre erreur, délègue au handler standard.
    */
   private handleConflictOrFallback(err: unknown, context: string): void {
     const httpErr = err as {
@@ -478,7 +478,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     };
     if (httpErr.status === 409 && httpErr.error?.error?.code === 'INVOICE_STALE') {
       this.snack.open(
-        'Cette facture a Ã©tÃ© modifiÃ©e par un autre admin. Vue rechargÃ©e.',
+        'Cette facture a été modifiée par un autre admin. Vue rechargée.',
         'OK',
         { duration: 8000 },
       );
@@ -497,7 +497,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     };
     if (httpErr.status === 401 || httpErr.status === 403) {
       sessionStorage.removeItem('tuita_admin_key');
-      this.snack.open('Session admin expirÃ©e', 'OK', { duration: 4000 });
+      this.snack.open('Session admin expirée', 'OK', { duration: 4000 });
       this.router.navigate(['/admin']);
       return;
     }
@@ -509,7 +509,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     if (apiError?.message && status >= 400 && status < 500) {
       const parts = [apiError.message];
       if (apiError.hint) parts.push(apiError.hint);
-      snackMsg = parts.join(' â€” ');
+      snackMsg = parts.join(' — ');
     } else {
       snackMsg = `Erreur lors du chargement (${context})`;
     }
@@ -528,23 +528,23 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openMarkPaymentInProgress(inv: AdminInvoice): void {
     this.openActionDialog(
       {
-        title: 'Marquer le virement comme lancÃ©',
+        title: 'Marquer le virement comme lancé',
         body:
-          `Cette action passe la facture en PAYMENT_IN_PROGRESS et Ã©met le webhook ` +
+          `Cette action passe la facture en PAYMENT_IN_PROGRESS et émet le webhook ` +
           `contractor.invoice.payment_in_progress vers tuita.fr. Le contractor verra ` +
-          `Â« virement en cours Â» dans son portail.`,
+          `« virement en cours » dans son portail.`,
         confirmLabel: 'Lancer le virement',
         cancelLabel: 'Annuler',
         danger: false,
         fields: [
-          { key: 'payment_ref', label: 'RÃ©fÃ©rence de virement', type: 'text', required: true, value: '' },
+          { key: 'payment_ref', label: 'Référence de virement', type: 'text', required: true, value: '' },
         ],
         invoice: inv,
       },
       ctx => {
         const payRef = this.fieldValue(ctx, 'payment_ref').trim();
         this.api.markPaymentInProgress(inv.uuid, { payment_ref: payRef }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Virement marquÃ© en cours'),
+          next: () => this.afterAction('Virement marqué en cours'),
           error: err => this.handleConflictOrFallback(err, 'mark-payment-in-progress'),
         });
       },
@@ -556,15 +556,15 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       {
         title: 'Confirmer le paiement',
         body:
-          `Cette action passe la facture en PAID et Ã©met le webhook ` +
-          `contractor.invoice.paid. Strict D1 : la facture doit Ãªtre en ` +
+          `Cette action passe la facture en PAID et émet le webhook ` +
+          `contractor.invoice.paid. Strict D1 : la facture doit être en ` +
           `PAYMENT_IN_PROGRESS.`,
-        confirmLabel: 'Marquer payÃ©e',
+        confirmLabel: 'Marquer payée',
         cancelLabel: 'Annuler',
         danger: false,
         fields: [
           { key: 'paid_at', label: 'Date de paiement (banque)', type: 'date', required: true, value: this.todayIso() },
-          { key: 'payment_ref', label: 'RÃ©fÃ©rence de virement', type: 'text', required: true, value: '' },
+          { key: 'payment_ref', label: 'Référence de virement', type: 'text', required: true, value: '' },
         ],
         invoice: inv,
       },
@@ -572,7 +572,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         const paidAt = this.fieldValue(ctx, 'paid_at');
         const payRef = this.fieldValue(ctx, 'payment_ref').trim();
         this.api.markPaid(inv.uuid, { paid_at: paidAt, payment_ref: payRef }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Facture marquÃ©e payÃ©e'),
+          next: () => this.afterAction('Facture marquée payée'),
           error: err => this.handleConflictOrFallback(err, 'mark-paid'),
         });
       },
@@ -582,26 +582,26 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openMarkPaidFastPath(inv: AdminInvoice): void {
     this.openActionDialog(
       {
-        title: 'Marquer payÃ©e â€” fast path (saute PAYMENT_IN_PROGRESS)',
+        title: 'Marquer payée — fast path (saute PAYMENT_IN_PROGRESS)',
         body:
-          `âš  ATTENTION : ce fast path saute l'Ã©tape PAYMENT_IN_PROGRESS et Ã©met ` +
-          `2 webhooks en cascade (payment_in_progress puis paid). Ã€ utiliser ` +
-          `uniquement pour un virement instantanÃ© dÃ©jÃ  confirmÃ© cÃ´tÃ© banque. ` +
-          `La raison sera consignÃ©e dans l'audit trail.`,
+          `⚠ ATTENTION : ce fast path saute l'étape PAYMENT_IN_PROGRESS et émet ` +
+          `2 webhooks en cascade (payment_in_progress puis paid). À utiliser ` +
+          `uniquement pour un virement instantané déjà confirmé côté banque. ` +
+          `La raison sera consignée dans l'audit trail.`,
         confirmLabel: 'Confirmer le fast path',
         cancelLabel: 'Annuler',
         danger: true,
         fields: [
           { key: 'paid_at', label: 'Date de paiement', type: 'date', required: true, value: this.todayIso() },
-          { key: 'payment_ref', label: 'RÃ©fÃ©rence de virement', type: 'text', required: true, value: '' },
+          { key: 'payment_ref', label: 'Référence de virement', type: 'text', required: true, value: '' },
           {
             key: 'reason',
-            label: 'Raison (min 10 caractÃ¨res)',
+            label: 'Raison (min 10 caractères)',
             type: 'textarea',
             required: true,
             minLength: 10,
             value: '',
-            hint: 'Ex : virement instantanÃ© validÃ© par le CFO le 24/04',
+            hint: 'Ex : virement instantané validé par le CFO le 24/04',
           },
           {
             key: 'confirm_word',
@@ -624,7 +624,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
           skip_in_progress: true,
           reason,
         }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Facture marquÃ©e payÃ©e (fast path)'),
+          next: () => this.afterAction('Facture marquée payée (fast path)'),
           error: err => this.handleConflictOrFallback(err, 'mark-paid-fast-path'),
         });
       },
@@ -637,13 +637,13 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         title: 'Rouvrir la facture',
         body:
           `Cette action clone la facture REJECTED en une nouvelle facture en ` +
-          `PENDING_PAYMENT_VALIDATION. L'ancienne reste rejetÃ©e pour audit. ` +
+          `PENDING_PAYMENT_VALIDATION. L'ancienne reste rejetée pour audit. ` +
           `Maximum 2 rouvertures par mission_ref.`,
         confirmLabel: 'Rouvrir',
         cancelLabel: 'Annuler',
         danger: false,
         fields: [
-          { key: 'reason', label: 'Raison (min 10 caractÃ¨res)', type: 'textarea', required: true, minLength: 10, value: '' },
+          { key: 'reason', label: 'Raison (min 10 caractères)', type: 'textarea', required: true, minLength: 10, value: '' },
           {
             key: 'confirm_word',
             label: 'Tape CONFIRMER (en majuscules) pour activer',
@@ -658,7 +658,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       ctx => {
         const reason = this.fieldValue(ctx, 'reason').trim();
         this.api.reopen(inv.uuid, { reason }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Facture rouverte (clone crÃ©Ã©)'),
+          next: () => this.afterAction('Facture rouverte (clone créé)'),
           error: err => this.handleConflictOrFallback(err, 'reopen'),
         });
       },
@@ -668,20 +668,20 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openResolveDispute(inv: AdminInvoice): void {
     this.openActionDialog(
       {
-        title: 'RÃ©soudre le litige',
+        title: 'Résoudre le litige',
         body: `Cette action efface le flag paid_disputed_at sur la facture.`,
-        confirmLabel: 'RÃ©soudre',
+        confirmLabel: 'Résoudre',
         cancelLabel: 'Annuler',
         danger: false,
         fields: [
-          { key: 'resolution', label: 'RÃ©solution (description)', type: 'textarea', required: true, value: '' },
+          { key: 'resolution', label: 'Résolution (description)', type: 'textarea', required: true, value: '' },
         ],
         invoice: inv,
       },
       ctx => {
         const resolution = this.fieldValue(ctx, 'resolution').trim();
         this.api.resolveDispute(inv.uuid, { resolution }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Litige rÃ©solu'),
+          next: () => this.afterAction('Litige résolu'),
           error: err => this.handleConflictOrFallback(err, 'resolve-dispute'),
         });
       },
@@ -694,7 +694,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         title: 'Renvoyer un webhook',
         body:
           `Reset du flag webhook_*_sent_at correspondant et redispatch du webhook. ` +
-          `Ã€ utiliser si tuita.fr a manquÃ© un webhook (panne, parsing).`,
+          `À utiliser si tuita.fr a manqué un webhook (panne, parsing).`,
         confirmLabel: 'Renvoyer',
         cancelLabel: 'Annuler',
         danger: false,
@@ -732,7 +732,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
           | 'paid';
         const reason = this.fieldValue(ctx, 'reason').trim();
         this.api.forceResendWebhook(inv.uuid, { event_type: eventType, reason }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Webhook renvoyÃ©'),
+          next: () => this.afterAction('Webhook renvoyé'),
           error: err => this.handleConflictOrFallback(err, 'force-resend-webhook'),
         });
       },
@@ -743,7 +743,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.openActionDialog(
       {
         title: 'Ajouter une note admin',
-        body: `La note sera consignÃ©e dans l'audit trail de la facture.`,
+        body: `La note sera consignée dans l'audit trail de la facture.`,
         confirmLabel: 'Ajouter',
         cancelLabel: 'Annuler',
         danger: false,
@@ -755,7 +755,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       ctx => {
         const content = this.fieldValue(ctx, 'content').trim();
         this.api.addNote(inv.uuid, { content }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Note ajoutÃ©e'),
+          next: () => this.afterAction('Note ajoutée'),
           error: err => this.handleConflictOrFallback(err, 'add-note'),
         });
       },
@@ -765,7 +765,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openAuditTrail(inv: AdminInvoice): void {
     this.dialogCtx = {
       ...this.emptyDialogCtx(),
-      title: `Audit trail â€” ${inv.number ?? inv.uuid}`,
+      title: `Audit trail — ${inv.number ?? inv.uuid}`,
       body: '',
       confirmLabel: 'Fermer',
       cancelLabel: '',
@@ -785,7 +785,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openMissionDialog(missionRef: string): void {
     const ref = this.adminDialog.openMission(missionRef);
     ref.componentInstance.openInvoice.subscribe((invoiceUuid: string) => {
-      // Empile le dialog facture par-dessus mission. Material gÃ¨re le stacking automatiquement.
+      // Empile le dialog facture par-dessus mission. Material gère le stacking automatiquement.
       const rows = this.tabs[this.activeTab()]().rows;
       const inv = rows.find(r => r.uuid === invoiceUuid);
       if (inv) this.openDetail(inv);
@@ -795,7 +795,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   openDetail(inv: AdminInvoice): void {
     this.dialogCtx = {
       ...this.emptyDialogCtx(),
-      title: `DÃ©tail â€” ${inv.number ?? inv.uuid}`,
+      title: `Détail — ${inv.number ?? inv.uuid}`,
       body: '',
       confirmLabel: 'Fermer',
       cancelLabel: '',
@@ -821,8 +821,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.loadDetailContent(inv);
   }
 
-  /** Ferme uniquement le detail dialog (le bouton âœ• du header). Distinct
-   *  de onDialogCancel() qui ferme le dialog actif gÃ©nÃ©rique (action confirm). */
+  /** Ferme uniquement le detail dialog (le bouton ✕ du header). Distinct
+   *  de onDialogCancel() qui ferme le dialog actif générique (action confirm). */
   closeDetailDialog(): void {
     this.detailDialogRef?.close();
   }
@@ -836,12 +836,12 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.dialogCtx = {
       ...this.dialogCtx,
       invoice: inv,
-      title: `DÃ©tail â€” ${inv.number ?? inv.uuid}`,
+      title: `Détail — ${inv.number ?? inv.uuid}`,
     };
     // Sync split-view selection
     this.selectedInvoice.set(inv);
 
-    // 1. DÃ©tail structurÃ©
+    // 1. Détail structuré
     this.api.getInvoiceDetail(inv.uuid).subscribe({
       next: res => {
         this.detailData.set(res.data);
@@ -853,13 +853,13 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       },
     });
 
-    // 2. Audit trail (best-effort, n'empÃªche pas l'affichage)
+    // 2. Audit trail (best-effort, n'empêche pas l'affichage)
     this.api.getAuditTrail(inv.uuid).subscribe({
       next: res => this.detailAudit.set(res.data ?? null),
       error: () => {},
     });
 
-    // 3. PDF stream (en parallÃ¨le, peut Ã©chouer sans bloquer)
+    // 3. PDF stream (en parallèle, peut échouer sans bloquer)
     this.detailPdfLoading.set(true);
     this.api.downloadInvoicePdf(inv.uuid, true).subscribe({
       next: blob => {
@@ -874,9 +874,9 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         this.detailPdfLoading.set(false);
         const code = err?.error?.error?.code ?? '';
         if (code === 'INVOICE_PDF_NOT_FOUND') {
-          this.detailPdfError.set('PDF indisponible (upload freemium dont le fichier S3 a Ã©tÃ© perdu).');
+          this.detailPdfError.set('PDF indisponible (upload freemium dont le fichier S3 a été perdu).');
         } else if (err?.status === 401 || err?.status === 403) {
-          this.detailPdfError.set('AccÃ¨s refusÃ©.');
+          this.detailPdfError.set('Accès refusé.');
         } else {
           this.detailPdfError.set('Impossible de charger le PDF.');
         }
@@ -928,7 +928,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.detailPdfLoading.set(false);
   }
 
-  /** Force download du PDF actuellement chargÃ© (rÃ©utilise le blob dÃ©jÃ  fetchÃ©). */
+  /** Force download du PDF actuellement chargé (réutilise le blob déjà fetché). */
   downloadDetailPdf(): void {
     const blob = this.detailPdfBlob();
     const inv = this.detailData()?.invoice;
@@ -943,14 +943,14 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  /** Ouvre le PDF dans un nouvel onglet (rÃ©utilise l'object URL existant). */
+  /** Ouvre le PDF dans un nouvel onglet (réutilise l'object URL existant). */
   openDetailPdfInNewTab(): void {
     if (this.detailPdfObjectUrl) {
       window.open(this.detailPdfObjectUrl, '_blank', 'noopener');
     }
   }
 
-  /** Compute l'Ã©cart entre montant facturÃ© TTC et mission_snapshot.expected. */
+  /** Compute l'écart entre montant facturé TTC et mission_snapshot.expected. */
   amountDeviation(): { delta: number; pct: number } | null {
     const data = this.detailData();
     if (!data?.invoice?.amount_ttc || !data?.mission_snapshot?.expected_amount_ttc) return null;
@@ -964,7 +964,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   /**
    * Pivot 2026-05-13 : retourne la liste chronologique des approbations/rejets
-   * reÃ§us pour l'invoice (sans distinction de rÃ´le).
+   * reçus pour l'invoice (sans distinction de rôle).
    */
   detailValidators(): Array<{
     index: number;
@@ -1005,8 +1005,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     return [
       { key: 'rejected', label: 'Rejet', sent_at: w.rejected },
       { key: 'ready_to_pay', label: 'Bon pour paiement', sent_at: w.ready_to_pay },
-      { key: 'payment_in_progress', label: 'Virement lancÃ©', sent_at: w.payment_in_progress },
-      { key: 'paid', label: 'PayÃ©e', sent_at: w.paid },
+      { key: 'payment_in_progress', label: 'Virement lancé', sent_at: w.payment_in_progress },
+      { key: 'paid', label: 'Payée', sent_at: w.paid },
       { key: 'reopened', label: 'Reopened', sent_at: w.reopened },
     ];
   }
@@ -1028,7 +1028,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   onDialogConfirm(): void {
     if (!this.dialogCtx) return;
     if (!this.dialogValid()) {
-      this.snack.open('Veuillez complÃ©ter les champs requis', 'OK', { duration: 2500 });
+      this.snack.open('Veuillez compléter les champs requis', 'OK', { duration: 2500 });
       return;
     }
     const action = this.pendingAction;
@@ -1058,8 +1058,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     // Refresh current tab to reflect new state
     this.loadTab(this.activeTab());
     // Si le detail dialog est ouvert sur une facture, recharger son contenu
-    // (statut + audit trail) pour que le bouton chaud devienne cohÃ©rent avec
-    // la nouvelle transition. Le PDF n'a pas changÃ© â€” pas besoin de le refetch.
+    // (statut + audit trail) pour que le bouton chaud devienne cohérent avec
+    // la nouvelle transition. Le PDF n'a pas changé — pas besoin de le refetch.
     if (this.isDetailDialogOpen()) {
       const inv = this.dialogCtx.invoice;
       if (inv) {
@@ -1075,8 +1075,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Bouton chaud Ã  afficher dans le header du detail dialog selon le statut courant.
-   *  Renvoie null si aucune transition Â« 1-clic Â» n'est applicable. */
+  /** Bouton chaud à afficher dans le header du detail dialog selon le statut courant.
+   *  Renvoie null si aucune transition « 1-clic » n'est applicable. */
   detailHotAction(): { label: string; icon: string; color: 'primary' | 'accent' | 'warn'; run: () => void } | null {
     const status = this.detailData()?.invoice?.status ?? this.dialogCtx.invoice?.status ?? '';
     const inv = this.dialogCtx.invoice;
@@ -1085,7 +1085,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       return { label: 'Lancer le virement', icon: 'send', color: 'primary', run: () => this.openMarkPaymentInProgress(inv) };
     }
     if (status === 'payment_in_progress') {
-      return { label: 'Marquer payÃ©e', icon: 'paid', color: 'primary', run: () => this.openMarkPaid(inv) };
+      return { label: 'Marquer payée', icon: 'paid', color: 'primary', run: () => this.openMarkPaid(inv) };
     }
     return null;
   }
@@ -1102,7 +1102,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     return inv.status === 'rejected';
   }
 
-  /** Pivot 2026-05-13 : on raisonne en compte d'approbations, plus en rÃ´les. */
+  /** Pivot 2026-05-13 : on raisonne en compte d'approbations, plus en rôles. */
   approvalsCount(inv: AdminInvoice): number {
     return (inv as any).approvals_count ?? 0;
   }
@@ -1127,7 +1127,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     return 'chip-pending';
   }
 
-  /** DÃ©termine si une facture est "vieille" en attente de validation (>= 7j). */
+  /** Détermine si une facture est "vieille" en attente de validation (>= 7j). */
   ageDays(inv: AdminInvoice): number {
     return (inv as any).age_days ?? 0;
   }
@@ -1141,22 +1141,22 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   amountLabel(inv: AdminInvoice): string {
     const raw = inv.amount_ttc;
-    if (raw === null || raw === undefined || raw === '') return 'â€”';
+    if (raw === null || raw === undefined || raw === '') return '—';
     const num = typeof raw === 'string' ? parseFloat(raw) : raw;
     if (Number.isNaN(num)) return String(raw);
-    return `${num.toFixed(2)} â‚¬`;
+    return `${num.toFixed(2)} €`;
   }
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
       validating: 'Validation OCR',
-      draft: 'GÃ©nÃ©ration',
-      pending_payment_validation: 'Ã€ valider',
+      draft: 'Génération',
+      pending_payment_validation: 'À valider',
       ready_to_pay: 'Bon pour paiement',
       payment_in_progress: 'Virement en cours',
-      paid: 'PayÃ©e',
-      rejected: 'RejetÃ©e',
-      cancelled: 'AnnulÃ©e',
+      paid: 'Payée',
+      rejected: 'Rejetée',
+      cancelled: 'Annulée',
     };
     return map[status] ?? status;
   }
@@ -1166,8 +1166,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Ouvre la fiche complÃ¨te du contractor (vue 360Â°) Ã  partir de son phone.
-   * UtilisÃ© depuis la card "Contractor 360Â°" du modal dÃ©tail facture.
+   * Ouvre la fiche complète du contractor (vue 360°) à partir de son phone.
+   * Utilisé depuis la card "Contractor 360°" du modal détail facture.
    */
   navigateToContractor(phone: string): void {
     this.dialog.open(AdminContractorComponent, {
@@ -1181,7 +1181,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   formatDate(iso: string | null | undefined): string {
-    if (!iso) return 'â€”';
+    if (!iso) return '—';
     try {
       const d = new Date(iso);
       return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
@@ -1207,7 +1207,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Pivot 2026-05-13 â€” Action admin local : valider/rejeter une facture depuis
+   * Pivot 2026-05-13 — Action admin local : valider/rejeter une facture depuis
    * le back-office du microservice. Envoie POST /admin/invoices/{uuid}/validate
    * avec les headers X-Admin-Actor-Email + X-Admin-Actor-Name (lus depuis le
    * sessionStorage admin).
@@ -1221,7 +1221,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * VÃ©rifie que l'admin actor (email + nom) est configurÃ© dans sessionStorage.
+   * Vérifie que l'admin actor (email + nom) est configuré dans sessionStorage.
    * Sinon ouvre 2 prompts pour le saisir et persiste. Renvoie [email, name] ou null.
    */
   private ensureAdminActorConfigured(): { email: string; name: string } | null {
@@ -1231,11 +1231,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     if (!email) {
       const input = window.prompt(
         'Configurez votre adresse email admin Tuita (audit obligatoire).\n'
-        + 'Elle sera persistÃ©e dans cette session et envoyÃ©e comme X-Admin-Actor-Email.',
+        + 'Elle sera persistée dans cette session et envoyée comme X-Admin-Actor-Email.',
         '',
       );
       if (!input || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.trim())) {
-        this.snack.open('Adresse email invalide â€” validation annulÃ©e.', 'OK', { duration: 4000 });
+        this.snack.open('Adresse email invalide — validation annulée.', 'OK', { duration: 4000 });
         return null;
       }
       email = input.trim();
@@ -1244,11 +1244,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
     if (!name) {
       const input = window.prompt(
-        'Votre nom complet (visible cÃ´tÃ© contractor sur la timeline portail).',
+        'Votre nom complet (visible côté contractor sur la timeline portail).',
         '',
       );
       if (!input || input.trim().length < 2) {
-        this.snack.open('Nom invalide â€” validation annulÃ©e.', 'OK', { duration: 4000 });
+        this.snack.open('Nom invalide — validation annulée.', 'OK', { duration: 4000 });
         return null;
       }
       name = input.trim();
@@ -1258,16 +1258,16 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     return { email, name };
   }
 
-  /** Permet Ã  l'admin de changer son identitÃ© (bouton "Changer admin"). */
+  /** Permet à l'admin de changer son identité (bouton "Changer admin"). */
   resetAdminActor(): void {
     sessionStorage.removeItem('tuita_admin_actor_email');
     sessionStorage.removeItem('tuita_admin_actor_name');
     this.adminActorEmail.set(null);
     this.adminActorName.set(null);
-    this.snack.open('IdentitÃ© admin oubliÃ©e â€” vous serez invitÃ© Ã  la ressaisir Ã  la prochaine validation.', 'OK', { duration: 4000 });
+    this.snack.open('Identité admin oubliée — vous serez invité à la ressaisir à la prochaine validation.', 'OK', { duration: 4000 });
   }
 
-  /** Signals pour exposer l'Ã©tat courant cÃ´tÃ© template. */
+  /** Signals pour exposer l'état courant côté template. */
   readonly adminActorEmail = signal<string | null>(sessionStorage.getItem('tuita_admin_actor_email'));
   readonly adminActorName = signal<string | null>(sessionStorage.getItem('tuita_admin_actor_name'));
 
@@ -1282,11 +1282,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     const comment = window.prompt(
       status === 'approved'
         ? 'Commentaire optionnel pour valider :'
-        : 'Raison du rejet (obligatoire, min 10 caractÃ¨res) :',
+        : 'Raison du rejet (obligatoire, min 10 caractères) :',
       '',
     );
     if (status === 'rejected' && (!comment || comment.trim().length < 10)) {
-      this.snack.open('Rejet annulÃ© â€” raison trop courte.', 'OK', { duration: 4000 });
+      this.snack.open('Rejet annulé — raison trop courte.', 'OK', { duration: 4000 });
       return;
     }
     const apiUrl = (window as any).API_BASE_URL ?? '/contractor-compliance';
@@ -1312,16 +1312,16 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       const newStatus = body?.data?.invoice_status;
       this.snack.open(
         newStatus === 'ready_to_pay'
-          ? `Approbation enregistrÃ©e â€” facture bonne pour paiement (${count}/${required}) ðŸš©`
+          ? `Approbation enregistrée — facture bonne pour paiement (${count}/${required}) 🚩`
           : newStatus === 'rejected'
-            ? 'Facture rejetÃ©e.'
-            : `Approbation enregistrÃ©e (${count}/${required}).`,
+            ? 'Facture rejetée.'
+            : `Approbation enregistrée (${count}/${required}).`,
         'OK',
         { duration: 5000 },
       );
       this.refreshCurrent();
     } catch (err) {
-      this.snack.open('Erreur rÃ©seau lors de la validation.', 'OK', { duration: 5000 });
+      this.snack.open('Erreur réseau lors de la validation.', 'OK', { duration: 5000 });
     }
   }
 
@@ -1337,7 +1337,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   // ------------------------------------------------------------------
-  // Split view : sÃ©lection + PDF pane + raccourcis clavier
+  // Split view : sélection + PDF pane + raccourcis clavier
   // ------------------------------------------------------------------
 
   selectInvoice(inv: AdminInvoice): void {
@@ -1359,7 +1359,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         this.paneDetailPdfLoading.set(false);
         const code = err?.error?.error?.code ?? '';
         if (code === 'INVOICE_PDF_NOT_FOUND') {
-          this.paneDetailPdfError.set('PDF indisponible (upload freemium dont le fichier S3 a Ã©tÃ© perdu).');
+          this.paneDetailPdfError.set('PDF indisponible (upload freemium dont le fichier S3 a été perdu).');
         } else {
           this.paneDetailPdfError.set('Impossible de charger le PDF.');
         }

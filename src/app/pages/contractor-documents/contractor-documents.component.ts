@@ -727,11 +727,13 @@ export class ContractorDocumentsComponent implements OnInit, OnDestroy {
           return;
         }
 
-        // Dev / gratuit : la livraison tourne deja cote backend. On polle
-        // le statut de l'achat plutot que la liste docs — on detecte ainsi
-        // un echec Pappers (status=failed) sans timeout silencieux.
+        // Dev / gratuit : la livraison tourne déjà côté backend. Pas de
+        // route contractor pour le statut d'achat (admin-only côté Tuita) ;
+        // on polle donc directement la liste des documents pour détecter
+        // l'arrivée du nouveau doc livré par Pappers.
+        const countBefore = this.documents().length;
         if (purchaseUuid) {
-          this.pollPurchaseStatus(purchaseUuid);
+          this.pollUntilDocumentDelivered(countBefore);
         } else {
           this.loadDocuments();
           this.session.refreshDashboard();
@@ -836,102 +838,22 @@ export class ContractorDocumentsComponent implements OnInit, OnDestroy {
         // échouer (Pappers down, SIREN inconnu, etc.). On polle le STATUT de
         // l'achat — pas la liste docs — pour détecter un `failed` explicite
         // et le remonter au contractor au lieu d'un timeout silencieux.
-        if (purchaseUuid) {
-          this.pollPurchaseStatus(purchaseUuid);
-        } else {
-          this.pollUntilDocumentDelivered(countBeforePurchase);
-        }
+        // Backend Tuita n'expose pas de route contractor-scoped pour le
+        // statut d'un DocumentPurchase individuel (uniquement admin). On
+        // polle donc la liste des documents : l'arrivée du nouveau doc =
+        // signal de succès. Couvre les deux branches (avec/sans purchaseUuid).
+        this.pollUntilDocumentDelivered(countBeforePurchase);
         this.session.refreshDashboard();
       }
     });
   }
 
   /**
-   * Polling post-paiement sur le statut du DocumentPurchase. On surveille
-   * pending → completed | failed et on prévient le contractor en conséquence
-   * (toast). Évite le scénario silencieux où Pappers échoue (503, SIREN
-   * invalide, etc.) et le contractor n'a aucun feedback après avoir payé.
-   *
-   * Backoff total ≈ 25 s — au-delà l'achat est encore `pending` côté backend
-   * (Pappers très lent ou retry Horizon en cours). On affiche un toast
-   * informatif sans déclarer l'échec : la livraison peut encore aboutir.
-   */
-  private pollPurchaseStatus(purchaseUuid: string): void {
-    const delays = [1500, 2000, 2000, 3000, 4000, 5000, 7000];
-    let attempt = 0;
-
-    // Capture des UUIDs présents AVANT le démarrage du polling : nous permet
-    // d'identifier la nouvelle card livrée par Pappers pour scroller dessus
-    // et highlight visuellement (cf. branche 'completed').
-    const initialUuids = new Set(this.documents().map(d => d.uuid));
-
-    const tick = (): void => {
-      this.api.getPurchaseDetail(purchaseUuid).subscribe({
-        next: detail => {
-          if (detail.status === 'completed') {
-            this.session.refreshDashboard();
-            // On rafraîchit la liste puis on identifie le nouveau document
-            // pour pouvoir y scroller, l'animer, et offrir un download direct
-            // depuis la snackbar — un user qui vient de payer 9,99 € mérite
-            // un signal de succès net, pas un simple "OK" passif.
-            this.api.getDocuments().subscribe({
-              next: res => {
-                this.documents.set(res.data);
-                const arrived = res.data.find(d => !initialUuids.has(d.uuid));
-                this.celebratePurchaseSuccess(detail.label, arrived?.uuid);
-              },
-              error: () => {
-                // Fallback : si le reload list échoue on garde quand même la
-                // notif de succès. Le user fera Refresh manuellement.
-                this.celebratePurchaseSuccess(detail.label, undefined);
-              },
-            });
-            return;
-          }
-
-          if (detail.status === 'failed') {
-            this.loadDocuments();
-            this.session.refreshDashboard();
-            this.snack.open(
-              `Échec de la récupération de ${detail.label.toLowerCase()}. Vous serez remboursé automatiquement sous 5 jours ouvrés.`,
-              'OK',
-              { duration: 12000, panelClass: ['snack-error'] },
-            );
-            return;
-          }
-
-          // Encore pending — on continue de poller.
-          if (attempt < delays.length) {
-            setTimeout(tick, delays[attempt]);
-            attempt++;
-            return;
-          }
-
-          // Timeout : le job Pappers tourne encore (ou est en retry Horizon).
-          // On informe le contractor sans déclarer l'échec — un refresh manuel
-          // ou la prochaine navigation affichera le doc une fois livré.
-          this.snack.open(
-            'La livraison du document prend plus de temps que prévu. Rechargez la page dans quelques minutes.',
-            'OK',
-            { duration: 8000 },
-          );
-        },
-        error: () => {
-          if (attempt < delays.length) {
-            setTimeout(tick, delays[attempt]);
-            attempt++;
-          }
-        },
-      });
-    };
-
-    setTimeout(tick, 1500);
-  }
-
-  /**
-   * Poll la liste des documents après paiement Stripe jusqu'à voir le nouveau
-   * document livré par ProcessDocumentPurchase (via Pappers).
-   * Backoff progressif pour couvrir les flux Pappers lents (API externe).
+   * Polling post-paiement Stripe : on observe l'arrivée d'un nouveau document
+   * dans la liste contractor (signal de succès Pappers). Le backend Tuita
+   * n'expose pas de statut d'achat contractor-scoped — on infère depuis le
+   * delta côté client. Backoff progressif pour couvrir les flux Pappers
+   * externes lents.
    */
   private pollUntilDocumentDelivered(countBeforePurchase: number): void {
     // Backoff : 2 s, 4 s, 7 s, 11 s, 16 s — total ~20 s

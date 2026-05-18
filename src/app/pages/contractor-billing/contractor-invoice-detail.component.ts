@@ -1,4 +1,4 @@
-﻿import { Component, ChangeDetectionStrategy, inject, signal, OnInit, DestroyRef } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, signal, OnInit, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -42,12 +42,12 @@ interface Invoice {
   rejection_details?: string[] | null;
 
   // Nombre de pages physiques du PDF (source : Mistral OCR natif passe 1).
-  // Hard limit backend = 5 pages ; stockÃ© ici pour affichage indicatif.
+  // Hard limit backend = 5 pages ; stocké ici pour affichage indicatif.
   pages_count?: number | null;
 
-  // Timeline du pipeline de paiement â€” bloc enrichi par le backend
+  // Timeline du pipeline de paiement — bloc enrichi par le backend
   // (GET /contractor-compliance/invoices/{uuid}). Optionnel tant que l'endpoint
-  // n'a pas Ã©tÃ© mis Ã  jour â€” le composant ne s'affiche que si prÃ©sent.
+  // n'a pas été mis à jour — le composant ne s'affiche que si présent.
   timeline?: InvoiceTimeline | null;
 }
 
@@ -147,18 +147,18 @@ export class ContractorInvoiceDetailComponent implements OnInit {
 
   statusLabel(status: string): string {
     const labels: Record<string, string> = {
-      // Pipeline unifiÃ© (cf. docs/payment-flow.md Â§ 6)
+      // Pipeline unifié (cf. docs/payment-flow.md § 6)
       draft: 'Brouillon',
-      validating: 'VÃ©rification OCR',
+      validating: 'Vérification OCR',
       pending_payment_validation: 'Validation Tuita',
       ready_to_pay: 'Bon pour paiement',
       payment_in_progress: 'Virement en cours',
-      paid: 'PayÃ©e',
-      rejected: 'RejetÃ©e',
-      cancelled: 'AnnulÃ©e',
+      paid: 'Payée',
+      rejected: 'Rejetée',
+      cancelled: 'Annulée',
       // Statuts legacy (freemium/Pro pre-2026-04-18)
-      validated: 'ValidÃ©e',
-      sent: 'EnvoyÃ©e',
+      validated: 'Validée',
+      sent: 'Envoyée',
       overdue: 'En retard',
     };
     return labels[status] ?? status;
@@ -201,7 +201,7 @@ export class ContractorInvoiceDetailComponent implements OnInit {
   }
 
   sourceLabel(source: string): string {
-    return source === 'auto_generated' ? 'GÃ©nÃ©rÃ©e automatiquement' : 'EnvoyÃ©e manuellement';
+    return source === 'auto_generated' ? 'Générée automatiquement' : 'Envoyée manuellement';
   }
 
   operationIcon(type: string | undefined): string {
@@ -221,10 +221,10 @@ export class ContractorInvoiceDetailComponent implements OnInit {
   }
 
   /**
-   * Copy user-friendly du rejet Ã  afficher au contractor.
+   * Copy user-friendly du rejet à afficher au contractor.
    * Mapping exhaustif dans `invoice-rejection-messages.ts` (inclut notamment
-   * `invoice_too_many_pages` avec instruction "maximum 5 pages autorisÃ©es,
-   * retirez devis / bons d'intervention annexÃ©s").
+   * `invoice_too_many_pages` avec instruction "maximum 5 pages autorisées,
+   * retirez devis / bons d'intervention annexés").
    */
   rejectionCopy(): InvoiceRejectionCopy | null {
     const inv = this.invoice();
@@ -233,9 +233,9 @@ export class ContractorInvoiceDetailComponent implements OnInit {
   }
 
   /**
-   * Liste dÃ©taillÃ©e des rÃ¨gles ayant Ã©chouÃ© (rejection_details backend).
+   * Liste détaillée des règles ayant échoué (rejection_details backend).
    * Exemple typique pour too_many_pages :
-   *   ["Trop de pages (8) â€” une facture legitime fait 5 pages max"]
+   *   ["Trop de pages (8) — une facture legitime fait 5 pages max"]
    */
   rejectionDetails(): string[] {
     const inv = this.invoice();

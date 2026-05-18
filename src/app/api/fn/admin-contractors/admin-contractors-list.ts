@@ -10,11 +10,23 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminContractorsList$Params {
+  page?: number;
+  per_page?: number;
+  search?: string;
+  status?: string;
+  sort?: string;
+  direction?: 'asc' | 'desc';
 }
 
 export function adminContractorsList(http: HttpClient, rootUrl: string, params?: AdminContractorsList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminContractorsList.PATH, 'get');
   if (params) {
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
+    rb.query('search', params.search, {});
+    rb.query('status', params.status, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
   }
 
   return http.request(

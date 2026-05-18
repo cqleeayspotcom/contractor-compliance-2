@@ -88,28 +88,15 @@ export class ContractorInterventionDetailComponent implements OnInit {
   }
 
   simulateComplete(): void {
-    const m = this.mission();
-    if (!m) return;
-    this.isSimulating.set(true);
+    // L'endpoint dev-only `/missions/:ref/simulate-complete` n'a pas été
+    // porté côté Tuita (les missions sont complétées par le workflow ops
+    // backoffice). Le bouton reste affiché en dev pour rappel manuel, mais
+    // il ne fait plus que signaler l'indisponibilité — pas de crash UI.
+    this.isSimulating.set(false);
     this.simulateResult.set(null);
-    this.simulateError.set(null);
-
-    this.api.simulateMissionComplete(m.mid).subscribe({
-      next: (res: any) => {
-        this.isSimulating.set(false);
-        this.simulateResult.set(res.data?.message ?? 'Simulation reussie');
-        // Recharger la mission pour voir le statut facture mis a jour
-        setTimeout(() => {
-          this.api.getMission(m.mid).subscribe({
-            next: updated => this.mission.set(updated),
-          });
-        }, 2000);
-      },
-      error: (err: any) => {
-        this.isSimulating.set(false);
-        this.simulateError.set(err.error?.error?.message ?? 'Erreur lors de la simulation');
-      },
-    });
+    this.simulateError.set(
+      'Simulation de fin de mission indisponible côté Tuita — déclencher la complétion via le backoffice ops.',
+    );
   }
 
   /**

@@ -10,11 +10,17 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvoicesPendingValidation$Params {
+  stuck?: boolean;
+  page?: number;
+  per_page?: number;
 }
 
 export function adminInvoicesPendingValidation(http: HttpClient, rootUrl: string, params?: AdminInvoicesPendingValidation$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesPendingValidation.PATH, 'get');
   if (params) {
+    rb.query('stuck', params.stuck, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

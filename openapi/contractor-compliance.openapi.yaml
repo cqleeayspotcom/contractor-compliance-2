@@ -136,7 +136,83 @@ components:
       required: true
       schema:
         type: integer
+    # ----- Query params communs (pagination / tri / filtres) -----
+    QueryPage:
+      name: page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1 }
+    QueryPerPage:
+      name: per_page
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200 }
+    QuerySort:
+      name: sort
+      in: query
+      required: false
+      schema: { type: string }
+    QueryDirection:
+      name: direction
+      in: query
+      required: false
+      schema: { type: string, enum: [asc, desc] }
+    QuerySearch:
+      name: search
+      in: query
+      required: false
+      schema: { type: string }
+    QueryStatus:
+      name: status
+      in: query
+      required: false
+      schema: { type: string }
+    QueryPhone:
+      name: phone
+      in: query
+      required: false
+      schema: { type: string }
+    QueryStuck:
+      name: stuck
+      in: query
+      required: false
+      schema: { type: boolean }
+    QueryInline:
+      name: inline
+      in: query
+      required: false
+      schema: { type: boolean }
+      description: "Si `true`, force `Content-Disposition: inline` pour preview navigateur."
+    QueryFailureReason:
+      name: failure_reason
+      in: query
+      required: false
+      schema: { type: string }
+    QueryInvoiceStatus:
+      name: invoice_status
+      in: query
+      required: false
+      schema: { type: string }
+    QueryType:
+      name: type
+      in: query
+      required: false
+      schema: { type: string }
+    QueryArtifactPath:
+      name: path
+      in: query
+      required: true
+      schema: { type: string }
+      description: Chemin relatif de l'artifact KYC à streamer (.webm, .jpg…).
   responses:
+    # ----- Réponse binaire générique (PDF / image / vidéo) -----
+    BinaryOk:
+      description: Fichier binaire (PDF / image / vidéo).
+      content:
+        application/octet-stream:
+          schema:
+            type: string
+            format: binary
     JsonOk:
       description: OK
       content:
@@ -266,6 +342,10 @@ paths:
       tags: [Documents]
       operationId: documentsList
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryPage' }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
@@ -277,6 +357,17 @@ paths:
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/documents/{uuid}/download:
+    get:
+      tags: [Documents]
+      operationId: documentsDownload
+      security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+        - { $ref: '#/components/parameters/QueryInline' }
+      responses:
+        '200': { $ref: '#/components/responses/BinaryOk' }
 
   /contractor-compliance/documents/purchase:
     post:
@@ -332,10 +423,20 @@ paths:
   # Domaine 03 — KYC contractor
   # ============================================================
   /contractor-compliance/kyc/challenge:
-    get:
+    post:
       tags: [Kyc]
       operationId: kycChallenge
       security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [direct, mobile]
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
@@ -452,8 +553,23 @@ paths:
       tags: [Invoices]
       operationId: invoicesList
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
+
+  /contractor-compliance/invoices/{uuid}/pdf:
+    get:
+      tags: [Invoices]
+      operationId: invoicesPdf
+      security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+        - { $ref: '#/components/parameters/QueryInline' }
+      responses:
+        '200': { $ref: '#/components/responses/BinaryOk' }
 
   /contractor-compliance/invoices/{uuid}/timeline:
     get:
@@ -478,6 +594,11 @@ paths:
       tags: [Missions]
       operationId: missionsOffers
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/missions/active:
@@ -485,6 +606,12 @@ paths:
       tags: [Missions]
       operationId: missionsActive
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryInvoiceStatus' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/missions/history:
@@ -492,6 +619,12 @@ paths:
       tags: [Missions]
       operationId: missionsHistory
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryInvoiceStatus' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/missions/{ref}:
@@ -559,6 +692,9 @@ paths:
       tags: [InvoicesFree]
       operationId: invoicesFreeList
       security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/invoices/free/request:
@@ -715,6 +851,13 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsList
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}:
@@ -730,7 +873,11 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsDocuments
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      parameters:
+        - { $ref: '#/components/parameters/PhoneId' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryStatus' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/kyc-sessions:
@@ -738,7 +885,10 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsKycSessions
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      parameters:
+        - { $ref: '#/components/parameters/PhoneId' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/invoices:
@@ -746,7 +896,11 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsInvoices
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      parameters:
+        - { $ref: '#/components/parameters/PhoneId' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryStatus' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/purchases:
@@ -754,7 +908,10 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsPurchases
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      parameters:
+        - { $ref: '#/components/parameters/PhoneId' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/missions:
@@ -762,7 +919,11 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsMissions
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/PhoneId' }]
+      parameters:
+        - { $ref: '#/components/parameters/PhoneId' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryStatus' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/compliance-summary:
@@ -849,6 +1010,12 @@ paths:
       tags: [AdminInvitationCodes]
       operationId: adminInvitationCodesList
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
     post:
       tags: [AdminInvitationCodes]
@@ -1010,13 +1177,11 @@ paths:
       tags: [AdminDocuments]
       operationId: adminDocumentsFile
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+        - { $ref: '#/components/parameters/QueryInline' }
       responses:
-        '200':
-          description: Stream binaire document
-          content:
-            application/octet-stream:
-              schema: { type: string, format: binary }
+        '200': { $ref: '#/components/responses/BinaryOk' }
 
   # ============================================================
   # Domaine 07 — Admin circuit breakers
@@ -1044,6 +1209,13 @@ paths:
       tags: [AdminKyc]
       operationId: adminKycSessions
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryPhone' }
+        - { $ref: '#/components/parameters/QueryFailureReason' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/kyc/rejections:
@@ -1051,6 +1223,11 @@ paths:
       tags: [AdminKyc]
       operationId: adminKycRejections
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/kyc/sessions/{uuid}:
@@ -1061,13 +1238,24 @@ paths:
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
+  /contractor-compliance/admin/kyc/sessions/{uuid}/artifacts:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycArtifactsList
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
   /contractor-compliance/admin/kyc/{uuid}/artifacts/view:
     get:
       tags: [AdminKyc]
       operationId: adminKycArtifactsView
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Uuid' }]
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+        - { $ref: '#/components/parameters/QueryArtifactPath' }
+      responses:
+        '200': { $ref: '#/components/responses/BinaryOk' }
 
   /contractor-compliance/admin/kyc/{sessionUuid}/replay:
     post:
@@ -1093,6 +1281,9 @@ paths:
       tags: [AdminFreeInvoices]
       operationId: adminFreeInvoicesPending
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/free-invoices:
@@ -1100,6 +1291,10 @@ paths:
       tags: [AdminFreeInvoices]
       operationId: adminFreeInvoicesList
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/free-invoices/{uuid}:
@@ -1116,6 +1311,11 @@ paths:
       operationId: adminFreeInvoicesApprove
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/free-invoices/{uuid}/reject:
@@ -1147,6 +1347,14 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesList
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/pending-validation:
@@ -1154,6 +1362,10 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesPendingValidation
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/ready-to-pay:
@@ -1161,6 +1373,10 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesReadyToPay
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/payment-in-progress:
@@ -1168,6 +1384,10 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesPaymentInProgress
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/today-payments:
@@ -1182,6 +1402,10 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesPaidDisputed
       security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}:
@@ -1197,13 +1421,11 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesPdf
       security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+        - { $ref: '#/components/parameters/QueryInline' }
       responses:
-        '200':
-          description: PDF facture
-          content:
-            application/pdf:
-              schema: { type: string, format: binary }
+        '200': { $ref: '#/components/responses/BinaryOk' }
 
   /contractor-compliance/admin/invoices/{uuid}/audit-trail:
     get:
@@ -1219,6 +1441,11 @@ paths:
       operationId: adminInvoicesMarkPaymentInProgress
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/mark-paid:
@@ -1227,6 +1454,11 @@ paths:
       operationId: adminInvoicesMarkPaid
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/reopen:
@@ -1235,6 +1467,11 @@ paths:
       operationId: adminInvoicesReopen
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/resolve-dispute:
@@ -1256,6 +1493,11 @@ paths:
       operationId: adminInvoicesForceResendWebhook
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/add-note:

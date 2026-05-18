@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { provideHttpClient } from '@angular/common/http';
@@ -25,7 +25,7 @@ describe('AdminMissionDialogComponent', () => {
     },
     kpis: { expected_ttc: 500, total_invoiced_ttc: 510, deviation_pct: 2,
       reopens_count: 0, age_days: 5 },
-    anomalies: [{ level: 'warning', code: 'deviation_over_5pct', label: 'Ã‰cart 8% vs attendu' }],
+    anomalies: [{ level: 'warning', code: 'deviation_over_5pct', label: 'Écart 8% vs attendu' }],
     invoices: [{
       uuid: 'inv1', number: 'FA-001', status: 'pending_payment_validation',
       amount_ttc: 510, deviation_pct: 2,
@@ -66,7 +66,7 @@ describe('AdminMissionDialogComponent', () => {
     expect(html).toContain('M-1');
     expect(html).toContain('Marc Dupont');
     expect(html).toContain('FA-001');
-    expect(html).toContain('Ã‰cart 8% vs attendu');
+    expect(html).toContain('Écart 8% vs attendu');
   });
 
   it('shows 404 friendly state when mission unknown', () => {

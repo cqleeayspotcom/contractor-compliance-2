@@ -39,15 +39,15 @@ export const routes: Routes = [
 
   // [ADAPTATION TUITA BACKEND]
   // Auth contractor gérée par le monolithe Tuita (ContractorAuthAction
-  // + cookie __contractor_ssid via PIN SMS). En PROD, l'utilisateur arrive
-  // déjà authentifié depuis tuita.fr ; sinon l'intercepteur renvoie vers
-  // tuita.fr/contractor/login.
-  // En LOCAL/DEV : la page de login Tuita n'existe pas sur le monolithe
-  // (juste l'API JSON /contractor/auth/{pin,login}). On expose donc cette
-  // route /login in-app qui parle directement à l'API Tuita via proxy
-  // (/contractor/auth/** → localhost:8060). /signup reste désactivé : pas
-  // d'auto-inscription contractor — un admin Tuita doit créer le compte.
-  { path: 'signup', redirectTo: 'dashboard', pathMatch: 'full' },
+  // + cookie __contractor_ssid via PIN SMS). En LOCAL/DEV : la page de
+  // login Tuita n'existe pas sur le monolithe (juste l'API JSON
+  // /contractor/auth/{pin,login}). On expose donc /login in-app qui parle
+  // directement à l'API Tuita via proxy (/contractor/auth/** → :8060).
+  //
+  // POURQUOI /signup réactivé : depuis l'ajout du flow code d'invitation
+  // côté backend (POST /contractor-compliance/signup), un artisan disposant
+  // d'un code peut créer son propre compte. Le composant gère lui-même la
+  // pose du cookie __contractor_ssid via withCredentials:true.
   {
     path: 'login',
     loadComponent: () =>
@@ -55,6 +55,14 @@ export const routes: Routes = [
         m => m.ContractorLoginComponent
       ),
     title: 'Connexion - Tuita',
+  },
+  {
+    path: 'signup',
+    loadComponent: () =>
+      import('./pages/contractor-signup/contractor-signup.component').then(
+        m => m.ContractorSignupComponent
+      ),
+    title: 'Inscription - Tuita',
   },
 
   // Contractor Dashboard (compliance score, docs, KYC, billing)

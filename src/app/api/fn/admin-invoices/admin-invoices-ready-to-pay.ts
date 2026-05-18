@@ -10,11 +10,17 @@ import { RequestBuilder } from '../../request-builder';
 import { JsonObject } from '../../models/json-object';
 
 export interface AdminInvoicesReadyToPay$Params {
+  stuck?: boolean;
+  page?: number;
+  per_page?: number;
 }
 
 export function adminInvoicesReadyToPay(http: HttpClient, rootUrl: string, params?: AdminInvoicesReadyToPay$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesReadyToPay.PATH, 'get');
   if (params) {
+    rb.query('stuck', params.stuck, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
   }
 
   return http.request(

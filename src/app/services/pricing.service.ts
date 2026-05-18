@@ -1,28 +1,24 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-
-import { ContractorApiService } from './contractor-api.service';
+import { Injectable, computed, signal } from '@angular/core';
 
 /**
  * Source de vérité unique pour les 2 prix affichés dans le portail contractor :
  *
  *  - **Document officiel one-shot** (extrait INPI, avis SIRENE, statuts, KBIS) :
  *    9,99 € — tarif unifié Pappers, configurable backend via env
- *    `PAPPERS_*_PRICE_EUR`. Source : GET /documents/purchasable.
+ *    `PAPPERS_*_PRICE_EUR`.
  *
- *  - **Abonnement Tuita Pro** : 99 € / mois — backend `PLAN_PRICE_EUR` exposé
- *    via GET /billing/plan.
+ *  - **Abonnement Tuita Pro** : 99 € / mois — backend `PLAN_PRICE_EUR`.
  *
- * Les 2 endpoints sont chargés au boot via APP_INITIALIZER. Si l'un échoue
- * (401 sur /login, 5xx, offline) → fallback statique (9,99 et 99) qui
- * matche les valeurs `.env` par défaut. Aucune UI cassée même en mode dégradé.
+ * Pourquoi statique : le backend Tuita n'expose pas d'endpoint catalogue
+ * (juste `/billing/subscription` pour le plan courant et `/documents/purchase`
+ * pour l'achat unitaire). Les prix sont configurés côté backend via
+ * `PAPPERS_*_PRICE_EUR` et `PLAN_PRICE_EUR` — on miroite les valeurs par
+ * défaut ici. Si un endpoint catalogue est ajouté plus tard, rebrancher
+ * `loadDocumentPrice` / `loadSubscriptionPrice` avec les fonctions SDK.
  */
 @Injectable({ providedIn: 'root' })
 export class PricingService {
-  private readonly api = inject(ContractorApiService);
-
-  // Fallbacks alignés sur .env par défaut. Garantit qu'aucun « € » vide
-  // n'apparaisse même si les deux endpoints échouent au boot.
+  // Fallbacks alignés sur .env par défaut.
   private static readonly FALLBACK_DOCUMENT_EUR = 9.99;
   private static readonly FALLBACK_SUBSCRIPTION_EUR = 99;
 
@@ -32,41 +28,17 @@ export class PricingService {
   readonly documentPriceLabel = computed(() => this.formatEur(this.documentEur()));
   readonly subscriptionPriceLabel = computed(() => this.formatEur(this.subscriptionEur()));
 
-  /** Appelé une fois au boot par APP_INITIALIZER. Best-effort, jamais throw. */
+  /**
+   * Appelé une fois au boot par APP_INITIALIZER.
+   * No-op : fallback statique uniquement (cf. note ci-dessus).
+   */
   async load(): Promise<void> {
-    await Promise.allSettled([this.loadDocumentPrice(), this.loadSubscriptionPrice()]);
+    return Promise.resolve();
   }
 
   /** Prix d'un justificatif d'immatriculation officiel (9,99 € par défaut). */
   priceLabelFor(_documentType?: string): string {
     return this.documentPriceLabel();
-  }
-
-  private async loadDocumentPrice(): Promise<void> {
-    try {
-      const data = await firstValueFrom(this.api.getPurchasableCatalog());
-      // Tous les types Pappers ont le même prix (offre unifiée 9,99 €).
-      // On prend le premier non-null disponible.
-      const first = data.documents?.[0]?.price_eur;
-      if (typeof first === 'number' && first > 0) {
-        this.documentEur.set(first);
-      }
-    } catch {
-      // Silencieux — fallback statique.
-    }
-  }
-
-  private async loadSubscriptionPrice(): Promise<void> {
-    try {
-      const res = await firstValueFrom(this.api.getBillingPlan());
-      const paid = res?.plans?.find(p => p.id === 'paid');
-      const price = paid?.price_eur_month;
-      if (typeof price === 'number' && price > 0) {
-        this.subscriptionEur.set(price);
-      }
-    } catch {
-      // Silencieux — fallback statique.
-    }
   }
 
   private formatEur(value: number): string {

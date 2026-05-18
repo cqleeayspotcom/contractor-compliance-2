@@ -7,8 +7,9 @@
  *   (proxy.conf.json) qui forward `/contractor-compliance/**` vers
  *   http://localhost:8060 (backend Tuita monolithe).
  * - Auth contractor : cookie `__contractor_ssid` posé par Tuita après
- *   l'auth SMS (ContractorAuthAction). L'interceptor `api.interceptor.ts`
- *   active `withCredentials: true` sur les requêtes /contractor-compliance/*.
+ *   l'auth SMS (ContractorAuthAction). L'interceptor
+ *   `contractor-cookie.interceptor.ts` active `withCredentials: true` sur
+ *   les requêtes /contractor-compliance/*.
  * - Auth admin : bearer OAuth2 Tuita (CLEARANCE_STAFF_ONLY).
  */
 export const environment = {
