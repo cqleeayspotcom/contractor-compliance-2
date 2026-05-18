@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData } from '../api/unwrap';
 import { adminDocumentsShow } from '../api/fn/admin-documents/admin-documents-show';
 import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-file';
 
@@ -83,15 +84,16 @@ export interface DocumentDetail {
 @Injectable({ providedIn: 'root' })
 export class AdminDocumentService {
   private readonly http = inject(HttpClient);
-  private readonly api = inject(Api);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   /**
    * Vue admin (read-only) d'un document : metadata + OCR fields + version
    * history. Pas d'action exposee.
    */
   getDocument(uuid: string): Observable<{ data: DocumentDetail }> {
-    return from(this.api.invoke(adminDocumentsShow, { uuid })).pipe(
-      map(r => r as unknown as { data: DocumentDetail })
+    return adminDocumentsShow(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
+      unwrapData<DocumentDetail>(),
+      map(data => ({ data })),
     );
   }
 

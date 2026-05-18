@@ -7,7 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesPendingValidation$Params {
   stuck?: boolean;
@@ -15,7 +15,7 @@ export interface AdminInvoicesPendingValidation$Params {
   per_page?: number;
 }
 
-export function adminInvoicesPendingValidation(http: HttpClient, rootUrl: string, params?: AdminInvoicesPendingValidation$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminInvoicesPendingValidation(http: HttpClient, rootUrl: string, params?: AdminInvoicesPendingValidation$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesPendingValidation.PATH, 'get');
   if (params) {
     rb.query('stuck', params.stuck, {});
@@ -28,7 +28,7 @@ export function adminInvoicesPendingValidation(http: HttpClient, rootUrl: string
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

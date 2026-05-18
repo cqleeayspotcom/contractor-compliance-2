@@ -8,12 +8,13 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface NotificationsPreferencesUpdate$Params {
       body: JsonObject
 }
 
-export function notificationsPreferencesUpdate(http: HttpClient, rootUrl: string, params: NotificationsPreferencesUpdate$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function notificationsPreferencesUpdate(http: HttpClient, rootUrl: string, params: NotificationsPreferencesUpdate$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, notificationsPreferencesUpdate.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
@@ -24,7 +25,7 @@ export function notificationsPreferencesUpdate(http: HttpClient, rootUrl: string
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

@@ -3,6 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData } from '../api/unwrap';
 import { adminFreeInvoicesPending } from '../api/fn/admin-free-invoices/admin-free-invoices-pending';
 import { adminFreeInvoicesGet } from '../api/fn/admin-free-invoices/admin-free-invoices-get';
 import { adminFreeInvoicesReject } from '../api/fn/admin-free-invoices/admin-free-invoices-reject';
@@ -25,22 +27,26 @@ import { adminFreeInvoicesAttachments } from '../api/fn/admin-free-invoices/admi
 export class AdminFreeInvoiceService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   pending(): Observable<{ data: any[] }> {
-    return from(this.api.invoke(adminFreeInvoicesPending)).pipe(
-      map(r => r as unknown as { data: any[] })
+    return adminFreeInvoicesPending(this.http, this.apiConfig.rootUrl).pipe(
+      unwrapData<any[]>(),
+      map(data => ({ data })),
     );
   }
 
   list(params: { status?: string; page?: number; per_page?: number } = {}): Observable<{ data: any[] }> {
-    return from(this.api.invoke(adminFreeInvoicesList, params)).pipe(
-      map(r => r as unknown as { data: any[] })
+    return adminFreeInvoicesList(this.http, this.apiConfig.rootUrl, params).pipe(
+      unwrapData<any[]>(),
+      map(data => ({ data })),
     );
   }
 
   detail(uuid: string): Observable<{ data: any }> {
-    return from(this.api.invoke(adminFreeInvoicesGet, { uuid })).pipe(
-      map(r => r as unknown as { data: any })
+    return adminFreeInvoicesGet(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
+      unwrapData<any>(),
+      map(data => ({ data })),
     );
   }
 

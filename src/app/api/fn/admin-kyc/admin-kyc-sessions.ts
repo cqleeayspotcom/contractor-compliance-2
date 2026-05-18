@@ -7,7 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminKycSessions$Params {
   page?: number;
@@ -18,7 +18,7 @@ export interface AdminKycSessions$Params {
   direction?: 'asc' | 'desc';
 }
 
-export function adminKycSessions(http: HttpClient, rootUrl: string, params?: AdminKycSessions$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminKycSessions(http: HttpClient, rootUrl: string, params?: AdminKycSessions$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminKycSessions.PATH, 'get');
   if (params) {
     rb.query('page', params.page, {});
@@ -34,7 +34,7 @@ export function adminKycSessions(http: HttpClient, rootUrl: string, params?: Adm
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

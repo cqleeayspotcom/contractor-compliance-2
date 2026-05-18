@@ -7,13 +7,13 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminKycForceApprove$Params {
   sessionUuid: string;
 }
 
-export function adminKycForceApprove(http: HttpClient, rootUrl: string, params: AdminKycForceApprove$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminKycForceApprove(http: HttpClient, rootUrl: string, params: AdminKycForceApprove$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminKycForceApprove.PATH, 'post');
   if (params) {
     rb.path('sessionUuid', params.sessionUuid, {});
@@ -24,7 +24,7 @@ export function adminKycForceApprove(http: HttpClient, rootUrl: string, params: 
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

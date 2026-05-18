@@ -8,13 +8,14 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminContractorsPurchaseDocument$Params {
   userId: number;
       body: JsonObject
 }
 
-export function adminContractorsPurchaseDocument(http: HttpClient, rootUrl: string, params: AdminContractorsPurchaseDocument$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminContractorsPurchaseDocument(http: HttpClient, rootUrl: string, params: AdminContractorsPurchaseDocument$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminContractorsPurchaseDocument.PATH, 'post');
   if (params) {
     rb.path('userId', params.userId, {});
@@ -26,7 +27,7 @@ export function adminContractorsPurchaseDocument(http: HttpClient, rootUrl: stri
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

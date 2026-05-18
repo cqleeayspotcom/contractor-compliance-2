@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { UrgencyDialogService } from '../components/shared/urgency-dialog/urgency-dialog.service';
 import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData } from '../api/unwrap';
 import { invitationCodesCheck } from '../api/fn/signup/invitation-codes-check';
 import { signupCreate } from '../api/fn/signup/signup-create';
 
@@ -20,20 +21,17 @@ export interface SignupPayload {
 }
 
 export interface SignupResponse {
-  success: boolean;
-  data: {
-    session_id: string;
-    contractor: {
-      uuid: string;
-      phone: string;
-      first_name: string | null;
-      last_name: string | null;
-    };
-    invitation: {
-      code_used: string;
-    };
-    next: string;
+  session_id: string;
+  contractor: {
+    uuid: string;
+    phone: string;
+    first_name: string | null;
+    last_name: string | null;
   };
+  invitation: {
+    code_used: string;
+  };
+  next: string;
 }
 
 /**
@@ -73,17 +71,12 @@ export class ContractorSignupService {
    */
   verifyCode(code: string): Observable<VerifyCodeResponse> {
     return invitationCodesCheck(this.http, this.apiConfig.rootUrl, { code }).pipe(
-      map((res) => ({
-        valid: res.body.valid === true,
-        reason: res.body.reason,
-        code,
-      })),
+      unwrapData<{ valid: boolean; reason?: VerifyCodeReason }>(),
+      map((data) => ({ valid: data.valid === true, reason: data.reason, code })),
     );
   }
 
   signup(payload: SignupPayload): Observable<SignupResponse> {
-    // withCredentials: true → le navigateur stocke le cookie Set-Cookie de la
-    // réponse, indispensable pour les requêtes authentifiées suivantes.
     return signupCreate(this.http, this.apiConfig.rootUrl, {
       body: {
         code: payload.code,
@@ -95,16 +88,12 @@ export class ContractorSignupService {
         company_name: payload.company_name,
       },
     }).pipe(
-      map((res) => res.body as unknown as SignupResponse),
+      unwrapData<SignupResponse>(),
       // Marque le timestamp signup pour activer la période de grâce 24h du
       // UrgencyDialogService — sinon un user fresh signup serait harcelé
       // immédiatement par le modal "Ton dossier n'est pas complet" alors
       // qu'il vient à peine d'arriver. Voir BUG-004 / FIX-003.
-      tap((response) => {
-        if (response?.success) {
-          this.urgencyDialogService.markSignupCompleted();
-        }
-      }),
+      tap(() => this.urgencyDialogService.markSignupCompleted()),
     );
   }
 }

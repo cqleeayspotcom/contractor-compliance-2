@@ -1,8 +1,9 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData, unwrapDataMeta } from '../api/unwrap';
 import { adminContractorsShow } from '../api/fn/admin-contractors/admin-contractors-show';
 import { adminContractorsList } from '../api/fn/admin-contractors/admin-contractors-list';
 import { adminContractorsDocuments } from '../api/fn/admin-contractors/admin-contractors-documents';
@@ -289,7 +290,17 @@ const SDK_MIN_LIST_KEYS = ['page', 'per_page'] as const;
 @Injectable({ providedIn: 'root' })
 export class AdminContractorService {
   private readonly http = inject(HttpClient);
-  private readonly api = inject(Api);
+  private readonly apiConfig = inject(ApiConfiguration);
+
+  /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) à partir d'une réponse SDK enveloppée. */
+  private toPaginated<T>(
+    source$: Observable<import('../api/strict-http-response').StrictHttpResponse<unknown>>,
+  ): Observable<Paginated<T>> {
+    return source$.pipe(
+      unwrapDataMeta<T[], PaginatedMeta>(),
+      map(({ data, meta }) => ({ data, meta: meta as PaginatedMeta })),
+    );
+  }
 
   private toParams(query?: ListQuery): HttpParams | undefined {
     if (!query) return undefined;
@@ -329,19 +340,18 @@ export class AdminContractorService {
         params ? { params } : {},
       );
     }
-    return from(
-      this.api.invoke(adminContractorsList, {
-        page: query.page,
-        per_page: query.per_page,
-        sort: query.sort,
-        direction: query.direction,
-      }),
-    ).pipe(map(r => r as unknown as ContractorBrowseResponse));
+    return adminContractorsList(this.http, this.apiConfig.rootUrl, {
+      page: query.page,
+      per_page: query.per_page,
+      sort: query.sort,
+      direction: query.direction,
+    }).pipe(map(r => r.body as unknown as ContractorBrowseResponse));
   }
 
   getContractor(phone: string): Observable<{ data: ContractorDetail }> {
-    return from(this.api.invoke(adminContractorsShow, { phone })).pipe(
-      map(r => r as unknown as { data: ContractorDetail })
+    return adminContractorsShow(this.http, this.apiConfig.rootUrl, { phone }).pipe(
+      unwrapData<ContractorDetail>(),
+      map(data => ({ data })),
     );
   }
 
@@ -354,14 +364,14 @@ export class AdminContractorService {
         { params: this.toParams(query) },
       );
     }
-    return from(
-      this.api.invoke(adminContractorsDocuments, {
+    return this.toPaginated<ContractorDocumentRow>(
+      adminContractorsDocuments(this.http, this.apiConfig.rootUrl, {
         phone,
         page: query.page,
         per_page: query.per_page,
         status: query.status,
       }),
-    ).pipe(map(r => r as unknown as Paginated<ContractorDocumentRow>));
+    );
   }
 
   listKycSessions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorKycRow>> {
@@ -371,13 +381,13 @@ export class AdminContractorService {
         { params: this.toParams(query) },
       );
     }
-    return from(
-      this.api.invoke(adminContractorsKycSessions, {
+    return this.toPaginated<ContractorKycRow>(
+      adminContractorsKycSessions(this.http, this.apiConfig.rootUrl, {
         phone,
         page: query.page,
         per_page: query.per_page,
       }),
-    ).pipe(map(r => r as unknown as Paginated<ContractorKycRow>));
+    );
   }
 
   listInvoices(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorInvoiceRow>> {
@@ -387,14 +397,14 @@ export class AdminContractorService {
         { params: this.toParams(query) },
       );
     }
-    return from(
-      this.api.invoke(adminContractorsInvoices, {
+    return this.toPaginated<ContractorInvoiceRow>(
+      adminContractorsInvoices(this.http, this.apiConfig.rootUrl, {
         phone,
         page: query.page,
         per_page: query.per_page,
         status: query.status,
       }),
-    ).pipe(map(r => r as unknown as Paginated<ContractorInvoiceRow>));
+    );
   }
 
   listPurchases(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorPurchaseRow>> {
@@ -404,13 +414,13 @@ export class AdminContractorService {
         { params: this.toParams(query) },
       );
     }
-    return from(
-      this.api.invoke(adminContractorsPurchases, {
+    return this.toPaginated<ContractorPurchaseRow>(
+      adminContractorsPurchases(this.http, this.apiConfig.rootUrl, {
         phone,
         page: query.page,
         per_page: query.per_page,
       }),
-    ).pipe(map(r => r as unknown as Paginated<ContractorPurchaseRow>));
+    );
   }
 
   listMissions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorMissionRow>> {
@@ -420,14 +430,14 @@ export class AdminContractorService {
         { params: this.toParams(query) },
       );
     }
-    return from(
-      this.api.invoke(adminContractorsMissions, {
+    return this.toPaginated<ContractorMissionRow>(
+      adminContractorsMissions(this.http, this.apiConfig.rootUrl, {
         phone,
         page: query.page,
         per_page: query.per_page,
         status: query.status,
       }),
-    ).pipe(map(r => r as unknown as Paginated<ContractorMissionRow>));
+    );
   }
 
   /**

@@ -47,16 +47,47 @@ components:
         additionalProperties: true
     Empty:
       type: object
-    ErrorResponse:
+    # ============================================================
+    # Enveloppe API canonique (cf. trait PHP `ApiEnvelope`).
+    # Toute réponse JSON du module respecte une de ces deux formes :
+    #
+    #   Succès (HTTP 2xx) : { data: <payload>, meta?: <pagination/etc> }
+    #   Erreur (HTTP 4xx/5xx) : { error: { code, message, details? } }
+    #
+    # Le statut HTTP fait foi — pas de flag `success` redondant.
+    # ============================================================
+    SuccessEnvelope:
       type: object
+      required: [data]
       properties:
-        error:
-          type: string
-        message:
-          type: string
-        detail:
+        data:
+          description: Payload métier — type variable selon l'endpoint.
+        meta:
           type: object
           additionalProperties: true
+          description: Métadonnées optionnelles (pagination, cursors, etc.).
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          description: "Code machine-readable (ex: INVITATION_CODE_NOT_FOUND). Stable, utilisé par le frontend pour brancher la logique."
+        message:
+          type: string
+          description: "Message en français, prêt à afficher à l'utilisateur final tel quel."
+        details:
+          type: object
+          additionalProperties: true
+          description: "Détails optionnels (ex: champ en faute, contexte). Format libre par endpoint."
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error: { $ref: '#/components/schemas/ApiError' }
+    # Alias legacy — conservé temporairement pour compat.
+    ErrorResponse:
+      $ref: '#/components/schemas/ErrorEnvelope'
   parameters:
     Uuid:
       name: uuid
@@ -214,17 +245,17 @@ components:
             type: string
             format: binary
     JsonOk:
-      description: OK
+      description: "Succès — enveloppe data/meta?."
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/JsonObject'
+            $ref: '#/components/schemas/SuccessEnvelope'
     JsonError:
-      description: Erreur applicative
+      description: "Erreur — enveloppe error.code / error.message / error.details?."
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            $ref: '#/components/schemas/ErrorEnvelope'
 tags:
   - name: Signup
   - name: Profile
@@ -273,18 +304,22 @@ paths:
           description: Code d'invitation 4 caractères (alphabet `[A-HJ-NP-Z2-9]`).
       responses:
         '200':
-          description: Résultat de la vérification (200 même si invalide — voir `valid`).
+          description: Résultat de la vérification (200 même si le code est invalide — voir `data.valid`).
           content:
             application/json:
               schema:
                 type: object
-                required: [valid]
+                required: [data]
                 properties:
-                  valid: { type: boolean }
-                  reason:
-                    type: string
-                    enum: [invalid_format, not_found, revoked, expired, exhausted]
-                    description: "Présent uniquement quand valid=false."
+                  data:
+                    type: object
+                    required: [valid]
+                    properties:
+                      valid: { type: boolean }
+                      reason:
+                        type: string
+                        enum: [invalid_format, not_found, revoked, expired, exhausted]
+                        description: "Présent uniquement quand valid=false."
         default: { $ref: '#/components/responses/JsonError' }
 
   /contractor-compliance/signup:

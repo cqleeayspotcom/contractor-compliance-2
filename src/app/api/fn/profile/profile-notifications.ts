@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface ProfileNotifications$Params {
 }
 
-export function profileNotifications(http: HttpClient, rootUrl: string, params?: ProfileNotifications$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function profileNotifications(http: HttpClient, rootUrl: string, params?: ProfileNotifications$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, profileNotifications.PATH, 'get');
   if (params) {
   }
@@ -22,7 +22,7 @@ export function profileNotifications(http: HttpClient, rootUrl: string, params?:
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

@@ -1,8 +1,10 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData, unwrapDataMeta } from '../api/unwrap';
 import { adminInvoicesShow } from '../api/fn/admin-invoices/admin-invoices-show';
 import { adminInvoicesAuditTrail } from '../api/fn/admin-invoices/admin-invoices-audit-trail';
 import { adminInvoicesPendingValidation } from '../api/fn/admin-invoices/admin-invoices-pending-validation';
@@ -364,38 +366,58 @@ export interface AddNoteBody {
 @Injectable({ providedIn: 'root' })
 export class AdminInvoiceService {
   private readonly http = inject(HttpClient);
-  private readonly api = inject(Api);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   // ---------------------------------------------------------------------
   // Lists
   // ---------------------------------------------------------------------
 
+  /**
+   * Reconstruit `{ data, meta }` (forme `PaginatedInvoices`) à partir de
+   * l'enveloppe `{ data, meta }` du backend via `unwrapDataMeta`. Signature
+   * publique préservée pour les composants consommateurs (qui lisent `.data`
+   * et `.meta`).
+   */
+  private listFromMeta(
+    source$: Observable<import('../api/strict-http-response').StrictHttpResponse<unknown>>,
+  ): Observable<PaginatedInvoices> {
+    return source$.pipe(
+      unwrapDataMeta<AdminInvoice[], PaginatedInvoices['meta']>(),
+      map(({ data, meta }) => ({ data, meta })),
+    );
+  }
+
   listPendingValidation(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return from(
-      this.api.invoke(adminInvoicesPendingValidation, { page, per_page: perPage, stuck: opts.stuck }),
-    ) as Observable<PaginatedInvoices>;
+    return this.listFromMeta(
+      adminInvoicesPendingValidation(this.http, this.apiConfig.rootUrl, { page, per_page: perPage, stuck: opts.stuck }),
+    );
   }
 
   listReadyToPay(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return from(
-      this.api.invoke(adminInvoicesReadyToPay, { page, per_page: perPage, stuck: opts.stuck }),
-    ) as Observable<PaginatedInvoices>;
+    return this.listFromMeta(
+      adminInvoicesReadyToPay(this.http, this.apiConfig.rootUrl, { page, per_page: perPage, stuck: opts.stuck }),
+    );
   }
 
   listPaymentInProgress(page = 1, perPage = 20, opts: { stuck?: boolean } = {}): Observable<PaginatedInvoices> {
-    return from(
-      this.api.invoke(adminInvoicesPaymentInProgress, { page, per_page: perPage, stuck: opts.stuck }),
-    ) as Observable<PaginatedInvoices>;
+    return this.listFromMeta(
+      adminInvoicesPaymentInProgress(this.http, this.apiConfig.rootUrl, { page, per_page: perPage, stuck: opts.stuck }),
+    );
   }
 
   listPaidDisputed(page = 1, perPage = 20): Observable<PaginatedInvoices> {
-    return from(
-      this.api.invoke(adminInvoicesPaidDisputed, { page, per_page: perPage }),
-    ) as Observable<PaginatedInvoices>;
+    return this.listFromMeta(
+      adminInvoicesPaidDisputed(this.http, this.apiConfig.rootUrl, { page, per_page: perPage }),
+    );
   }
 
+  // Signature publique préservée : on rewrappe le payload dans `{ data }` pour
+  // ne pas casser les consommateurs (cf. contractor-admin.component.ts qui lit `res.data`).
   getStuckCounts(): Observable<{ data: StuckCounts }> {
-    return from(this.api.invoke(adminInvoicesStatsStuckCounts)) as Observable<{ data: StuckCounts }>;
+    return adminInvoicesStatsStuckCounts(this.http, this.apiConfig.rootUrl).pipe(
+      unwrapData<StuckCounts>(),
+      map(data => ({ data })),
+    );
   }
 
   // ---------------------------------------------------------------------
@@ -403,30 +425,38 @@ export class AdminInvoiceService {
   // ---------------------------------------------------------------------
 
   getInvoice(uuid: string): Observable<{ data: AdminInvoice }> {
-    return from(
-      this.api.invoke(adminInvoicesShow, { uuid }),
-    ) as Observable<{ data: AdminInvoice }>;
+    return adminInvoicesShow(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
+      unwrapData<AdminInvoice>(),
+      map(data => ({ data })),
+    );
   }
 
   /** Vue super-admin : invoice + relations + validations + items + webhooks + mission_snapshot + dispute. */
   getInvoiceDetail(uuid: string): Observable<{ data: InvoiceDetail }> {
-    return from(
-      this.api.invoke(adminInvoicesShow, { uuid }),
-    ) as Observable<{ data: InvoiceDetail }>;
+    return adminInvoicesShow(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
+      unwrapData<InvoiceDetail>(),
+      map(data => ({ data })),
+    );
   }
 
   /**
    * Stream le PDF en blob (l'admin key passe par header donc impossible
    * de mettre l'URL directe dans <iframe src> — il faut fetch + objectURL).
+   *
+   * Le SDK fn retourne déjà un Blob brut (pas d'enveloppe JSON) ; on extrait
+   * juste `r.body`.
    */
   downloadInvoicePdf(uuid: string, inline = true): Observable<Blob> {
-    return from(this.api.invoke(adminInvoicesPdf, { uuid, inline })) as Observable<Blob>;
+    return adminInvoicesPdf(this.http, this.apiConfig.rootUrl, { uuid, inline }).pipe(
+      map(r => r.body as unknown as Blob),
+    );
   }
 
   getAuditTrail(uuid: string): Observable<{ data: AuditTrailDetail }> {
-    return from(
-      this.api.invoke(adminInvoicesAuditTrail, { uuid }),
-    ) as Observable<{ data: AuditTrailDetail }>;
+    return adminInvoicesAuditTrail(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
+      unwrapData<AuditTrailDetail>(),
+      map(data => ({ data })),
+    );
   }
 
   // ---------------------------------------------------------------------

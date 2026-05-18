@@ -7,7 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface KycVideo$Params {
       body: {
@@ -15,7 +15,7 @@ export interface KycVideo$Params {
 }
 }
 
-export function kycVideo(http: HttpClient, rootUrl: string, params: KycVideo$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function kycVideo(http: HttpClient, rootUrl: string, params: KycVideo$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, kycVideo.PATH, 'post');
   if (params) {
     rb.body(params.body, 'multipart/form-data');
@@ -26,7 +26,7 @@ export function kycVideo(http: HttpClient, rootUrl: string, params: KycVideo$Par
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

@@ -8,13 +8,14 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesMarkPaymentInProgress$Params {
   uuid: string;
       body?: JsonObject
 }
 
-export function adminInvoicesMarkPaymentInProgress(http: HttpClient, rootUrl: string, params: AdminInvoicesMarkPaymentInProgress$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminInvoicesMarkPaymentInProgress(http: HttpClient, rootUrl: string, params: AdminInvoicesMarkPaymentInProgress$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesMarkPaymentInProgress.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
@@ -26,7 +27,7 @@ export function adminInvoicesMarkPaymentInProgress(http: HttpClient, rootUrl: st
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

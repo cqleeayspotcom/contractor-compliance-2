@@ -8,13 +8,14 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface CertificationQcmSubmit$Params {
   attempt: number;
       body: JsonObject
 }
 
-export function certificationQcmSubmit(http: HttpClient, rootUrl: string, params: CertificationQcmSubmit$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function certificationQcmSubmit(http: HttpClient, rootUrl: string, params: CertificationQcmSubmit$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, certificationQcmSubmit.PATH, 'post');
   if (params) {
     rb.path('attempt', params.attempt, {});
@@ -26,7 +27,7 @@ export function certificationQcmSubmit(http: HttpClient, rootUrl: string, params
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

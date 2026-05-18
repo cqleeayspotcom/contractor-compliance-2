@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminMetrics$Params {
 }
 
-export function adminMetrics(http: HttpClient, rootUrl: string, params?: AdminMetrics$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminMetrics(http: HttpClient, rootUrl: string, params?: AdminMetrics$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminMetrics.PATH, 'get');
   if (params) {
   }
@@ -22,7 +22,7 @@ export function adminMetrics(http: HttpClient, rootUrl: string, params?: AdminMe
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

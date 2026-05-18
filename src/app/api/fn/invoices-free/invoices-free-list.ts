@@ -7,14 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface InvoicesFreeList$Params {
   page?: number;
   per_page?: number;
 }
 
-export function invoicesFreeList(http: HttpClient, rootUrl: string, params?: InvoicesFreeList$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function invoicesFreeList(http: HttpClient, rootUrl: string, params?: InvoicesFreeList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, invoicesFreeList.PATH, 'get');
   if (params) {
     rb.query('page', params.page, {});
@@ -26,7 +26,7 @@ export function invoicesFreeList(http: HttpClient, rootUrl: string, params?: Inv
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

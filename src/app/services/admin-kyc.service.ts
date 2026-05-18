@@ -71,18 +71,21 @@ export class AdminKycService {
   }
 
   async getSessions(query?: KycSessionsQuery): Promise<KycPaginatedResponse<KycSessionRow>> {
-    const result = await this.api.invoke(adminKycSessions, this.sanitizeQuery(query));
-    return result as unknown as KycPaginatedResponse<KycSessionRow>;
+    // SuccessEnvelope `{ data: KycSessionRow[], meta: {...} }` → on conserve la
+    // forme `KycPaginatedResponse` attendue par le composant.
+    const env = await this.api.invoke(adminKycSessions, this.sanitizeQuery(query));
+    return env as unknown as KycPaginatedResponse<KycSessionRow>;
   }
 
   async getRejections(query?: KycSessionsQuery): Promise<KycPaginatedResponse<KycSessionRow>> {
-    const result = await this.api.invoke(adminKycRejections, this.sanitizeQuery(query));
-    return result as unknown as KycPaginatedResponse<KycSessionRow>;
+    const env = await this.api.invoke(adminKycRejections, this.sanitizeQuery(query));
+    return env as unknown as KycPaginatedResponse<KycSessionRow>;
   }
 
   async getArtifacts(sessionUuid: string): Promise<KycArtifact[]> {
-    const result = await this.api.invoke(adminKycArtifactsList, { uuid: sessionUuid });
-    return ((result as unknown as KycArtifactsResponse).data?.artifacts) ?? [];
+    // Enveloppe `{ data: { session_uuid, artifacts } }` → on extrait artifacts.
+    const env = await this.api.invoke(adminKycArtifactsList, { uuid: sessionUuid });
+    return ((env as { data?: { artifacts?: KycArtifact[] } }).data?.artifacts) ?? [];
   }
 
   async fetchArtifactBlob(sessionUuid: string, path: string): Promise<string> {

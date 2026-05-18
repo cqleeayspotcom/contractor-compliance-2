@@ -7,7 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminContractorsShow$Params {
 
@@ -17,7 +17,7 @@ export interface AdminContractorsShow$Params {
   phone: string;
 }
 
-export function adminContractorsShow(http: HttpClient, rootUrl: string, params: AdminContractorsShow$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminContractorsShow(http: HttpClient, rootUrl: string, params: AdminContractorsShow$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminContractorsShow.PATH, 'get');
   if (params) {
     rb.path('phone', params.phone, {});
@@ -28,7 +28,7 @@ export function adminContractorsShow(http: HttpClient, rootUrl: string, params: 
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

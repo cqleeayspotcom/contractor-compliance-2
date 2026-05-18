@@ -8,13 +8,14 @@ import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
 import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesReject$Params {
   uuid: string;
       body: JsonObject
 }
 
-export function adminInvoicesReject(http: HttpClient, rootUrl: string, params: AdminInvoicesReject$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminInvoicesReject(http: HttpClient, rootUrl: string, params: AdminInvoicesReject$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesReject.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
@@ -26,7 +27,7 @@ export function adminInvoicesReject(http: HttpClient, rootUrl: string, params: A
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

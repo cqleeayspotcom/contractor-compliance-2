@@ -1,9 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 import { ApiConfiguration } from '../api/api-configuration';
 import { adminMissionShow } from '../api/fn/admin/admin-mission-show';
+import { unwrapData } from '../api/unwrap';
 
 export type ValidatorType = 'compliance' | 'production' | 'accounting';
 export type ValidationStatus = 'approved' | 'rejected' | null;
@@ -71,7 +71,7 @@ export class AdminMissionService {
   // X-Tuita-Admin-Key est injecté globalement par admin-key.interceptor.ts.
   getMissionDetail(missionRef: string): Observable<MissionDetail> {
     return adminMissionShow(this.http, this.apiConfig.rootUrl, { missionRef }).pipe(
-      map(r => r.body as unknown as MissionDetail),
+      unwrapData<MissionDetail>(),
     );
   }
 }

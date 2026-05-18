@@ -7,13 +7,13 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminKycShow$Params {
   uuid: string;
 }
 
-export function adminKycShow(http: HttpClient, rootUrl: string, params: AdminKycShow$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminKycShow(http: HttpClient, rootUrl: string, params: AdminKycShow$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminKycShow.PATH, 'get');
   if (params) {
     rb.path('uuid', params.uuid, {});
@@ -24,7 +24,7 @@ export function adminKycShow(http: HttpClient, rootUrl: string, params: AdminKyc
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

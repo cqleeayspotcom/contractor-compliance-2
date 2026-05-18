@@ -32,6 +32,7 @@ import { missionsActive } from '../api/fn/missions/missions-active';
 import { missionsHistory } from '../api/fn/missions/missions-history';
 import { missionsShow } from '../api/fn/missions/missions-show';
 import { missionsOffers } from '../api/fn/missions/missions-offers';
+import { unwrapDataMeta } from '../api/unwrap';
 
 export type { MissionOffer } from '../models/mission-offer.model';
 
@@ -357,7 +358,14 @@ export class ContractorApiService {
       status: params?.status,
       type: params?.type,
       page: params?.page,
-    }).pipe(map((r) => r.body as unknown as PaginatedResponse<ContractorDocument>));
+    }).pipe(
+      unwrapDataMeta<ContractorDocument[], PaginatedResponse<ContractorDocument>['meta']>(),
+      map(({ data, meta }) => ({
+        success: true,
+        data,
+        meta: meta ?? { current_page: 1, total: data.length, per_page: data.length, last_page: 1 },
+      })),
+    );
   }
 
   uploadDocument(file: File, type?: string): Observable<any> {
@@ -381,7 +389,9 @@ export class ContractorApiService {
    * statuts apr�s navigation arri�re ou refresh.
    */
   getDocumentStatus(uuid: string): Observable<any> {
-    return from(this.api.invoke(documentsGet, { uuid }));
+    return from(
+      this.api.invoke(documentsGet, { uuid }) as Promise<{ data: any }>
+    ).pipe(map((res) => res.data));
   }
 
   /** Achat unitaire d'un document Pappers (KBIS, URSSAF, fiscale, statuts). */
@@ -389,8 +399,8 @@ export class ContractorApiService {
     return from(
       this.api.invoke(documentsPurchase, {
         body: { document_type: documentType, siren } as any,
-      })
-    );
+      }) as Promise<{ data: any }>
+    ).pipe(map((res) => res.data));
   }
 
   /**
@@ -606,7 +616,14 @@ export class ContractorApiService {
       status: params?.status,
       page: params?.page,
       per_page: params?.per_page,
-    }).pipe(map((r) => r.body as unknown as PaginatedResponse<any>));
+    }).pipe(
+      unwrapDataMeta<any[], PaginatedResponse<any>['meta']>(),
+      map(({ data, meta }) => ({
+        success: true,
+        data,
+        meta: meta ?? { current_page: 1, total: data.length, per_page: data.length, last_page: 1 },
+      })),
+    );
   }
 
   /**
@@ -669,7 +686,9 @@ export class ContractorApiService {
    * pour les �crans qui rafra�chissent apr�s navigation.
    */
   getInvoiceStatus(uuid: string): Observable<any> {
-    return from(this.api.invoke(invoicesTimeline, { uuid }));
+    return from(
+      this.api.invoke(invoicesTimeline, { uuid }) as Promise<{ data: any }>
+    ).pipe(map((res) => res.data));
   }
 
   // --- Certification ---
@@ -740,7 +759,12 @@ export class ContractorApiService {
     // sur `/missions/active`, et `/missions/history` quand `status=history`.
     const fn = query.status === 'history' ? missionsHistory : missionsActive;
     return fn(this.http, this.rootUrl, sdkParams).pipe(
-      map((r) => r.body as unknown as MissionsResponse),
+      unwrapDataMeta<ContractorMission[], MissionsResponse['meta']>(),
+      map(({ data, meta }) => ({
+        success: true,
+        data,
+        meta: meta ?? { total: data.length, completed: 0, invoiceable: 0, invoiced: 0 },
+      })),
     );
   }
 
@@ -758,7 +782,9 @@ export class ContractorApiService {
 
   listMissionOffers(): Observable<{ data: MissionOffer[]; can_accept?: boolean }> {
     return from(
-      this.api.invoke(missionsOffers) as Promise<{ data: MissionOffer[]; can_accept?: boolean }>
-    );
+      this.api.invoke(missionsOffers) as Promise<{
+        data: { data: MissionOffer[]; can_accept?: boolean };
+      }>
+    ).pipe(map((res) => res.data));
   }
 }

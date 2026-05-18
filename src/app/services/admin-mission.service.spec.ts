@@ -29,7 +29,7 @@ describe('AdminMissionService', () => {
     service.getMissionDetail('M-2026-001').subscribe();
     const req = http.expectOne('/contractor-compliance/admin/missions/M-2026-001');
     expect(req.request.method).toBe('GET');
-    req.flush({ mission_ref: 'M-2026-001' });
+    req.flush({ data: { mission_ref: 'M-2026-001' } });
   });
 
   it('encodes special characters in mission_ref', () => {
@@ -38,7 +38,7 @@ describe('AdminMissionService', () => {
       r.url === '/contractor-compliance/admin/missions/M%2Fspecial%231',
     );
     expect(req.request.method).toBe('GET');
-    req.flush({ mission_ref: 'M/special#1' });
+    req.flush({ data: { mission_ref: 'M/special#1' } });
   });
 
   it('returns the parsed body to subscribers', () => {
@@ -65,7 +65,7 @@ describe('AdminMissionService', () => {
     };
     service.getMissionDetail('M-2026-001').subscribe(res => (captured = res));
     const req = http.expectOne('/contractor-compliance/admin/missions/M-2026-001');
-    req.flush(payload);
+    req.flush({ data: payload });
     expect(captured).toEqual(payload);
     expect(captured?.mission_ref).toBe('M-2026-001');
   });

@@ -93,12 +93,14 @@ function getErrorMessage(error: HttpErrorResponse): string {
     return 'Erreur de connexion. Vérifiez votre internet.';
   }
 
-  // Try to extract a meaningful message from the backend
-  const backendMsg = error.error?.error?.message || error.error?.message;
-  if (backendMsg && typeof backendMsg === 'string') {
+  // Enveloppe canonique : { error: { code, message, details? } }.
+  // Le message backend est déjà en français, prêt à afficher.
+  const backendMsg = error.error?.error?.message;
+  if (typeof backendMsg === 'string' && backendMsg !== '') {
     return backendMsg;
   }
 
+  // Fallback : aucun message envoyé par le backend (timeout, 5xx brut, etc.).
   switch (error.status) {
     case 400: return 'Requête invalide.';
     case 403: return 'Accès refusé.';
@@ -109,4 +111,16 @@ function getErrorMessage(error: HttpErrorResponse): string {
     case 502: case 503: case 504: return 'Service temporairement indisponible.';
     default: return 'Une erreur est survenue.';
   }
+}
+
+/**
+ * Helper consommé par les composants pour lire le code machine-readable
+ * de l'erreur backend (ex: 'INVITATION_CODE_NOT_FOUND') afin de brancher
+ * une logique métier (redirect, retry, masquer un champ...). Ne PAS l'utiliser
+ * pour afficher un message — `error.error.error.message` est déjà en
+ * français et prêt à l'emploi via le snackbar global.
+ */
+export function getBackendErrorCode(error: HttpErrorResponse): string | null {
+  const code = error?.error?.error?.code;
+  return typeof code === 'string' && code !== '' ? code : null;
 }

@@ -1,7 +1,10 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData } from '../api/unwrap';
 import { adminContractorsComplianceSummary } from '../api/fn/admin-contractors/admin-contractors-compliance-summary';
 
 /**
@@ -74,11 +77,13 @@ export interface ComplianceSummary {
 
 @Injectable({ providedIn: 'root' })
 export class AdminContractorComplianceService {
-  private readonly api = inject(Api);
+  private readonly http = inject(HttpClient);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   summary(phone: string): Observable<{ data: ComplianceSummary }> {
-    return from(
-      this.api.invoke(adminContractorsComplianceSummary, { phone }),
-    ) as Observable<{ data: ComplianceSummary }>;
+    return adminContractorsComplianceSummary(this.http, this.apiConfig.rootUrl, { phone }).pipe(
+      unwrapData<ComplianceSummary>(),
+      map(data => ({ data })),
+    );
   }
 }

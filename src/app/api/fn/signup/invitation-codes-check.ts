@@ -17,12 +17,14 @@ export interface InvitationCodesCheck$Params {
 }
 
 export function invitationCodesCheck(http: HttpClient, rootUrl: string, params: InvitationCodesCheck$Params, context?: HttpContext): Observable<StrictHttpResponse<{
+'data': {
 'valid': boolean;
 
 /**
  * Présent uniquement quand valid=false.
  */
 'reason'?: 'invalid_format' | 'not_found' | 'revoked' | 'expired' | 'exhausted';
+};
 }>> {
   const rb = new RequestBuilder(rootUrl, invitationCodesCheck.PATH, 'get');
   if (params) {
@@ -35,12 +37,14 @@ export function invitationCodesCheck(http: HttpClient, rootUrl: string, params: 
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
       return r as StrictHttpResponse<{
+      'data': {
       'valid': boolean;
       
       /**
        * Présent uniquement quand valid=false.
        */
       'reason'?: 'invalid_format' | 'not_found' | 'revoked' | 'expired' | 'exhausted';
+      };
       }>;
     })
   );

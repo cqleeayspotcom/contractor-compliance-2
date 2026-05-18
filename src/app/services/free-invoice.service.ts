@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Api } from '../api/api';
 import { ApiConfiguration } from '../api/api-configuration';
 import { invoicesFreeGet } from '../api/fn/invoices-free/invoices-free-get';
@@ -76,7 +77,9 @@ export class FreeInvoiceService {
   }
 
   getEligibleMissions(): Observable<EligibleMission[]> {
-    return from(this.api.invoke(invoicesFreeEligibleMissions) as Promise<EligibleMission[]>);
+    return from(
+      this.api.invoke(invoicesFreeEligibleMissions) as Promise<{ data: EligibleMission[] }>,
+    ).pipe(map((res) => res.data));
   }
 
   cancel(uuid: string): Observable<unknown> {

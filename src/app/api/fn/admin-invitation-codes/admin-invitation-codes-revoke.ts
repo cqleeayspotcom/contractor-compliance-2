@@ -7,13 +7,13 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvitationCodesRevoke$Params {
   code: string;
 }
 
-export function adminInvitationCodesRevoke(http: HttpClient, rootUrl: string, params: AdminInvitationCodesRevoke$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminInvitationCodesRevoke(http: HttpClient, rootUrl: string, params: AdminInvitationCodesRevoke$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvitationCodesRevoke.PATH, 'post');
   if (params) {
     rb.path('code', params.code, {});
@@ -24,7 +24,7 @@ export function adminInvitationCodesRevoke(http: HttpClient, rootUrl: string, pa
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }

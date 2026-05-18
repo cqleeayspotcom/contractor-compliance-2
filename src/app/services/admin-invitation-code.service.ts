@@ -1,7 +1,10 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, from } from 'rxjs';
+import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
-import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
+import { unwrapData, unwrapDataMeta } from '../api/unwrap';
 import { adminInvitationCodesCreate } from '../api/fn/admin-invitation-codes/admin-invitation-codes-create';
 import { adminInvitationCodesShow } from '../api/fn/admin-invitation-codes/admin-invitation-codes-show';
 import { adminInvitationCodesRevoke } from '../api/fn/admin-invitation-codes/admin-invitation-codes-revoke';
@@ -56,12 +59,14 @@ export interface InvitationCodeListResponse {
 
 @Injectable({ providedIn: 'root' })
 export class AdminInvitationCodeService {
-  private readonly api = inject(Api);
+  private readonly http = inject(HttpClient);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   list(params: { status?: string; per_page?: number; sort?: string; direction?: 'asc' | 'desc' } = {}): Observable<InvitationCodeListResponse> {
-    return from(
-      this.api.invoke(adminInvitationCodesList, params),
-    ) as Observable<InvitationCodeListResponse>;
+    return adminInvitationCodesList(this.http, this.apiConfig.rootUrl, params).pipe(
+      unwrapDataMeta<InvitationCodeRow[], InvitationCodeListResponse['meta']>(),
+      map(({ data, meta }) => ({ data, meta: meta as InvitationCodeListResponse['meta'] })),
+    );
   }
 
   create(body: {
@@ -70,28 +75,32 @@ export class AdminInvitationCodeService {
     note: string;
     generated_by_label: string;
   }): Observable<{ data: InvitationCodeRow }> {
-    return from(
-      this.api.invoke(adminInvitationCodesCreate, { body }),
-    ) as Observable<{ data: InvitationCodeRow }>;
+    return adminInvitationCodesCreate(this.http, this.apiConfig.rootUrl, { body }).pipe(
+      unwrapData<InvitationCodeRow>(),
+      map(data => ({ data })),
+    );
   }
 
   detail(uuid: string): Observable<{ data: InvitationCodeDetail }> {
     // NOTE : le param OpenAPI s'appelle `code` mais sémantiquement le backend
     // accepte aussi l'uuid (les consommateurs passent row.uuid historiquement).
-    return from(
-      this.api.invoke(adminInvitationCodesShow, { code: uuid }),
-    ) as Observable<{ data: InvitationCodeDetail }>;
+    return adminInvitationCodesShow(this.http, this.apiConfig.rootUrl, { code: uuid }).pipe(
+      unwrapData<InvitationCodeDetail>(),
+      map(data => ({ data })),
+    );
   }
 
   revoke(uuid: string): Observable<{ data: InvitationCodeRow }> {
-    return from(
-      this.api.invoke(adminInvitationCodesRevoke, { code: uuid }),
-    ) as Observable<{ data: InvitationCodeRow }>;
+    return adminInvitationCodesRevoke(this.http, this.apiConfig.rootUrl, { code: uuid }).pipe(
+      unwrapData<InvitationCodeRow>(),
+      map(data => ({ data })),
+    );
   }
 
   updateNote(uuid: string, note: string): Observable<{ data: InvitationCodeRow }> {
-    return from(
-      this.api.invoke(adminInvitationCodesUpdateNote, { code: uuid, body: { note } }),
-    ) as Observable<{ data: InvitationCodeRow }>;
+    return adminInvitationCodesUpdateNote(this.http, this.apiConfig.rootUrl, { code: uuid, body: { note } }).pipe(
+      unwrapData<InvitationCodeRow>(),
+      map(data => ({ data })),
+    );
   }
 }

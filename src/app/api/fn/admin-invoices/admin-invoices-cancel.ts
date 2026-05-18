@@ -7,13 +7,13 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesCancel$Params {
   uuid: string;
 }
 
-export function adminInvoicesCancel(http: HttpClient, rootUrl: string, params: AdminInvoicesCancel$Params, context?: HttpContext): Observable<StrictHttpResponse<JsonObject>> {
+export function adminInvoicesCancel(http: HttpClient, rootUrl: string, params: AdminInvoicesCancel$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesCancel.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
@@ -24,7 +24,7 @@ export function adminInvoicesCancel(http: HttpClient, rootUrl: string, params: A
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<JsonObject>;
+      return r as StrictHttpResponse<SuccessEnvelope>;
     })
   );
 }
