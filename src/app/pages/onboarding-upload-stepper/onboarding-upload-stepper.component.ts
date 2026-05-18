@@ -240,6 +240,151 @@ const VARIANTS_BY_STEP_TYPE: Record<string, readonly IdentityVariant[]> = {
 };
 
 /**
+ * Tous les slugs backend qu'un step peut accepter. Pour un step à variantes,
+ * ce sont les slugs de toutes les cartes. Sinon, juste le slug canonique.
+ *
+ * Pourquoi cette fonction existe : le dashboard renvoie une DocumentRequirement
+ * par slug uploadé (extrait_inpi OU kbis OU avis_sirene), pas une par step.
+ * Sans expansion, lookup direct par cfg.type rate quand l'artisan a uploadé
+ * une variante autre que le slug canonique (cas réel : INPI sur step 'kbis').
+ */
+function getRequirementTypesForStep(cfgType: string): readonly string[] {
+  const variants = VARIANTS_BY_STEP_TYPE[cfgType];
+  if (variants && variants.length > 0) {
+    return variants.map((v) => v.type);
+  }
+  return [cfgType];
+}
+
+/**
+ * Verdict frontend rendu à l'utilisateur après un upload. Distinct du
+ * status backend brut : on regroupe les 8 statuts DocumentStatus en 4
+ * familles UX (succès / erreur / info bleue / attente grise).
+ *
+ *   - 'verified'  → succès vert, auto-advance
+ *   - 'rejected'  → erreur rouge, l'artisan doit réessayer
+ *   - 'info'      → information neutre (ex: doc deja a jour)
+ *   - 'pending'   → traitement en cours (OCR, revue manuelle)
+ */
+export interface UploadVerdict {
+  type: 'verified' | 'rejected' | 'info' | 'pending';
+  message: string;
+  code?: string | null;
+}
+
+/**
+ * Map un status backend DocumentStatus + failure_detail vers un UploadVerdict
+ * UX. Source unique de mapping back→front — toute nouvelle valeur de
+ * DocumentStatus doit etre ajoutee ici sinon l'artisan ne verra rien
+ * (silence bug observe 2026-05-18 sur status='superseded').
+ *
+ * Le backend renvoie failure_detail en FR (cf. OcrDocumentRules + setFailure
+ * de ProcessOcrJob). On l'utilise tel quel quand present, sinon fallback FR
+ * cote front pour ne JAMAIS laisser l'utilisateur sans feedback.
+ */
+export function interpretUploadStatus(
+  status: string | undefined | null,
+  failureDetail?: string | null,
+  failureReason?: string | null,
+): UploadVerdict {
+  const detail = failureDetail?.trim() || null;
+  const code = failureReason?.trim() || null;
+  switch (status) {
+    case 'verified':
+      return { type: 'verified', message: 'Document validé !', code };
+    case 'rejected':
+      return {
+        type: 'rejected',
+        message:
+          detail
+          ?? 'Le document a été refusé. Vérifie qu\'il est bien lisible et réessaie.',
+        code,
+      };
+    case 'expired':
+      return {
+        type: 'rejected',
+        message:
+          detail
+          ?? 'Ce document est expiré. Téléverse une version à jour.',
+        code: code ?? 'document_expired',
+      };
+    case 'legally_outdated':
+      return {
+        type: 'rejected',
+        message:
+          detail
+          ?? 'Ce document est trop ancien pour être accepté. Téléverse une version récente.',
+        code: code ?? 'document_legally_outdated',
+      };
+    case 'superseded':
+      return {
+        type: 'info',
+        message:
+          detail
+          ?? 'Tu as déjà une version plus récente de ce document — on garde la plus récente.',
+        code: code ?? 'document_superseded',
+      };
+    case 'pending':
+    case 'processing':
+      return {
+        type: 'pending',
+        message: 'On vérifie ton document…',
+        code: code ?? null,
+      };
+    case 'pending_manual_review':
+      return {
+        type: 'pending',
+        message:
+          detail
+          ?? 'Document reçu, en cours de vérification manuelle. Tu recevras un email dès qu\'il est validé.',
+        code: code ?? 'document_pending_manual_review',
+      };
+    default:
+      // Filet de sécurité : un nouveau statut backend non encore mappé ne
+      // doit jamais produire de silence côté UX. On affiche un message
+      // générique mais on remonte le code pour qu'il apparaisse dans la
+      // console interceptor (debug support).
+      return {
+        type: 'pending',
+        message: detail ?? 'Document reçu, en cours de traitement.',
+        code: code ?? (status ? `unknown_status:${status}` : 'unknown_status'),
+      };
+  }
+}
+
+/**
+ * Sélectionne la "meilleure" requirement pour un step parmi ses variantes
+ * acceptées. Priorité : verified > processing > pending > rejected > expired.
+ * Permet au step d'être marqué `done` dès qu'UNE variante est verified.
+ */
+function pickBestRequirementForStep(
+  cfgType: string,
+  byType: Map<string, DocumentRequirement>,
+): DocumentRequirement | null {
+  const STATUS_PRIORITY: readonly string[] = [
+    'verified',
+    'processing',
+    'pending',
+    'rejected',
+    'expired',
+  ];
+  const fallback = STATUS_PRIORITY.length;
+  let best: DocumentRequirement | null = null;
+  let bestRank = fallback;
+  for (const slug of getRequirementTypesForStep(cfgType)) {
+    const r = byType.get(slug);
+    if (!r) continue;
+    const rank = STATUS_PRIORITY.indexOf(r.status ?? '');
+    const effective = rank === -1 ? fallback : rank;
+    if (effective < bestRank) {
+      best = r;
+      bestRank = effective;
+    }
+  }
+  return best;
+}
+
+/**
  * Une vidéo dédiée par papier (4-6s chacune, fade in/out). L'artisan voit
  * uniquement la portion qui le concerne au moment où il la regarde.
  *
@@ -434,14 +579,14 @@ export class OnboardingUploadStepperComponent implements OnInit {
   private purchasePollHandle: ReturnType<typeof setInterval> | null = null;
 
   /** Dernier verdict reçu (pour afficher succès/échec sur l'étape courante). */
-  readonly lastVerdict = signal<{ type: 'verified' | 'rejected'; message: string; code?: string | null } | null>(null);
+  readonly lastVerdict = signal<UploadVerdict | null>(null);
 
   /**
    * Verdict spécifique au dernier upload du bloc secondaire (séparé du
    * verdict principal pour ne pas mélanger les retours). Reset au
    * changement d'étape.
    */
-  readonly secondaryVerdict = signal<{ type: 'verified' | 'rejected'; message: string; code?: string | null } | null>(null);
+  readonly secondaryVerdict = signal<UploadVerdict | null>(null);
 
   /** Upload en cours sur le bloc secondaire (distinct du principal). */
   readonly isUploadingSecondary = signal<boolean>(false);
@@ -753,7 +898,13 @@ export class OnboardingUploadStepperComponent implements OnInit {
           expired: false,
         };
       }
-      const req = byType.get(cfg.type) ?? null;
+      // Un step peut accepter plusieurs slugs backend (cf.
+      // VARIANTS_BY_STEP_TYPE : cni|passport, extrait_inpi|kbis|avis_sirene).
+      // On prend la "meilleure" requirement parmi les variantes : verified >
+      // processing > pending > rejected > expired > missing. Sans cette
+      // agrégation, uploader un extrait INPI laisse byType.get('kbis') à null
+      // et le step "Immatriculation" reste éternellement à 'missing'.
+      const req = pickBestRequirementForStep(cfg.type, byType);
       const status = req?.status ?? 'missing';
       const days = req?.days_until_expiry;
       const expiringSoon =
@@ -1390,11 +1541,12 @@ export class OnboardingUploadStepperComponent implements OnInit {
         };
         const doc = r?.data?.document;
         const status = doc?.status ?? r?.data?.status ?? r?.status;
-        if (status === 'verified') {
-          setVerdict.set({
-            type: 'verified',
-            message: 'Document validé !',
-          });
+        const detail = doc?.failure_detail ?? r?.data?.failure_detail ?? r?.failure_detail;
+        const reason = doc?.failure_reason ?? r?.data?.failure_reason ?? r?.failure_reason;
+        const verdict = interpretUploadStatus(status, detail, reason);
+        setVerdict.set(verdict);
+
+        if (verdict.type === 'verified') {
           // Auto-advance UNIQUEMENT pour le bloc principal — un upload
           // secondaire (ex: décennale) ne change pas d'étape, l'artisan
           // doit cliquer "Suivant" lui-même.
@@ -1437,22 +1589,32 @@ export class OnboardingUploadStepperComponent implements OnInit {
             });
             this.session.refreshDashboard();
           }
-        } else if (status === 'rejected') {
-          const detail = doc?.failure_detail ?? r?.data?.failure_detail ?? r?.failure_detail;
-          const reason = doc?.failure_reason ?? r?.data?.failure_reason ?? r?.failure_reason;
+        } else if (verdict.type === 'rejected') {
           // Microcopy user-facing : on n'expose PAS le code machine `reason`
-          // dans le message visible. Il est conservé en console (interceptor)
-          // pour le support. Le `failure_detail` du backend est déjà un
-          // message FR actionnable.
-          const fallback = 'Le document a été refusé. Vérifie qu\'il est bien lisible et réessaie.';
-          const message = detail ?? fallback;
-          setVerdict.set({ type: 'rejected', message, code: reason ?? null });
-          this.snack.open(message, 'OK', {
+          // dans le message visible. Il est conservé sur le verdict pour
+          // la console interceptor (debug support).
+          this.snack.open(verdict.message, 'OK', {
             duration: 8000,
             panelClass: ['tuita-snackbar', 'snack-error'],
           });
           this.session.refreshDashboard();
+        } else if (verdict.type === 'info') {
+          // Cas neutre (ex: superseded — version plus récente déjà en base).
+          // On ne bloque pas l'artisan, on l'informe et on refresh pour qu'il
+          // voie le ✓ de l'étape passer.
+          this.snack.open(verdict.message, '', {
+            duration: 5000,
+            panelClass: ['tuita-snackbar'],
+          });
+          this.session.refreshDashboard();
         } else {
+          // verdict.type === 'pending' : OCR en cours / revue manuelle.
+          // L'artisan voit le banner verdict + on refresh le dashboard pour
+          // que l'étape se mette à jour quand le worker aura traité.
+          this.snack.open(verdict.message, '', {
+            duration: 4000,
+            panelClass: ['tuita-snackbar'],
+          });
           this.session.refreshDashboard();
         }
       },

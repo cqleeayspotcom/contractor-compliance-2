@@ -228,19 +228,29 @@
             </div>
           </div>
         }
-        <!-- Verdict du dernier upload -->
+        <!-- Verdict du dernier upload (4 types : verified / rejected / info / pending). -->
         @if (lastVerdict(); as v) {
           <div class="stepper__verdict"
                [class.stepper__verdict--ok]="v.type === 'verified'"
                [class.stepper__verdict--ko]="v.type === 'rejected'"
+               [class.stepper__verdict--info]="v.type === 'info' || v.type === 'pending'"
                role="status"
                aria-live="polite">
-            <mat-icon aria-hidden="true">
-              {{ v.type === 'verified' ? 'check_circle' : 'error_outline' }}
-            </mat-icon>
+            @if (v.type === 'pending') {
+              <mat-progress-spinner mode="indeterminate" diameter="24"></mat-progress-spinner>
+            } @else {
+              <mat-icon aria-hidden="true">
+                {{ v.type === 'verified' ? 'check_circle'
+                  : v.type === 'rejected' ? 'error_outline'
+                  : 'info_outline' }}
+              </mat-icon>
+            }
             <div>
               <strong>
-                {{ v.type === 'verified' ? 'Document validé !' : 'Document refusé' }}
+                {{ v.type === 'verified' ? 'Document validé !'
+                  : v.type === 'rejected' ? 'Document refusé'
+                  : v.type === 'pending' ? 'Vérification en cours'
+                  : 'Information' }}
               </strong>
               <span>{{ v.message }}</span>
             </div>
@@ -639,14 +649,24 @@
               <div class="stepper__verdict"
                    [class.stepper__verdict--ok]="v.type === 'verified'"
                    [class.stepper__verdict--ko]="v.type === 'rejected'"
+                   [class.stepper__verdict--info]="v.type === 'info' || v.type === 'pending'"
                    role="status"
                    aria-live="polite">
-                <mat-icon aria-hidden="true">
-                  {{ v.type === 'verified' ? 'check_circle' : 'error_outline' }}
-                </mat-icon>
+                @if (v.type === 'pending') {
+                  <mat-progress-spinner mode="indeterminate" diameter="24"></mat-progress-spinner>
+                } @else {
+                  <mat-icon aria-hidden="true">
+                    {{ v.type === 'verified' ? 'check_circle'
+                      : v.type === 'rejected' ? 'error_outline'
+                      : 'info_outline' }}
+                  </mat-icon>
+                }
                 <div>
                   <strong>
-                    {{ v.type === 'verified' ? 'Décennale validée !' : 'Décennale refusée' }}
+                    {{ v.type === 'verified' ? 'Décennale validée !'
+                      : v.type === 'rejected' ? 'Décennale refusée'
+                      : v.type === 'pending' ? 'Vérification en cours'
+                      : 'Information' }}
                   </strong>
                   <span>{{ v.message }}</span>
                 </div>

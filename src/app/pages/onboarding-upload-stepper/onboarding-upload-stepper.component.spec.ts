@@ -4,7 +4,10 @@ import { BehaviorSubject, of, throwError } from 'rxjs';
 import { provideRouter, Router } from '@angular/router';
 import { MatDialog } from '@angular/material/dialog';
 
-import { OnboardingUploadStepperComponent } from './onboarding-upload-stepper.component';
+import {
+  OnboardingUploadStepperComponent,
+  interpretUploadStatus,
+} from './onboarding-upload-stepper.component';
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import {
   ContractorApiService,
@@ -650,6 +653,95 @@ describe('OnboardingUploadStepperComponent — sélecteur de variante immatricul
     expect(api.uploadDocument).toHaveBeenCalledWith(file, 'avis_sirene');
   });
 
+  // Régression : uploader un extrait INPI satisfait la requirement du step
+  // « immatriculation » (cfg.type='kbis'). Le step doit passer en done, sinon
+  // un refresh ramène l'utilisateur sur la dropzone bien qu'il ait validé
+  // l'étape (bug observé 2026-05-18).
+  it('step kbis = done quand n\'importe quelle variante immat est verified (INPI)', () => {
+    const dash = buildDashboard();
+    dash.documents.items.push({
+      type: 'extrait_inpi',
+      label: 'Extrait INPI',
+      status: 'verified',
+      expires_at: null,
+      days_until_expiry: null,
+      can_purchase: false,
+      purchase_price_eur: null,
+      document_uuid: 'doc-inpi-1',
+    });
+    const { cmp } = createHarness(dash);
+
+    const kbisStep = cmp.steps().find((s) => s.config.type === 'kbis')!;
+    expect(kbisStep.done).toBe(true);
+    expect(kbisStep.requirement?.type).toBe('extrait_inpi');
+  });
+
+  it('step kbis = done quand avis_sirene est verified', () => {
+    const dash = buildDashboard();
+    dash.documents.items.push({
+      type: 'avis_sirene',
+      label: 'Avis SIRENE',
+      status: 'verified',
+      expires_at: null,
+      days_until_expiry: null,
+      can_purchase: false,
+      purchase_price_eur: null,
+      document_uuid: 'doc-sirene-1',
+    });
+    const { cmp } = createHarness(dash);
+
+    expect(cmp.steps().find((s) => s.config.type === 'kbis')?.done).toBe(true);
+  });
+
+  it('step cni = done quand passeport est verified (variante d\'identité)', () => {
+    const dash = buildDashboard();
+    dash.documents.items.push({
+      type: 'passport',
+      label: 'Passeport',
+      status: 'verified',
+      expires_at: null,
+      days_until_expiry: null,
+      can_purchase: false,
+      purchase_price_eur: null,
+      document_uuid: 'doc-pass-1',
+    });
+    const { cmp } = createHarness(dash);
+
+    expect(cmp.steps().find((s) => s.config.type === 'cni')?.done).toBe(true);
+  });
+
+  it('verified gagne contre rejected sur les variantes immat (priorité status)', () => {
+    const dash = buildDashboard();
+    dash.documents.items.push(
+      {
+        type: 'kbis',
+        label: 'Kbis',
+        status: 'rejected',
+        expires_at: null,
+        days_until_expiry: null,
+        can_purchase: false,
+        purchase_price_eur: null,
+        document_uuid: 'doc-kbis-rej',
+      },
+      {
+        type: 'extrait_inpi',
+        label: 'Extrait INPI',
+        status: 'verified',
+        expires_at: null,
+        days_until_expiry: null,
+        can_purchase: false,
+        purchase_price_eur: null,
+        document_uuid: 'doc-inpi-ok',
+      },
+    );
+    const { cmp } = createHarness(dash);
+
+    const kbisStep = cmp.steps().find((s) => s.config.type === 'kbis')!;
+    expect(kbisStep.done).toBe(true);
+    expect(kbisStep.rejected).toBe(false);
+    expect(kbisStep.requirement?.type).toBe('extrait_inpi');
+  });
+
   it('changer d\'étape réinitialise la variante immat (pas de fuite vers URSSAF)', () => {
     const { cmp } = createHarness();
     cmp.next(); // CNI → KBIS
@@ -969,5 +1061,96 @@ describe('OnboardingUploadStepperComponent — Pappers purchase completion (Stri
     expect(refresh).not.toHaveBeenCalled();
     expect(cmp.lastVerdict()).not.toBeNull();
     expect(cmp.isPurchasePolling()).toBe(false);
+  });
+});
+
+// ===========================================================================
+// interpretUploadStatus — back↔front mapping des 8 statuts DocumentStatus.
+// Régression : avant 2026-05-18, le frontend ignorait silencieusement tout
+// statut autre que verified/rejected (bug URSSAF périmée renvoyée superseded
+// sans message visible côté UX).
+// ===========================================================================
+
+describe('interpretUploadStatus — mapping back→front complet', () => {
+  it('verified → succès vert', () => {
+    const v = interpretUploadStatus('verified', null, null);
+    expect(v.type).toBe('verified');
+    expect(v.message).toMatch(/validé/i);
+  });
+
+  it('rejected → erreur rouge, utilise failure_detail FR backend', () => {
+    const v = interpretUploadStatus('rejected', 'Photo trop floue.', 'blur');
+    expect(v.type).toBe('rejected');
+    expect(v.message).toBe('Photo trop floue.');
+    expect(v.code).toBe('blur');
+  });
+
+  it('rejected sans failure_detail → fallback FR générique', () => {
+    const v = interpretUploadStatus('rejected', null, 'unknown_reason');
+    expect(v.type).toBe('rejected');
+    expect(v.message).toMatch(/refusé|lisible|réessaie/i);
+  });
+
+  it('expired → erreur rouge avec message "expiré"', () => {
+    const v = interpretUploadStatus('expired', null, null);
+    expect(v.type).toBe('rejected');
+    expect(v.message).toMatch(/expiré/i);
+    expect(v.code).toBe('document_expired');
+  });
+
+  it('legally_outdated → erreur rouge avec message "trop ancien"', () => {
+    const v = interpretUploadStatus('legally_outdated', null, null);
+    expect(v.type).toBe('rejected');
+    expect(v.message).toMatch(/ancien|récente/i);
+    expect(v.code).toBe('document_legally_outdated');
+  });
+
+  it('superseded → info bleue (pas une erreur, pas un succès)', () => {
+    const v = interpretUploadStatus('superseded', null, null);
+    expect(v.type).toBe('info');
+    expect(v.message).toMatch(/récente|garde/i);
+    expect(v.code).toBe('document_superseded');
+  });
+
+  it('pending → spinner d\'attente', () => {
+    const v = interpretUploadStatus('pending', null, null);
+    expect(v.type).toBe('pending');
+    expect(v.message).toMatch(/vérifie|en cours/i);
+  });
+
+  it('processing → spinner d\'attente (idem pending)', () => {
+    const v = interpretUploadStatus('processing', null, null);
+    expect(v.type).toBe('pending');
+    expect(v.message).toMatch(/vérifie|en cours/i);
+  });
+
+  it('pending_manual_review → attente avec message dédié', () => {
+    const v = interpretUploadStatus('pending_manual_review', null, null);
+    expect(v.type).toBe('pending');
+    expect(v.message).toMatch(/manuelle|email/i);
+  });
+
+  it('statut inconnu → fallback pending (jamais de silence)', () => {
+    const v = interpretUploadStatus('something_new_2027', null, null);
+    expect(v.type).toBe('pending');
+    expect(v.message).toBeTruthy();
+    expect(v.code).toBe('unknown_status:something_new_2027');
+  });
+
+  it('status null/undefined → fallback pending avec code unknown_status', () => {
+    expect(interpretUploadStatus(null, null, null).code).toBe('unknown_status');
+    expect(interpretUploadStatus(undefined, null, null).type).toBe('pending');
+  });
+
+  it('failure_detail backend a priorité sur le fallback frontend', () => {
+    const v = interpretUploadStatus(
+      'expired',
+      'Cette URSSAF date d\'il y a 8 mois — il faut une attestation récente.',
+      'urssaf_too_old',
+    );
+    expect(v.message).toBe(
+      'Cette URSSAF date d\'il y a 8 mois — il faut une attestation récente.',
+    );
+    expect(v.code).toBe('urssaf_too_old');
   });
 });
