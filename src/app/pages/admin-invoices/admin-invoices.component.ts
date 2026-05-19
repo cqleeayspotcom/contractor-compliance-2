@@ -12,7 +12,8 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { interval, Subscription, fromEvent } from 'rxjs';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { firstValueFrom, interval, Subscription, fromEvent } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -46,6 +47,7 @@ import {
   PaginatedInvoices,
   InvoiceSearchFilters,
 } from '../../services/admin-invoice.service';
+import { adminInvoicesValidate } from '../../api/fn/admin-invoices/admin-invoices-validate';
 import { AdminDialogService } from '../../services/admin-dialog.service';
 import { AdminInvoiceFilterBarComponent } from '../../components/admin/admin-invoice-filter-bar/admin-invoice-filter-bar.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
@@ -141,6 +143,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   private visibilitySub: Subscription | null = null;
 
   private readonly api = inject(AdminInvoiceService);
+  private readonly http = inject(HttpClient);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
@@ -163,9 +166,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   @ViewChild('actionDialogTpl', { static: true }) actionDialogTpl!: TemplateRef<unknown>;
   @ViewChild('detailDialogTpl', { static: true }) detailDialogTpl!: TemplateRef<unknown>;
   @ViewChild('auditDialogTpl', { static: true }) auditDialogTpl!: TemplateRef<unknown>;
-
-  // Auth gate
-  readonly hasKey = signal<boolean>(!!sessionStorage.getItem('tuita_admin_key'));
 
   // Active tab
   readonly activeTab = signal<TabKey>('pending');
@@ -274,10 +274,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   readonly currentTabState = computed(() => this.tabs[this.activeTab()]());
 
   ngOnInit(): void {
-    if (!this.hasKey()) {
-      this.router.navigate(['/admin']);
-      return;
-    }
+    // Auth garantie par AdminAuthGuard sur /admin/* ; le Bearer OAuth2
+    // mysession est injecté par admin-key.interceptor.
     const order: TabKey[] = ['pending', 'ready', 'inprogress', 'disputed', 'all'];
     const requested = this.route.snapshot.queryParamMap.get('tab') as TabKey | null;
     const initial: TabKey = requested && order.includes(requested) ? requested : 'pending';
@@ -494,9 +492,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       error?: { error?: { code?: string; message?: string; hint?: string } };
     };
     if (httpErr.status === 401 || httpErr.status === 403) {
-      sessionStorage.removeItem('tuita_admin_key');
+      sessionStorage.removeItem('tuita_admin_token');
+      sessionStorage.removeItem('tuita_admin_refresh');
+      sessionStorage.removeItem('tuita_admin_user');
       this.snack.open('Session admin expirée', 'OK', { duration: 4000 });
-      this.router.navigate(['/admin']);
+      this.router.navigate(['/admin/login']);
       return;
     }
     console.error(`[admin-invoices] ${context}`, err);
@@ -1287,24 +1287,24 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       this.snack.open('Rejet annulé — raison trop courte.', 'OK', { duration: 4000 });
       return;
     }
-    const apiUrl = (window as any).API_BASE_URL ?? '/contractor-compliance';
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'X-Tuita-Admin-Key': sessionStorage.getItem('tuita_admin_key') ?? '',
+    // SDK manquant : `adminInvoicesValidate` ne déclare ni body
+    // (`{ status, comment }`) ni les headers d'audit `X-Admin-Actor-*` dans la
+    // spec OpenAPI — on utilise HttpClient direct via `.PATH` du SDK. Le
+    // Bearer est injecté par admin-key.interceptor (pas de header
+    // Authorization en clair ici).
+    const url = adminInvoicesValidate.PATH.replace('{uuid}', inv.uuid);
+    const headers = new HttpHeaders({
       'X-Admin-Actor-Email': actorEmail,
       'X-Admin-Actor-Name': actorName,
-    };
+    });
     try {
-      const resp = await fetch(`${apiUrl}/admin/invoices/${inv.uuid}/validate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ status, comment }),
-      });
-      const body = await resp.json();
-      if (!resp.ok) {
-        this.snack.open(body?.error?.message ?? `Erreur HTTP ${resp.status}`, 'OK', { duration: 6000 });
-        return;
-      }
+      const body = await firstValueFrom(
+        this.http.post<{ data?: { approvals_count?: number; approvals_required?: number; invoice_status?: string } }>(
+          url,
+          { status, comment },
+          { headers },
+        ),
+      );
       const count = body?.data?.approvals_count ?? 0;
       const required = body?.data?.approvals_required ?? 3;
       const newStatus = body?.data?.invoice_status;
@@ -1318,8 +1318,9 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         { duration: 5000 },
       );
       this.refreshCurrent();
-    } catch (err) {
-      this.snack.open('Erreur réseau lors de la validation.', 'OK', { duration: 5000 });
+    } catch (err: any) {
+      const apiMsg = err?.error?.error?.message;
+      this.snack.open(apiMsg ?? 'Erreur réseau lors de la validation.', 'OK', { duration: 6000 });
     }
   }
 

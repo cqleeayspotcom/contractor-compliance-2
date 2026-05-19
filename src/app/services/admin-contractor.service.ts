@@ -19,9 +19,9 @@ import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-fi
  * Wraps GET /contractor-compliance/admin/contractors/{phone} (summary) +
  * /documents /kyc-sessions /invoices /purchases (paginated).
  *
- * Le header X-Tuita-Admin-Key est injectÃ© globalement par
- * admin-key.interceptor.ts. Les 401/403 sont gÃ©rÃ©s par contractorCookieInterceptor
- * (redirect /login).
+ * Le header Authorization Bearer est injecté globalement par
+ * admin-key.interceptor.ts. Les 401/403 sont gérés par le composant appelant
+ * (purge sessionStorage + redirect /admin/login).
  *
  * Regle SDK first : toute route HTTP passe par le SDK genere
  * (src/app/api/fn/...). Quand un param hors spec OpenAPI est requis
@@ -441,9 +441,9 @@ export class AdminContractorService {
   }
 
   /**
-   * Stream un document via X-Tuita-Admin-Key (impossible avec un simple <iframe>
-   * cross-origin si la cle n'est pas en query). On fetch en blob -> object URL,
-   * que le composant peut donner a un <iframe> ou a un <a download>.
+   * Stream un document via le Bearer OAuth2 admin (impossible avec un simple
+   * <iframe> cross-origin si le token n'est pas en query). On fetch en blob ->
+   * object URL, que le composant peut donner à un <iframe> ou à un <a download>.
    *
    * Exception SDK : binaire (responseType: 'blob') -> on garde HttpClient,
    * mais l'URL vient de `adminDocumentsFile.PATH` (jamais hardcodee).

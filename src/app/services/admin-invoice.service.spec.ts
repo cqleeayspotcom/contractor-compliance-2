@@ -8,7 +8,7 @@ describe('AdminInvoiceService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    sessionStorage.setItem('tuita_admin_key', 'test-admin-key');
+    sessionStorage.setItem('tuita_admin_token', 'test-admin-key');
     TestBed.configureTestingModule({
       providers: [
         AdminInvoiceService,
@@ -22,7 +22,7 @@ describe('AdminInvoiceService', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('tuita_admin_key');
+    sessionStorage.removeItem('tuita_admin_token');
   });
 
   // ---------------------------------------------------------------------

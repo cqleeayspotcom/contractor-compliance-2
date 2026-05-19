@@ -37,16 +37,13 @@ export class AdminFreeInvoicesComponent implements OnInit {
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
 
-  readonly hasKey = signal<boolean>(!!sessionStorage.getItem('tuita_admin_key'));
   readonly pending = signal<any[]>([]);
   readonly all = signal<any[]>([]);
   readonly loading = signal(true);
 
   ngOnInit(): void {
-    if (!this.hasKey()) {
-      this.router.navigate(['/admin']);
-      return;
-    }
+    // Auth garantie par AdminAuthGuard sur la route /admin/* ; le Bearer est
+    // injecté par admin-key.interceptor sur chaque appel admin.
     this.refresh();
   }
 
@@ -135,9 +132,12 @@ export class AdminFreeInvoicesComponent implements OnInit {
   private handleError(err: unknown, context: string): void {
     const httpErr = err as { status?: number };
     if (httpErr.status === 401 || httpErr.status === 403) {
-      sessionStorage.removeItem('tuita_admin_key');
+      // Bearer OAuth2 mysession invalide/expiré : purge et retour login.
+      sessionStorage.removeItem('tuita_admin_token');
+      sessionStorage.removeItem('tuita_admin_refresh');
+      sessionStorage.removeItem('tuita_admin_user');
       this.snack.open('Session admin expirée', 'OK', { duration: 4000 });
-      this.router.navigate(['/admin']);
+      this.router.navigate(['/admin/login']);
       return;
     }
     console.error(`[admin-free-invoices] ${context}`, err);

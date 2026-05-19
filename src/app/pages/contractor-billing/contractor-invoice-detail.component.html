@@ -58,35 +58,36 @@
       <app-invoice-timeline *ngIf="inv.timeline" [timeline]="inv.timeline"></app-invoice-timeline>
 
       <!--
-        Bloc "Vérification automatique passée + délai 30j fin de mois" — affiché
-        uniquement quand l'étape OCR (vérification auto) est passée. C'est la
+        Bloc "Cyndi a validé + délai 30j fin de mois" — affiché uniquement
+        quand l'étape OCR (vérification auto Cyndi) est passée. C'est la
         "date de dépôt validée" qui démarre légalement le compteur de paiement
         (directive Moussa 2026-05-19).
+
+        Cyndi = nom public de l'IA de validation Tuita (orthographe canonique
+        figée 2026-05-19). Le code interne reste neutre (`autoValidationAt`,
+        step `ocr_passed`) ; seules les chaînes user-visible portent le nom.
 
         Le bloc joue 2 rôles :
         1) Transparence : le contractor sait QUAND il sera payé (date prévisionnelle).
         2) Friction Freemium : on lui dit qu'avec Plan Pro, ce délai n'existe pas
            (ou est nettement raccourci grâce à l'auto-génération). CTA upsell
            uniquement si `isFreemium()` — un Pro n'a pas besoin de friction.
-
-        NB : on évite le nom interne "Sindi" (jamais exposé dans l'UI) et on
-        utilise la nomenclature publique "Vérification automatique" alignée
-        sur `STEP_LABELS.ocr_passed` du composant InvoiceTimeline.
       -->
       @if (autoValidationAt(); as validatedAt) {
         <div class="payment-terms-block" role="status">
           <div class="payment-terms-block__sindi">
             <mat-icon class="payment-terms-block__icon">verified</mat-icon>
             <div>
-              <strong>Votre facture a passé la vérification automatique</strong>
+              <strong>Cyndi a validé votre facture</strong>
               <span>le {{ formatDate(validatedAt) }}</span>
             </div>
           </div>
 
           <p class="payment-terms-block__note">
-            Une revue manuelle par l'équipe Tuita peut encore être en cours.
-            La date ci-dessous est calculée à partir de la date de dépôt
-            validée automatiquement.
+            Cyndi est notre assistante IA de vérification automatique des
+            factures. Une revue manuelle par l'équipe Tuita peut encore être
+            en cours — la date ci-dessous est calculée à partir de la date
+            de dépôt validée par Cyndi.
           </p>
 
           <div class="payment-terms-block__terms">

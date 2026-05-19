@@ -38,8 +38,6 @@ import {
 } from './reset-setting-dialog.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 
-const ADMIN_KEY_STORAGE_KEY = 'tuita_admin_key';
-
 @Component({
   selector: 'app-admin-settings',
   standalone: true,
@@ -90,13 +88,9 @@ export class AdminSettingsComponent implements OnInit {
     return [...filtered].sort((a, b) => this.compare(a, b, s));
   });
 
-  readonly hasAuth = signal<boolean>(!!sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY));
-
   ngOnInit(): void {
-    if (!this.hasAuth()) {
-      this.router.navigate(['/admin']);
-      return;
-    }
+    // Auth garantie par adminAuthGuard sur /admin/* — le Bearer OAuth2 est
+    // injecté par adminKeyInterceptor. Pas de gate local.
     this.refresh();
   }
 
@@ -179,12 +173,16 @@ export class AdminSettingsComponent implements OnInit {
   private handleError(err: unknown): void {
     const httpErr = err as { status?: number; error?: { message?: string } };
     if (httpErr.status === 401 || httpErr.status === 403) {
-      this.error.set("Clé d'administration invalide.");
-      sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
+      // Bearer OAuth2 expiré → purge la triple-clé admin et bascule sur la
+      // page de login dédiée. Le guard fera barrage si l'utilisateur revient.
+      this.error.set("Session admin expirée.");
+      sessionStorage.removeItem('tuita_admin_token');
+      sessionStorage.removeItem('tuita_admin_refresh');
+      sessionStorage.removeItem('tuita_admin_user');
       this.snack.open("Authentification expirée. Reconnectez-vous.", 'Fermer', {
         duration: 4000,
       });
-      this.router.navigate(['/admin']);
+      this.router.navigate(['/admin/login']);
       return;
     }
     const msg = httpErr.error?.message ?? 'Erreur serveur. Réessayez.';

@@ -17,7 +17,7 @@ describe('AdminSettingsService', () => {
   };
 
   beforeEach(() => {
-    sessionStorage.setItem('tuita_admin_key', 'test-key');
+    sessionStorage.setItem('tuita_admin_token', 'test-key');
     TestBed.configureTestingModule({
       providers: [
         AdminSettingsService,
@@ -31,7 +31,7 @@ describe('AdminSettingsService', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('tuita_admin_key');
+    sessionStorage.removeItem('tuita_admin_token');
   });
 
   it('GET /settings returns the list', async () => {

@@ -110,11 +110,8 @@ export class AdminKycFailuresComponent implements OnInit {
   readonly hasResults = computed(() => this.rows().length > 0);
 
   ngOnInit(): void {
-    if (!sessionStorage.getItem('tuita_admin_key')) {
-      this.snackBar.open('Authentification administrateur requise.', 'Fermer', { duration: 4000 });
-      this.router.navigate(['/admin']);
-      return;
-    }
+    // Auth garantie par AdminAuthGuard sur /admin/* ; Bearer OAuth2 injecté
+    // par admin-key.interceptor.
     this.load();
   }
 
@@ -220,9 +217,11 @@ export class AdminKycFailuresComponent implements OnInit {
   private handleError(err: unknown): void {
     const httpErr = err as { status?: number };
     if (httpErr?.status === 401 || httpErr?.status === 403) {
-      this.snackBar.open('Clé d\'administration invalide ou expirée.', 'Fermer', { duration: 4000 });
-      sessionStorage.removeItem('tuita_admin_key');
-      this.router.navigate(['/admin']);
+      this.snackBar.open('Session admin expirée — reconnectez-vous.', 'Fermer', { duration: 4000 });
+      sessionStorage.removeItem('tuita_admin_token');
+      sessionStorage.removeItem('tuita_admin_refresh');
+      sessionStorage.removeItem('tuita_admin_user');
+      this.router.navigate(['/admin/login']);
       return;
     }
     this.errorMsg.set('Erreur lors du chargement des échecs KYC.');

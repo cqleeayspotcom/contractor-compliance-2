@@ -1,10 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
-import { map } from 'rxjs/operators';
+
 import { Api } from '../api/api';
-import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData } from '../core/api-envelope';
 import { adminFreeInvoicesPending } from '../api/fn/admin-free-invoices/admin-free-invoices-pending';
 import { adminFreeInvoicesGet } from '../api/fn/admin-free-invoices/admin-free-invoices-get';
 import { adminFreeInvoicesReject } from '../api/fn/admin-free-invoices/admin-free-invoices-reject';
@@ -15,39 +13,30 @@ import { adminFreeInvoicesAttachments } from '../api/fn/admin-free-invoices/admi
 /**
  * AdminFreeInvoiceService
  *
- * Wrapper KEEP avec SDK a l'interieur : on caste les retours SDK (JsonObject)
- * vers la shape attendue par le UI, et on conserve HttpClient pour les
- * endpoints non couverts par le SDK (list avec query params, approve avec
- * body, attachment-by-index en blob).
+ * Encapsule les endpoints /contractor-compliance/admin/free-invoices/* via le
+ * SDK auto-généré (pattern `api.invoke(fn, params)`). Les retours du SDK sont
+ * castés vers la shape attendue par le UI (les payloads `JsonObject` du SDK
+ * sont opaques côté types).
  *
- * Le header X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts.
+ * Le header Authorization Bearer est injecté globalement par
+ * admin-key.interceptor.ts.
  */
 
 @Injectable({ providedIn: 'root' })
 export class AdminFreeInvoiceService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
-  private readonly apiConfig = inject(ApiConfiguration);
 
   pending(): Observable<{ data: any[] }> {
-    return adminFreeInvoicesPending(this.http, this.apiConfig.rootUrl).pipe(
-      unwrapData<any[]>(),
-      map(data => ({ data })),
-    );
+    return from(this.api.invoke(adminFreeInvoicesPending) as Promise<{ data: any[] }>);
   }
 
   list(params: { status?: string; page?: number; per_page?: number } = {}): Observable<{ data: any[] }> {
-    return adminFreeInvoicesList(this.http, this.apiConfig.rootUrl, params).pipe(
-      unwrapData<any[]>(),
-      map(data => ({ data })),
-    );
+    return from(this.api.invoke(adminFreeInvoicesList, params) as Promise<{ data: any[] }>);
   }
 
   detail(uuid: string): Observable<{ data: any }> {
-    return adminFreeInvoicesGet(this.http, this.apiConfig.rootUrl, { uuid }).pipe(
-      unwrapData<any>(),
-      map(data => ({ data })),
-    );
+    return from(this.api.invoke(adminFreeInvoicesGet, { uuid }) as Promise<{ data: any }>);
   }
 
   approve(uuid: string, body: { amount_authorized_ttc: number; comment?: string }): Observable<unknown> {
@@ -59,11 +48,13 @@ export class AdminFreeInvoiceService {
   }
 
   /**
-   * Fetch an attachment as a Blob and return an object URL.
+   * Fetch un attachment en Blob et renvoie un object URL côté composant.
    *
-   * Le SDK fn `adminFreeInvoicesAttachments` retourne la liste des attachments
-   * (JsonObject) et n'expose pas l'endpoint indexe `/attachments/{index}` en
-   * blob â€” choix architectural assumÃ© : HttpClient direct pour ce blob.
+   * SDK manquant : `adminFreeInvoicesAttachments` renvoie la liste des
+   * attachments (JsonObject) et n'expose pas l'endpoint indexé
+   * `/attachments/{index}` en blob — HttpClient direct sur `.PATH` du SDK
+   * pour rester aligné si la spec bouge. Le Bearer est injecté par
+   * l'interceptor (pas besoin de header explicite).
    */
   fetchAttachmentBlob(uuid: string, index: number): Observable<Blob> {
     const base = adminFreeInvoicesAttachments.PATH.replace('{uuid}', encodeURIComponent(uuid));

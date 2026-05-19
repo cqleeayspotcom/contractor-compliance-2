@@ -1,25 +1,5 @@
 <div class="admin-purchases">
   <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
-  <!-- ============================================================== -->
-  <!-- AUTH GATE                                                       -->
-  <!-- ============================================================== -->
-  @if (!isAuthenticated()) {
-    <mat-card class="auth-card">
-      <mat-card-header>
-        <mat-card-title>Supervision achats — authentification</mat-card-title>
-        <mat-card-subtitle>Clé admin (X-Tuita-Admin-Key) requise</mat-card-subtitle>
-      </mat-card-header>
-      <mat-card-content>
-        <mat-form-field appearance="outline" style="width:100%;">
-          <mat-label>Clé API admin</mat-label>
-          <input matInput type="password" [(ngModel)]="apiKeyInput" (keyup.enter)="submitApiKey()" />
-        </mat-form-field>
-      </mat-card-content>
-      <mat-card-actions>
-        <button mat-raised-button color="primary" (click)="submitApiKey()">Entrer</button>
-      </mat-card-actions>
-    </mat-card>
-  } @else {
     <!-- ============================================================ -->
     <!-- HEADER + KPIs                                                 -->
     <!-- ============================================================ -->
@@ -247,5 +227,4 @@
         (page)="onPage($event)">
       </mat-paginator>
     </mat-card>
-  }
 </div>

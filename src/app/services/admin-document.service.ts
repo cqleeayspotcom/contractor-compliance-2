@@ -11,7 +11,7 @@ import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-fi
  * Admin Document Service
  *
  * Wraps GET /contractor-compliance/admin/documents/{uuid} endpoints. Le header
- * X-Tuita-Admin-Key est injecte globalement par admin-key.interceptor.ts.
+ * Authorization Bearer est injecté globalement par admin-key.interceptor.ts.
  *
  * Read-only by design â€” no mutating endpoints. Politique zero-manuel.
  *

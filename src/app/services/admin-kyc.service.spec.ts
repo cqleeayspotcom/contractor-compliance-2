@@ -8,7 +8,7 @@ describe('AdminKycService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    sessionStorage.setItem('tuita_admin_key', 'test-key-123');
+    sessionStorage.setItem('tuita_admin_token', 'test-key-123');
     TestBed.configureTestingModule({
       providers: [
         AdminKycService,
@@ -22,7 +22,7 @@ describe('AdminKycService', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('tuita_admin_key');
+    sessionStorage.removeItem('tuita_admin_token');
   });
 
   it('GET /sessions returns paginated rows and sends admin header', async () => {

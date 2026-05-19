@@ -79,7 +79,7 @@ export const appConfig: ApplicationConfig = {
         // ou cookie n'agissent dessus.
         featureFlagInterceptor,
         // Doit s'exécuter AVANT contractorCookieInterceptor pour que le
-        // header X-Tuita-Admin-Key soit déjà posé quand withCredentials
+        // header Authorization Bearer soit déjà posé quand withCredentials
         // est ajouté. Inactif sur les routes non-admin.
         adminKeyInterceptor,
         loadingInterceptor,

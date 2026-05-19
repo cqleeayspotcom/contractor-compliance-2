@@ -8,7 +8,7 @@ describe('AdminContractorService', () => {
   let http: HttpTestingController;
 
   beforeEach(() => {
-    sessionStorage.setItem('tuita_admin_key', 'test-admin-key');
+    sessionStorage.setItem('tuita_admin_token', 'test-admin-key');
     TestBed.configureTestingModule({
       providers: [
         AdminContractorService,
@@ -22,7 +22,7 @@ describe('AdminContractorService', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('tuita_admin_key');
+    sessionStorage.removeItem('tuita_admin_token');
   });
 
   it('listDocuments forwards page/per_page/search/status/sort/dir as query params', () => {

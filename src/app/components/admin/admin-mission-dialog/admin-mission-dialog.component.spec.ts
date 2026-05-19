@@ -5,8 +5,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
-import { AdminMissionDialogComponent } from './admin-mission-dialog.component';
-import { MissionDetail } from '../../../services/admin-mission.service';
+import { AdminMissionDialogComponent, MissionDetail } from './admin-mission-dialog.component';
 
 describe('AdminMissionDialogComponent', () => {
   let fixture: ComponentFixture<AdminMissionDialogComponent>;
@@ -36,7 +35,7 @@ describe('AdminMissionDialogComponent', () => {
   };
 
   beforeEach(() => {
-    sessionStorage.setItem('tuita_admin_key', 'k');
+    sessionStorage.setItem('tuita_admin_token', 'k');
     TestBed.configureTestingModule({
       imports: [AdminMissionDialogComponent],
       providers: [
@@ -54,7 +53,7 @@ describe('AdminMissionDialogComponent', () => {
 
   afterEach(() => {
     http.verify();
-    sessionStorage.removeItem('tuita_admin_key');
+    sessionStorage.removeItem('tuita_admin_token');
   });
 
   it('fetches /admin/missions/{ref} on init and renders mission_ref + KPIs + invoices', () => {

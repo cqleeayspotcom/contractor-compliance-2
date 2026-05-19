@@ -8,9 +8,18 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
+
+import { Api } from '../../api/api';
+import { adminPurchasesShow } from '../../api/fn/admin-purchases/admin-purchases-show';
+import { adminPurchasesRetry } from '../../api/fn/admin-purchases/admin-purchases-retry';
+// POURQUOI : on importe les PATH du SDK pour les fallbacks HttpClient
+// (filtres / blob / body) afin de rester aligné avec la spec OpenAPI.
+import { adminPurchasesList } from '../../api/fn/admin-purchases/admin-purchases-list';
+import { adminPurchasesStats } from '../../api/fn/admin-purchases/admin-purchases-stats';
+import { adminPurchasesExport } from '../../api/fn/admin-purchases/admin-purchases-export';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -152,9 +161,11 @@ export function statusColor(status: string): string {
 })
 export class AdminPurchasesComponent implements OnInit {
   private readonly http = inject(HttpClient);
+  private readonly api = inject(Api);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly pricing = inject(PricingService);
 
   extraitInpiPriceLabel(): string {
@@ -164,12 +175,9 @@ export class AdminPurchasesComponent implements OnInit {
   /** Quand true, ne montre que les achats "stuck" (créés depuis > 10 min). Activé via ?stuck=1. */
   readonly stuckOnly = signal(false);
 
-  // -- Auth ------------------------------------------------------------------
-  readonly apiKey = signal<string>(sessionStorage.getItem('tuita_admin_key') ?? '');
-  readonly isAuthenticated = computed(() => this.apiKey().length > 0);
-  apiKeyInput = '';
-
   // -- Data ------------------------------------------------------------------
+  // Auth garantie par AdminAuthGuard sur /admin/* ; le Bearer OAuth2 mysession
+  // est injecté par admin-key.interceptor sur chaque appel HttpClient.
   readonly purchases = signal<PurchaseRow[]>([]);
   // Tri server-side : `sort` + `direction` envoyés au backend, qui applique
   // l'orderBy avant pagination → couvre toutes les pages (pas juste la page
@@ -220,23 +228,10 @@ export class AdminPurchasesComponent implements OnInit {
     if (stuck === '1' || stuck === 'true') {
       this.stuckOnly.set(true);
     }
-    if (this.isAuthenticated()) {
-      this.refreshAll();
-    }
-  }
-
-  submitApiKey(): void {
-    const key = this.apiKeyInput.trim();
-    if (!key) return;
-    sessionStorage.setItem('tuita_admin_key', key);
-    this.apiKey.set(key);
     this.refreshAll();
   }
 
   // -- HTTP ------------------------------------------------------------------
-  private headers(): HttpHeaders {
-    return new HttpHeaders({ 'X-Tuita-Admin-Key': this.apiKey() });
-  }
 
   refreshAll(): void {
     this.loadList();
@@ -244,10 +239,11 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   loadStats(): void {
+    // SDK manquant : `adminPurchasesStats` ne renvoie pas le type `PurchaseStats`
+    // côté généré (SuccessEnvelope brut). On reste sur HttpClient (qui passe par
+    // l'intercepteur Bearer admin) pour conserver le typage local précis.
     this.http
-      .get<{ data: PurchaseStats }>('/contractor-compliance/admin/purchases/stats', {
-        headers: this.headers(),
-      })
+      .get<{ data: PurchaseStats }>(adminPurchasesStats.PATH)
       .subscribe({
         next: res => this.stats.set(res.data),
         error: err => this.onHttpError(err, 'stats'),
@@ -269,10 +265,13 @@ export class AdminPurchasesComponent implements OnInit {
     if (this.untilInput) params = params.set('until', this.untilInput);
     if (this.stuckOnly()) params = params.set('stuck', '1');
 
+    // SDK manquant : `adminPurchasesList` généré n'expose pas les query params
+    // (status/type/search/since/until/stuck/sort/direction) → fallback HttpClient.
+    // L'intercepteur Bearer admin se charge de l'auth ; aucun header manuel ici.
     this.http
       .get<{ data: PurchaseRow[]; meta: { total: number } }>(
-        '/contractor-compliance/admin/purchases',
-        { headers: this.headers(), params },
+        adminPurchasesList.PATH,
+        { params },
       )
       .subscribe({
         next: res => {
@@ -309,26 +308,25 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   openDetail(row: PurchaseRow): void {
-    this.http
-      .get<{ data: PurchaseDetail }>(`/contractor-compliance/admin/purchases/${row.uuid}`, {
-        headers: this.headers(),
+    // Détail d'achat : SDK `adminPurchasesShow` (envelope SuccessEnvelope →
+    // on extrait `.data` typé `PurchaseDetail`).
+    this.api
+      .invoke(adminPurchasesShow, { uuid: row.uuid })
+      .then(env => {
+        const detail = (env as unknown as { data: PurchaseDetail }).data;
+        const ref = this.dialog.open(PurchaseDetailDialogComponent, {
+          data: detail,
+          width: '1100px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+        });
+        ref.afterClosed().subscribe(result => {
+          if (result?.action === 'retry') {
+            this.openRetry(row);
+          }
+        });
       })
-      .subscribe({
-        next: res => {
-          const ref = this.dialog.open(PurchaseDetailDialogComponent, {
-            data: res.data,
-            width: '1100px',
-            maxWidth: '95vw',
-            maxHeight: '90vh',
-          });
-          ref.afterClosed().subscribe(result => {
-            if (result?.action === 'retry') {
-              this.openRetry(row);
-            }
-          });
-        },
-        error: err => this.onHttpError(err, 'detail'),
-      });
+      .catch(err => this.onHttpError(err, 'detail'));
   }
 
   openRetry(row: PurchaseRow): void {
@@ -340,11 +338,13 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   private doRetry(row: PurchaseRow, reason: string): void {
+    // SDK manquant : `adminPurchasesRetry` n'expose pas le body `{ reason }`
+    // (signature généré sans payload). Fallback HttpClient — l'intercepteur
+    // Bearer admin gère l'auth, aucun header manuel.
     this.http
       .post<{ data: { uuid: string; status: string } }>(
-        `/contractor-compliance/admin/purchases/${row.uuid}/retry`,
+        adminPurchasesRetry.PATH.replace('{uuid}', row.uuid),
         { reason },
-        { headers: this.headers() },
       )
       .subscribe({
         next: () => {
@@ -374,49 +374,58 @@ export class AdminPurchasesComponent implements OnInit {
    * Statut → si l'admin n'a pas filtré, le backend exporte completed+refunded.
    */
   exportCsv(): void {
-    const params = new URLSearchParams();
-    if (this.statusFilter) params.set('status', this.statusFilter);
-    if (this.typeFilter) params.set('document_type', this.typeFilter);
-    if (this.sinceInput) params.set('since', this.sinceInput);
-    if (this.untilInput) params.set('until', this.untilInput);
+    // SDK manquant : `adminPurchasesExport` généré renvoie SuccessEnvelope JSON
+    // alors que l'endpoint produit un CSV binaire avec Content-Disposition.
+    // On reste sur HttpClient en mode blob → passe par l'intercepteur Bearer
+    // admin (pas besoin de lire sessionStorage à la main, plus de `fetch`).
+    let params = new HttpParams();
+    if (this.statusFilter) params = params.set('status', this.statusFilter);
+    if (this.typeFilter) params = params.set('document_type', this.typeFilter);
+    if (this.sinceInput) params = params.set('since', this.sinceInput);
+    if (this.untilInput) params = params.set('until', this.untilInput);
 
-    const url = `/contractor-compliance/admin/purchases/export${params.toString() ? '?' + params.toString() : ''}`;
-
-    fetch(url, {
-      headers: { 'X-Tuita-Admin-Key': this.apiKey() },
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.blob().then(blob => ({ blob, headers: res.headers }));
+    this.http
+      .get(adminPurchasesExport.PATH, {
+        params,
+        responseType: 'blob',
+        observe: 'response',
       })
-      .then(({ blob, headers }) => {
-        const contentDisposition = headers.get('Content-Disposition') ?? '';
-        const match = contentDisposition.match(/filename="?([^"]+)"?/);
-        const filename = match?.[1] ?? `achats-documents_${new Date().toISOString().slice(0, 10)}.csv`;
+      .subscribe({
+        next: response => {
+          const blob = response.body as Blob;
+          const contentDisposition = response.headers.get('Content-Disposition') ?? '';
+          const match = contentDisposition.match(/filename="?([^"]+)"?/);
+          const filename =
+            match?.[1] ?? `achats-documents_${new Date().toISOString().slice(0, 10)}.csv`;
 
-        const objectUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = objectUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(objectUrl);
+          const objectUrl = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = objectUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(objectUrl);
 
-        this.snack.open('Export CSV téléchargé', 'OK', { duration: 4000 });
-      })
-      .catch(err => {
-        if (err?.message?.includes('401') || err?.message?.includes('403')) {
-          sessionStorage.removeItem('tuita_admin_key');
-          this.apiKey.set('');
-          this.error.set('Cle admin invalide');
-          return;
-        }
-        this.snack.open("Échec de l'export CSV", 'OK', { duration: 6000 });
-        console.error('[admin-purchases] export', err);
+          this.snack.open('Export CSV téléchargé', 'OK', { duration: 4000 });
+        },
+        error: err => {
+          if (err?.status === 401 || err?.status === 403) {
+            this.logout();
+            return;
+          }
+          this.snack.open("Échec de l'export CSV", 'OK', { duration: 6000 });
+          console.error('[admin-purchases] export', err);
+        },
       });
+  }
+
+  /** Purge la session admin et redirige vers /admin/login. */
+  private logout(): void {
+    sessionStorage.removeItem('tuita_admin_token');
+    sessionStorage.removeItem('tuita_admin_refresh');
+    sessionStorage.removeItem('tuita_admin_user');
+    this.router.navigate(['/admin/login']);
   }
 
   formatDuration(seconds: number | null): string {
@@ -458,9 +467,10 @@ export class AdminPurchasesComponent implements OnInit {
 
   private onHttpError(err: any, ctx: string): void {
     if (err?.status === 401 || err?.status === 403) {
-      sessionStorage.removeItem('tuita_admin_key');
-      this.apiKey.set('');
-      this.error.set('Cle admin invalide');
+      // Session OAuth2 mysession expirée → purge la triple-clé et redirige
+      // explicitement vers /admin/login (plus de simple "set error").
+      this.error.set('Session admin expirée');
+      this.logout();
     } else {
       console.error('[admin-purchases]', ctx, err);
     }

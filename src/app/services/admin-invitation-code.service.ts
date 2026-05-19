@@ -1,10 +1,7 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, from } from 'rxjs';
 
-import { ApiConfiguration } from '../api/api-configuration';
-import { unwrapData, unwrapDataMeta } from '../core/api-envelope';
+import { Api } from '../api/api';
 import { adminInvitationCodesCreate } from '../api/fn/admin-invitation-codes/admin-invitation-codes-create';
 import { adminInvitationCodesShow } from '../api/fn/admin-invitation-codes/admin-invitation-codes-show';
 import { adminInvitationCodesRevoke } from '../api/fn/admin-invitation-codes/admin-invitation-codes-revoke';
@@ -57,15 +54,27 @@ export interface InvitationCodeListResponse {
   meta: { total: number; per_page: number; current_page: number; last_page: number };
 }
 
+/**
+ * Wrappers SDK pour la gestion admin des codes d'invitation contractor.
+ *
+ * POURQUOI on renvoie des Observables alors que `Api.invoke` produit des
+ * Promises : les composants existants consomment ces méthodes via `.subscribe`
+ * (gestion erreurs MatSnackBar, refresh table). On wrappe via `from()` pour
+ * éviter une réécriture des composants, tout en s'appuyant exclusivement sur
+ * le SDK auto-généré côté transport HTTP.
+ */
 @Injectable({ providedIn: 'root' })
 export class AdminInvitationCodeService {
-  private readonly http = inject(HttpClient);
-  private readonly apiConfig = inject(ApiConfiguration);
+  private readonly api = inject(Api);
 
-  list(params: { status?: string; per_page?: number; sort?: string; direction?: 'asc' | 'desc' } = {}): Observable<InvitationCodeListResponse> {
-    return adminInvitationCodesList(this.http, this.apiConfig.rootUrl, params).pipe(
-      unwrapDataMeta<InvitationCodeRow[], InvitationCodeListResponse['meta']>(),
-      map(({ data, meta }) => ({ data, meta: meta as InvitationCodeListResponse['meta'] })),
+  list(
+    params: { status?: string; per_page?: number; sort?: string; direction?: 'asc' | 'desc' } = {},
+  ): Observable<InvitationCodeListResponse> {
+    return from(
+      this.api.invoke(adminInvitationCodesList, params).then((env) => {
+        const body = env as { data: InvitationCodeRow[]; meta: InvitationCodeListResponse['meta'] };
+        return { data: body.data, meta: body.meta };
+      }),
     );
   }
 
@@ -75,32 +84,36 @@ export class AdminInvitationCodeService {
     note: string;
     generated_by_label: string;
   }): Observable<{ data: InvitationCodeRow }> {
-    return adminInvitationCodesCreate(this.http, this.apiConfig.rootUrl, { body }).pipe(
-      unwrapData<InvitationCodeRow>(),
-      map(data => ({ data })),
+    return from(
+      this.api.invoke(adminInvitationCodesCreate, { body }).then((env) => ({
+        data: (env as { data: InvitationCodeRow }).data,
+      })),
     );
   }
 
   detail(uuid: string): Observable<{ data: InvitationCodeDetail }> {
-    // NOTE : le param OpenAPI s'appelle `code` mais sÃ©mantiquement le backend
-    // accepte aussi l'uuid (les consommateurs passent row.uuid historiquement).
-    return adminInvitationCodesShow(this.http, this.apiConfig.rootUrl, { code: uuid }).pipe(
-      unwrapData<InvitationCodeDetail>(),
-      map(data => ({ data })),
+    // POURQUOI : le paramètre OpenAPI s'appelle `code`, mais le backend
+    // accepte aussi l'uuid. Les composants passent historiquement `row.uuid`.
+    return from(
+      this.api.invoke(adminInvitationCodesShow, { code: uuid }).then((env) => ({
+        data: (env as { data: InvitationCodeDetail }).data,
+      })),
     );
   }
 
   revoke(uuid: string): Observable<{ data: InvitationCodeRow }> {
-    return adminInvitationCodesRevoke(this.http, this.apiConfig.rootUrl, { code: uuid }).pipe(
-      unwrapData<InvitationCodeRow>(),
-      map(data => ({ data })),
+    return from(
+      this.api.invoke(adminInvitationCodesRevoke, { code: uuid }).then((env) => ({
+        data: (env as { data: InvitationCodeRow }).data,
+      })),
     );
   }
 
   updateNote(uuid: string, note: string): Observable<{ data: InvitationCodeRow }> {
-    return adminInvitationCodesUpdateNote(this.http, this.apiConfig.rootUrl, { code: uuid, body: { note } }).pipe(
-      unwrapData<InvitationCodeRow>(),
-      map(data => ({ data })),
+    return from(
+      this.api.invoke(adminInvitationCodesUpdateNote, { code: uuid, body: { note } }).then((env) => ({
+        data: (env as { data: InvitationCodeRow }).data,
+      })),
     );
   }
 }

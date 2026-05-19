@@ -10,12 +10,59 @@ import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
-import {
-  AdminContractorComplianceService,
-  ComplianceBadge,
-  ComplianceSummary,
-} from '../../../services/admin-contractor-compliance.service';
+import { Api } from '../../../api/api';
+import { adminContractorsComplianceSummary } from '../../../api/fn/admin-contractors/admin-contractors-compliance-summary';
 import { PhoneDisplayPipe } from '../../../pipes/phone-display.pipe';
+
+// POURQUOI : les types métier vivaient dans l'ancien AdminContractorComplianceService
+// (supprimé car wrapper trivial du SDK). On les déclare en local pour rester
+// auto-suffisant — le composant est le seul consommateur de cet endpoint.
+export type ComplianceBadge = 'ok' | 'pending' | 'ko' | 'expired' | 'missing' | 'unknown';
+
+export interface ComplianceSummary {
+  identity: {
+    phone_masked: string;
+    first_name: string | null;
+    last_name: string | null;
+    siren: string | null;
+    company_name: string | null;
+    plan: 'free' | 'paid' | string;
+    account_state: string | null;
+  };
+  kyc: {
+    status: string;
+    status_label: string;
+    badge: ComplianceBadge;
+    last_attempted_at: string | null;
+    face_match_score: number | null;
+    failure_reason: string | null;
+    retry_count: number;
+  };
+  compliance: {
+    score: number | null;
+    global_status: string | null;
+    is_fully_compliant: boolean;
+    last_validated_at: string | null;
+  };
+  documents: Array<{
+    type: string;
+    type_label: string;
+    status: string;
+    badge: ComplianceBadge;
+    expires_at: string | null;
+    verified_at: string | null;
+    failure_reason: string | null;
+    days_until_expiry: number | null;
+  }>;
+  activity: {
+    total: number;
+    paid: number;
+    rejected: number;
+    in_progress: number;
+    in_validation: number;
+  };
+  generated_at: string;
+}
 
 /**
  * Snapshot compliance d'un contractor — panneau réutilisable côté backoffice admin.
@@ -134,7 +181,9 @@ import { PhoneDisplayPipe } from '../../../pipes/phone-display.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContractorComplianceSummaryComponent {
-  private svc = inject(AdminContractorComplianceService);
+  // POURQUOI api.invoke direct : pas de service wrapper, l'endpoint est unique
+  // et le payload backend est déjà pré-mappé (libellés FR, badges calculés).
+  private readonly api = inject(Api);
 
   loading = signal(true);
   error = signal<string | null>(null);
@@ -174,16 +223,18 @@ export class ContractorComplianceSummaryComponent {
   private load(phone: string): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.summary(phone).subscribe({
-      next: (r) => {
-        this.summary.set(r.data);
+    // SuccessEnvelope `{ data: ComplianceSummary }` côté backend — on extrait `data` directement.
+    this.api
+      .invoke(adminContractorsComplianceSummary, { phone })
+      .then((env) => {
+        const data = (env as { data: ComplianceSummary }).data;
+        this.summary.set(data);
         this.loading.set(false);
-      },
-      error: (err) => {
+      })
+      .catch((err) => {
         this.error.set(err?.error?.message ?? 'Impossible de charger le statut du contractor.');
         this.loading.set(false);
-      },
-    });
+      });
   }
 
   badgeIcon(badge: ComplianceBadge): string {

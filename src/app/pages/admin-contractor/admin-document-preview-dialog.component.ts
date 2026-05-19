@@ -23,9 +23,9 @@ import {
  * Modal preview admin pour un document uploadé par le contractor.
  *
  * Le fichier est stocké chiffré sur S3 et streamé via un endpoint admin
- * protégé par X-Tuita-Admin-Key (header). On ne peut donc pas pointer un
- * <iframe src="..."> direct cross-origin — on fetch un Blob avec le header,
- * puis on injecte un object URL dans l'iframe / img.
+ * protégé par OAuth2 Bearer (cf. admin-key.interceptor). Un <iframe src>
+ * direct ne peut pas porter le header → on fetch un Blob puis on injecte
+ * un object URL dans l'iframe / img.
  *
  * Object URLs revoke()'d en ngOnDestroy pour ne pas leaker.
  */

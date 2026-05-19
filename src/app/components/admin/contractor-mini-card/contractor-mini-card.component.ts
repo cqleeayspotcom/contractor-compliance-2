@@ -2,7 +2,9 @@ import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from 
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
-import { MissionContractor } from '../../../services/admin-mission.service';
+// POURQUOI : types métier exposés par le composant dialog (l'ancien
+// AdminMissionService a été supprimé car wrapper trivial du SDK).
+import { MissionContractor } from '../admin-mission-dialog/admin-mission-dialog.component';
 import { PhoneDisplayPipe } from '../../../pipes/phone-display.pipe';
 
 @Component({

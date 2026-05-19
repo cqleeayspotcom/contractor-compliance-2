@@ -41,7 +41,8 @@ import {
   ListQuery,
   PaginatedMeta,
 } from '../../services/admin-contractor.service';
-import { HttpClient } from '@angular/common/http';
+import { Api } from '../../api/api';
+import { adminPurchasesShow } from '../../api/fn/admin-purchases/admin-purchases-show';
 import { AdminDocumentPreviewDialogComponent } from './admin-document-preview-dialog.component';
 import { AdminKycSessionDialogComponent } from '../admin-kyc-failures/admin-kyc-session-dialog.component';
 import { PurchaseDetailDialogComponent } from '../admin-purchases/purchase-detail-dialog/purchase-detail-dialog.component';
@@ -126,7 +127,9 @@ export class AdminContractorComponent implements OnInit {
   private readonly location = inject(Location);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
-  private readonly http = inject(HttpClient);
+  // Wrapper SDK genere : `invoke(fn, params)` -> Promise<body>. Utilise pour
+  // les routes admin sans helper dans AdminContractorService.
+  private readonly sdk = inject(Api);
   private readonly dialogRef = inject<MatDialogRef<AdminContractorComponent> | null>(MatDialogRef, { optional: true });
   private readonly dialogData = inject<{ phone?: string } | null>(MAT_DIALOG_DATA, { optional: true });
 
@@ -311,9 +314,13 @@ export class AdminContractorComponent implements OnInit {
 
   private handleAuthError(err: { status?: number; message?: string }): void {
     if (err.status === 401 || err.status === 403) {
-      sessionStorage.removeItem('tuita_admin_key');
+      // Session OAuth2 mysession expirée : on purge le bearer + meta admin
+      // pour forcer un re-login propre via /admin/login.
+      sessionStorage.removeItem('tuita_admin_token');
+      sessionStorage.removeItem('tuita_admin_refresh');
+      sessionStorage.removeItem('tuita_admin_user');
       this.snackBar.open('Session admin expirée. Reconnectez-vous.', 'OK', { duration: 4000 });
-      this.router.navigate(['/admin']);
+      this.router.navigate(['/admin/login']);
       return;
     }
     if (err.status === 404) {
@@ -417,22 +424,21 @@ export class AdminContractorComponent implements OnInit {
   }
 
   openPurchaseDetail(row: ContractorPurchaseRow): void {
-    const adminKey = sessionStorage.getItem('tuita_admin_key') ?? '';
-    this.http
-      .get<{ data: PurchaseDetail }>(`/contractor-compliance/admin/purchases/${row.uuid}`, {
-        headers: { 'X-Tuita-Admin-Key': adminKey },
+    // SDK auto-genere : `adminPurchasesShow` -> /contractor-compliance/admin/purchases/{uuid}.
+    // L'Authorization Bearer est ajoute par admin-key.interceptor.
+    // `invoke()` renvoie une Promise du body { data: PurchaseDetail }.
+    this.sdk
+      .invoke(adminPurchasesShow, { uuid: row.uuid })
+      .then((res) => {
+        const detail = (res as unknown as { data: PurchaseDetail }).data;
+        this.dialog.open(PurchaseDetailDialogComponent, {
+          data: detail,
+          width: '1100px',
+          maxWidth: '95vw',
+          maxHeight: '90vh',
+        });
       })
-      .subscribe({
-        next: (res) => {
-          this.dialog.open(PurchaseDetailDialogComponent, {
-            data: res.data,
-            width: '1100px',
-            maxWidth: '95vw',
-            maxHeight: '90vh',
-          });
-        },
-        error: (err) => this.handleAuthError(err),
-      });
+      .catch((err) => this.handleAuthError(err));
   }
 
   // ---- Formatters / helpers ----

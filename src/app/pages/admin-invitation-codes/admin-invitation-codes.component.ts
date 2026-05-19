@@ -41,8 +41,8 @@ type StatusFilter = 'all' | 'active' | 'expired' | 'revoked';
  * - Click sur ligne → drawer détail (consommations + arbre + édition note)
  * - Bouton revoke par ligne (idempotent)
  *
- * Auth : sessionStorage `tuita_admin_key` (header X-Tuita-Admin-Key envoyé
- * par AdminInvitationCodeService).
+ * Auth : OAuth2 Bearer mysession injecté par admin-key.interceptor sur
+ * toutes les routes /contractor-compliance/admin/*.
  */
 @Component({
   selector: 'app-admin-invitation-codes',

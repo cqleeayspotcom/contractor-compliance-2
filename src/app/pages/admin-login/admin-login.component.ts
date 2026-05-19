@@ -94,6 +94,8 @@ export class AdminLoginComponent {
     try {
       const resp = await firstValueFrom(
         this.http.post<RequestPinResponse>(
+          // SDK manquant : endpoint pré-auth (déclenchement du PIN admin)
+          // non exposé dans la spec OpenAPI — URL conservée en dur.
           '/contractor-compliance/admin/auth/request-pin',
           { email }
         )

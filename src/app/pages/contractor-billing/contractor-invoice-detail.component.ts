@@ -233,9 +233,10 @@ export class ContractorInvoiceDetailComponent implements OnInit {
    * 2026-05-19). Tant que cette date n'est pas connue, on ne peut pas afficher
    * la date pr\u00e9vue de paiement au contractor.
    *
-   * NB nommage : on \u00e9vite "Sindi" qui n'est pas un terme public \u2014 la
-   * nomenclature UI utilise "V\u00e9rification automatique" (cf.
-   * InvoiceTimelineComponent.STEP_LABELS).
+   * NB nommage : nom public de l'IA = "Cyndi" (orthographe canonique fig\u00e9e
+   * 2026-05-19). La m\u00e9thode reste neutre (`autoValidationAt`) pour d\u00e9coupler
+   * le contrat code du branding ; seules les cha\u00eenes user-visible portent
+   * le nom Cyndi.
    */
   autoValidationAt(): string | null {
     const inv = this.invoice();
