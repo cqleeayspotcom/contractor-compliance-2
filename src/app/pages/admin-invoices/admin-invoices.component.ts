@@ -49,7 +49,6 @@ import {
 import { AdminDialogService } from '../../services/admin-dialog.service';
 import { AdminInvoiceFilterBarComponent } from '../../components/admin/admin-invoice-filter-bar/admin-invoice-filter-bar.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
-import { AdminInvoicePdfPaneComponent } from '../../components/admin/admin-invoice-pdf-pane/admin-invoice-pdf-pane.component';
 import { KeyboardShortcutsOverlayComponent } from '../../components/admin/keyboard-shortcuts-overlay/keyboard-shortcuts-overlay.component';
 import { ContractorStatusBannerComponent } from '../../components/admin/contractor-status-banner/contractor-status-banner.component';
 import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
@@ -115,7 +114,6 @@ interface DialogField {
     MatTooltipModule,
     AdminInvoiceFilterBarComponent,
     AdminBackButtonComponent,
-    AdminInvoicePdfPaneComponent,
     KeyboardShortcutsOverlayComponent,
     ContractorStatusBannerComponent,
     PhoneDisplayPipe,

@@ -761,10 +761,16 @@ export class ContractorApiService {
   // individuelle. La page de dï¿½tail offre redirige donc vers la liste.
 
   listMissionOffers(): Observable<{ data: MissionOffer[]; can_accept?: boolean }> {
+    // Depuis le chantier 8, le SDK retourne MissionOffersListResponse :
+    //   { data: MissionOffer[], meta: { ..., can_accept: boolean, links: ... } }
+    // Le contrat consommateur côté composant reste `{ data, can_accept? }`.
     return from(
       this.api.invoke(missionsOffers) as Promise<{
-        data: { data: MissionOffer[]; can_accept?: boolean };
+        data: MissionOffer[];
+        meta: { can_accept?: boolean };
       }>
-    ).pipe(map((res) => res.data));
+    ).pipe(
+      map((res) => ({ data: res.data, can_accept: res.meta?.can_accept })),
+    );
   }
 }

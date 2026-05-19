@@ -33,7 +33,6 @@ import {
   ContractorListRow,
 } from '../../services/admin-contractor.service';
 import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
-import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
 
 const DEPARTMENTS: string[] = [
@@ -53,7 +52,6 @@ const DEPARTMENTS: string[] = [
     CommonModule,
     FormsModule,
     RouterLink,
-    AdminBackButtonComponent,
     MatButtonModule,
     MatCardModule,
     MatChipsModule,
