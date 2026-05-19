@@ -7,7 +7,7 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { SuccessEnvelope } from '../../models/success-envelope';
+import { MissionOffersListResponse } from '../../models/mission-offers-list-response';
 
 export interface MissionsOffers$Params {
   status?: string;
@@ -16,7 +16,7 @@ export interface MissionsOffers$Params {
   per_page?: number;
 }
 
-export function missionsOffers(http: HttpClient, rootUrl: string, params?: MissionsOffers$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+export function missionsOffers(http: HttpClient, rootUrl: string, params?: MissionsOffers$Params, context?: HttpContext): Observable<StrictHttpResponse<MissionOffersListResponse>> {
   const rb = new RequestBuilder(rootUrl, missionsOffers.PATH, 'get');
   if (params) {
     rb.query('status', params.status, {});
@@ -30,7 +30,7 @@ export function missionsOffers(http: HttpClient, rootUrl: string, params?: Missi
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<SuccessEnvelope>;
+      return r as StrictHttpResponse<MissionOffersListResponse>;
     })
   );
 }

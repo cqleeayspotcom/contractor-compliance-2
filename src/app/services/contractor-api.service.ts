@@ -2,7 +2,9 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, from } from 'rxjs';
 import { map, timeout } from 'rxjs/operators';
-import { MissionOffer } from '../models/mission-offer.model';
+import { MissionOffer } from '../api/models/mission-offer';
+import { ContractorMission } from '../api/models/contractor-mission';
+import { MissionsMeta } from '../api/models/missions-meta';
 import { Api } from '../api/api';
 import { ApiConfiguration } from '../api/api-configuration';
 import { dashboardIndex } from '../api/fn/dashboard/dashboard-index';
@@ -34,7 +36,13 @@ import { missionsShow } from '../api/fn/missions/missions-show';
 import { missionsOffers } from '../api/fn/missions/missions-offers';
 import { unwrapDataMeta } from '../core/api-envelope';
 
-export type { MissionOffer } from '../models/mission-offer.model';
+// Types missions : depuis le chantier 8, le SDK ng-openapi-gen génère des
+// modèles fortement typés à partir de l'OpenAPI backend. On les ré-exporte
+// pour préserver les imports existants (`MissionOffer`, `ContractorMission`,
+// etc.) côté composants, sans avoir à toucher 30 fichiers.
+export type { MissionOffer } from '../api/models/mission-offer';
+export type { ContractorMission } from '../api/models/contractor-mission';
+export type { MissionsMeta } from '../api/models/missions-meta';
 
 /**
  * Timeout HTTP pour les uploads (documents admin + factures freemium).
@@ -212,53 +220,13 @@ export interface KycDebugPayload {
   };
 }
 
-export interface ContractorMission {
-  mid: string;
-  caseNumber: string;
-  missionTitle: string;
-  operationType: string;
-  operationTypeLabel: string;
-  price: number;
-  targetAddress: string;
-  city: string;
-  visitDateConfirmed: string | null;
-  signedAt: string | null;
-  canRun: boolean;
-  invoice_status:
-    | 'none'
-    | 'validating'            // freemium : OCR en cours (quasi jamais vu cÃ´tÃ© UI depuis sync upload)
-    | 'pending_validation'    // pipeline unifiÃ© : triple validation Tuita en cours
-    | 'ready_to_pay'          // les 3 validateurs OK, drapeau "Ã  payer"
-    | 'paying'                // virement lancÃ© par la compta Tuita
-    | 'paid'                  // virement confirmÃ© cÃ´tÃ© banque (terminal)
-    | 'uploaded'              // freemium gÃ©nÃ©rique (statuts legacy)
-    | 'auto_generated'        // Pro gÃ©nÃ©rique (statuts legacy)
-    | 'rejected';
-  // RenseignÃ©s par le backend uniquement lorsqu'une facture existe pour cette
-  // mission (cf. ContractorMissionController::enrichInvoiceStatus). Permettent
-  // d'ouvrir le panel latÃ©ral de visualisation sans appel supplÃ©mentaire.
-  invoice_uuid?: string;
-  invoice_number?: string | null;
-}
-
+// ContractorMission est désormais typée par le SDK ng-openapi-gen
+// (cf. chantier 8 - OpenAPI enrichi). On garde l'enveloppe de réponse
+// utilisée par les composants (data + meta). Le type des items vient du SDK.
 export interface MissionsResponse {
   success: boolean;
   data: ContractorMission[];
-  meta: {
-    total: number;
-    completed: number;
-    invoiceable: number;
-    invoiced: number;
-    // Stats specifiques aux missions REALISEES (signedAt + visite passee)
-    realized?: number;
-    realized_to_invoice?: number;
-    invoice_status_counts?: Record<string, number>;
-    // Pagination (presents si page/per_page demandes au backend)
-    current_page?: number;
-    last_page?: number;
-    per_page?: number;
-    filtered_total?: number;
-  };
+  meta: MissionsMeta;
 }
 
 export interface MissionsQuery {
@@ -759,11 +727,23 @@ export class ContractorApiService {
     // sur `/missions/active`, et `/missions/history` quand `status=history`.
     const fn = query.status === 'history' ? missionsHistory : missionsActive;
     return fn(this.http, this.rootUrl, sdkParams).pipe(
-      unwrapDataMeta<ContractorMission[], MissionsResponse['meta']>(),
+      unwrapDataMeta<ContractorMission[], MissionsMeta>(),
       map(({ data, meta }) => ({
         success: true,
         data,
-        meta: meta ?? { total: data.length, completed: 0, invoiceable: 0, invoiced: 0 },
+        // Le backend renvoie toujours un meta complet depuis le chantier 8.
+        // En cas d'absence (anomalie réseau), on synthétise un meta minimal
+        // qui respecte le contrat MissionsMeta.
+        meta: meta ?? {
+          total: data.length,
+          filtered_total: data.length,
+          page: 1,
+          per_page: data.length || 20,
+          last_page: 1,
+          realized: 0,
+          realized_to_invoice: 0,
+          invoice_status_counts: {},
+        },
       })),
     );
   }

@@ -154,17 +154,15 @@ export class ContractorProfileComponent implements OnInit {
 
     await this.profileService.logout().catch(() => undefined);
 
-    this.snack.open('Déconnexion réussie - redirection vers tuita.fr', '', {
+    this.snack.open('Déconnexion réussie', '', {
       duration: 1500,
       panelClass: ['snack-success'],
       horizontalPosition: 'center',
       verticalPosition: 'top',
     });
 
-    // Délai 800 ms : laisse le temps au snackbar d'apparaître + animation
-    // avant que la page Compliance disparaisse derrière le redirect.
     setTimeout(() => {
-      window.location.href = 'https://tuita.fr';
+      window.location.href = '/';
     }, 800);
   }
 

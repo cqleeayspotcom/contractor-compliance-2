@@ -88,6 +88,249 @@ components:
     # Alias legacy — conservé temporairement pour compat.
     ErrorResponse:
       $ref: '#/components/schemas/ErrorEnvelope'
+
+    # ============================================================
+    # Missions contractor — schémas typés depuis le chantier 8.
+    # Sources backend :
+    #   - ContractorCompliance\Service\Mission\MissionView::toArray()
+    #   - ContractorCompliance\Service\Mission\OfferView::toArray()
+    #   - ContractorCompliance\Service\Mission\MissionListResult::getMeta()
+    # ============================================================
+    InvoiceStatusFront:
+      type: string
+      enum:
+        - none                  # aucune facture — signal Freemium "à facturer"
+        - validating            # OCR en cours
+        - pending_validation    # triple validation Tuita en cours
+        - ready_to_pay          # 3/3 OK, drapeau "à payer"
+        - paying                # virement lancé par la compta
+        - paid                  # virement confirmé (terminal)
+        - uploaded              # générique freemium
+        - auto_generated        # générique Pro (auto Tuita)
+        - rejected              # rejetée, à refaire
+      description: |
+        9 statuts de facture exposés au front contractor. Mapping interne
+        14 statuts -> 9 réalisé dans InvoiceStatusMapper côté backend.
+    ContractorMission:
+      type: object
+      required:
+        - mid
+        - caseNumber
+        - missionTitle
+        - operationType
+        - operationTypeLabel
+        - price
+        - canRun
+        - invoice_status
+      properties:
+        mid:
+          type: string
+          description: ID Tuita de la MissionStatement (= primary key affichable).
+        missionUid:
+          type: string
+          nullable: true
+          description: Identifiant unique court côté contractor (cm.mission_uid).
+        caseNumber:
+          type: string
+          description: Référence dossier (CMD-XXX / opportunity caseNumber).
+        missionTitle:
+          type: string
+        operationType:
+          type: string
+          description: "Clé technique : ridge, gutter, previsit, starlink, etc."
+        operationTypeLabel:
+          type: string
+          description: Libellé humain (lookup ValueRegistry ROOFING_OPERATION_TYPE).
+        price:
+          type: number
+          format: float
+          description: "Prix contractor en € (depuis cft_smith_contract.price, round 2)."
+        targetAddress:
+          type: string
+          nullable: true
+          description: |
+            Adresse VAGUE (postal_code + city). Pas la rue / numéro
+            (consigne business anti-court-circuit).
+        city:
+          type: string
+          nullable: true
+        visitDateConfirmed:
+          type: string
+          format: date-time
+          nullable: true
+        signedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601, date de signature de la mission (réalisée si non-null).
+        canRun:
+          type: boolean
+          description: Ce contractor peut-il piloter la mission (master vs secondary).
+        invoice_status:
+          $ref: '#/components/schemas/InvoiceStatusFront'
+        invoice_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        invoice_number:
+          type: string
+          nullable: true
+          description: Numéro de facture contractor si présent.
+        mission_ref:
+          type: string
+          description: Alias snake_case de caseNumber (rétrocompat admin).
+    MissionsMeta:
+      type: object
+      required:
+        - total
+        - filtered_total
+        - page
+        - per_page
+        - last_page
+        - realized
+        - realized_to_invoice
+        - invoice_status_counts
+      properties:
+        total:
+          type: integer
+          description: Total brut (avant filtres).
+        filtered_total:
+          type: integer
+          description: Total après filtres (= taille effective).
+        page:
+          type: integer
+        per_page:
+          type: integer
+        last_page:
+          type: integer
+        realized:
+          type: integer
+          description: Nombre de missions avec signedAt != null.
+        realized_to_invoice:
+          type: integer
+          description: |
+            Missions réalisées dont l'invoice_status est none ou rejected
+            (= action upload facture requise côté Freemium).
+        invoice_status_counts:
+          type: object
+          additionalProperties:
+            type: integer
+          description: "Map { 'none' => N, 'paid' => N, ... } sur les 9 statuts front."
+        links:
+          type: object
+          properties:
+            self:  { type: string, nullable: true }
+            first: { type: string, nullable: true }
+            last:  { type: string, nullable: true }
+            next:  { type: string, nullable: true }
+            prev:  { type: string, nullable: true }
+    ContractorMissionListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/ContractorMission' }
+        meta:
+          $ref: '#/components/schemas/MissionsMeta'
+    ContractorMissionDetailResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/ContractorMission'
+    MissionOfferCategory:
+      type: string
+      enum: [pre_visite, fibre, btp, autre]
+      description: Catégorie front (mapping depuis DxMission.missionType).
+    MissionOfferAddress:
+      type: object
+      required: [street, city, postal_code, department]
+      properties:
+        street:
+          type: string
+          description: |
+            Vide côté liste offres (consigne anti-court-circuit). La rue
+            n'est révélée qu'après acceptation effective sur une autre route.
+        city:
+          type: string
+        postal_code:
+          type: string
+        department:
+          type: string
+          description: Code département (2 chiffres) dérivé du postal_code.
+    MissionOffer:
+      type: object
+      required:
+        - mission_ref
+        - title
+        - category
+        - scheduled_at
+        - address
+        - description_short
+        - required_badges
+        - expires_at
+        - offered_at
+      properties:
+        mission_ref:
+          type: string
+          description: Référence mission (= DxMission.caseNumber).
+        title:
+          type: string
+        category:
+          $ref: '#/components/schemas/MissionOfferCategory'
+        expected_amount_ttc:
+          type: number
+          format: float
+          nullable: true
+          description: Montant TTC attendu en €.
+        scheduled_at:
+          type: string
+          format: date-time
+        address:
+          $ref: '#/components/schemas/MissionOfferAddress'
+        description_short:
+          type: string
+        required_badges:
+          type: array
+          items: { type: string }
+          description: Certifications requises pour accepter (vide pour l'instant côté Tuita).
+        expires_at:
+          type: string
+          format: date-time
+        offered_at:
+          type: string
+          format: date-time
+    MissionOffersMeta:
+      type: object
+      required: [total, page, per_page, last_page, can_accept]
+      properties:
+        total:      { type: integer }
+        page:       { type: integer }
+        per_page:   { type: integer }
+        last_page:  { type: integer }
+        can_accept:
+          type: boolean
+          description: |
+            False quand le contractor n'est pas encore fully_verified.
+            Le front affiche les offres mais désactive accept/decline.
+        links:
+          type: object
+          properties:
+            self:  { type: string, nullable: true }
+            first: { type: string, nullable: true }
+            last:  { type: string, nullable: true }
+            next:  { type: string, nullable: true }
+            prev:  { type: string, nullable: true }
+    MissionOffersListResponse:
+      type: object
+      required: [data, meta]
+      properties:
+        data:
+          type: array
+          items: { $ref: '#/components/schemas/MissionOffer' }
+        meta:
+          $ref: '#/components/schemas/MissionOffersMeta'
   parameters:
     Uuid:
       name: uuid
@@ -256,6 +499,24 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+    ContractorMissionListOk:
+      description: "Liste paginée + filtrée des missions attribuées au contractor."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContractorMissionListResponse'
+    ContractorMissionDetailOk:
+      description: "Détail d'une mission attribuée pour le contractor connecté."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ContractorMissionDetailResponse'
+    MissionOffersOk:
+      description: "Liste paginée des offres SuperDispatch en attente d'acceptation."
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MissionOffersListResponse'
 tags:
   - name: Signup
   - name: Profile
@@ -686,18 +947,23 @@ paths:
     get:
       tags: [Missions]
       operationId: missionsOffers
+      summary: Offres SuperDispatch en attente (DxOffer pending pour ce contractor).
       security: [{ contractorCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/QueryStatus' }
         - { $ref: '#/components/parameters/QuerySearch' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      responses:
+        '200': { $ref: '#/components/responses/MissionOffersOk' }
 
   /contractor-compliance/missions/active:
     get:
       tags: [Missions]
       operationId: missionsActive
+      summary: |
+        Missions attribuées (en cours + réalisées) du contractor, enrichies
+        de invoice_status + meta compteurs Freemium "réalisées à facturer".
       security: [{ contractorCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/QueryStatus' }
@@ -705,12 +971,16 @@ paths:
         - { $ref: '#/components/parameters/QueryInvoiceStatus' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      responses:
+        '200': { $ref: '#/components/responses/ContractorMissionListOk' }
 
   /contractor-compliance/missions/history:
     get:
       tags: [Missions]
       operationId: missionsHistory
+      summary: |
+        Alias rétrocompat de /missions/active (même payload). Conservé pour
+        ne pas casser le SDK contractor existant.
       security: [{ contractorCookie: [] }]
       parameters:
         - { $ref: '#/components/parameters/QueryStatus' }
@@ -718,15 +988,18 @@ paths:
         - { $ref: '#/components/parameters/QueryInvoiceStatus' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      responses:
+        '200': { $ref: '#/components/responses/ContractorMissionListOk' }
 
   /contractor-compliance/missions/{ref}:
     get:
       tags: [Missions]
       operationId: missionsShow
+      summary: Détail d'une mission attribuée par caseNumber.
       security: [{ contractorCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Ref' }]
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      responses:
+        '200': { $ref: '#/components/responses/ContractorMissionDetailOk' }
 
   /contractor-compliance/certification/status:
     get:

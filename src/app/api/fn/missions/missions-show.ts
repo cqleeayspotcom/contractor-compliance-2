@@ -7,13 +7,13 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { SuccessEnvelope } from '../../models/success-envelope';
+import { ContractorMissionDetailResponse } from '../../models/contractor-mission-detail-response';
 
 export interface MissionsShow$Params {
   ref: string;
 }
 
-export function missionsShow(http: HttpClient, rootUrl: string, params: MissionsShow$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+export function missionsShow(http: HttpClient, rootUrl: string, params: MissionsShow$Params, context?: HttpContext): Observable<StrictHttpResponse<ContractorMissionDetailResponse>> {
   const rb = new RequestBuilder(rootUrl, missionsShow.PATH, 'get');
   if (params) {
     rb.path('ref', params.ref, {});
@@ -24,7 +24,7 @@ export function missionsShow(http: HttpClient, rootUrl: string, params: Missions
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<SuccessEnvelope>;
+      return r as StrictHttpResponse<ContractorMissionDetailResponse>;
     })
   );
 }
