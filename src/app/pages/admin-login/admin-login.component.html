@@ -1,0 +1,102 @@
+<div class="admin-login-page">
+  <div class="admin-login-card">
+    <header>
+      <mat-icon class="logo-icon">admin_panel_settings</mat-icon>
+      <h1>Admin Tuita</h1>
+      <p class="subtitle">
+        @if (step() === 'email') {
+          Auth OAuth2 staff — PIN envoyé sur Slack (ou logs en dev).
+        } @else {
+          PIN envoyé pour <strong>{{ email() }}</strong>.
+        }
+      </p>
+    </header>
+
+    @if (step() === 'email') {
+      <form (ngSubmit)="submitEmail()" #emailForm="ngForm" class="form">
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Email</mat-label>
+          <input
+            matInput
+            type="email"
+            name="email"
+            autocomplete="username"
+            required
+            [ngModel]="email()"
+            (ngModelChange)="email.set($event)"
+            [disabled]="loading()"
+          />
+          <mat-icon matSuffix>person</mat-icon>
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="submit-btn"
+          [disabled]="loading() || !emailForm.valid"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <span>Envoyer le PIN</span>
+          }
+        </button>
+      </form>
+    } @else {
+      <form (ngSubmit)="submitPin()" #pinForm="ngForm" class="form">
+        <mat-form-field appearance="outline" class="full">
+          <mat-label>Code PIN</mat-label>
+          <input
+            matInput
+            type="text"
+            name="pin"
+            autocomplete="one-time-code"
+            inputmode="numeric"
+            required
+            [ngModel]="pin()"
+            (ngModelChange)="pin.set($event)"
+            [disabled]="loading()"
+          />
+          <mat-icon matSuffix>vpn_key</mat-icon>
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          class="submit-btn"
+          [disabled]="loading() || !pinForm.valid"
+        >
+          @if (loading()) {
+            <mat-spinner diameter="20"></mat-spinner>
+          } @else {
+            <span>Se connecter</span>
+          }
+        </button>
+
+        <button
+          mat-button
+          type="button"
+          class="back-btn"
+          (click)="resetToEmail()"
+          [disabled]="loading()"
+        >
+          <mat-icon>arrow_back</mat-icon>
+          <span>Changer d'email</span>
+        </button>
+      </form>
+    }
+
+    <footer class="dev-hint">
+      <mat-icon>info</mat-icon>
+      <span>
+        @if (pincodeMedia() === 'slack') {
+          PIN diffusé sur Slack #granting-enquiry.
+        } @else {
+          DEV — PIN dans <code>application.log</code> (chercher "ADMIN PINCODE").
+        }
+      </span>
+    </footer>
+  </div>
+</div>

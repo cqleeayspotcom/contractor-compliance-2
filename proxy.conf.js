@@ -47,4 +47,13 @@ module.exports = {
     logLevel: 'debug',
     onProxyRes: rewriteSetCookieForLocalhost,
   },
+  // Route OAuth2 `/signin` du vendor laminas-api-tools/oauth2 — utilisée
+  // par la page admin-login (step 2/2) pour échanger PIN + Sms-Trip
+  // contre un access_token. PAS de cookie ici, juste un Bearer en réponse.
+  '/signin': {
+    target,
+    secure: false,
+    changeOrigin: true,
+    logLevel: 'debug',
+  },
 };

@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import {
+  adminAuthGuard,
   certificationCompletedGuard,
   certificationNotCompletedGuard,
   chantiersAccessGuard,
@@ -276,13 +277,25 @@ export const routes: Routes = [
     title: 'Règles TUITA',
   },
 
-  // Admin supervision (super admin only, requires API key)
+  // Page de login admin Tuita (OAuth2 mysession : email → PIN Slack/log → token).
+  // PAS de adminAuthGuard ici (logique : on doit pouvoir y aller sans token).
+  {
+    path: 'admin/login',
+    loadComponent: () =>
+      import('./pages/admin-login/admin-login.component').then(
+        m => m.AdminLoginComponent
+      ),
+    title: 'Connexion admin - Tuita',
+  },
+
+  // Admin supervision (super admin only, OAuth2 staff bearer)
   {
     path: 'admin',
     loadComponent: () =>
       import('./pages/contractor-admin/contractor-admin.component').then(
         m => m.ContractorAdminComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Supervision - Tuita',
   },
 
@@ -293,6 +306,7 @@ export const routes: Routes = [
       import('./pages/admin-purchases/admin-purchases.component').then(
         m => m.AdminPurchasesComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Supervision achats - Tuita',
   },
 
@@ -303,6 +317,7 @@ export const routes: Routes = [
       import('./pages/admin-invitation-codes/admin-invitation-codes.component').then(
         m => m.AdminInvitationCodesComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Codes d\'invitation - Tuita',
   },
 
@@ -314,6 +329,7 @@ export const routes: Routes = [
       import('./pages/admin-invoices/admin-invoices.component').then(
         m => m.AdminInvoicesComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Gestion factures - Tuita',
   },
 
@@ -324,6 +340,7 @@ export const routes: Routes = [
       import('./pages/admin-settings/admin-settings.component').then(
         m => m.AdminSettingsComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Paramètres plateforme - Tuita',
   },
 
@@ -334,6 +351,7 @@ export const routes: Routes = [
       import('./pages/admin-contractors-list/admin-contractors-list.component').then(
         m => m.AdminContractorsListComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Prestataires - Tuita',
   },
 
@@ -344,6 +362,7 @@ export const routes: Routes = [
       import('./pages/admin-contractor/admin-contractor.component').then(
         m => m.AdminContractorComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Contractor 360° - Tuita',
   },
 
@@ -354,6 +373,7 @@ export const routes: Routes = [
       import('./pages/admin-kyc-failures/admin-kyc-failures.component').then(
         m => m.AdminKycFailuresComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'KYC en échec - Tuita',
   },
 
@@ -364,6 +384,7 @@ export const routes: Routes = [
       import('./pages/admin-free-invoices/admin-free-invoices.component').then(
         m => m.AdminFreeInvoicesComponent
       ),
+    canActivate: [adminAuthGuard],
     title: 'Factures libres - Tuita',
   },
 

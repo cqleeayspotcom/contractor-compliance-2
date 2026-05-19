@@ -48,7 +48,13 @@ export function contractorCookieInterceptor(
         // (juste l'API /contractor/auth/{pin,login}). On reste donc dans
         // l'app sur /login, qui appelle directement l'API Tuita via le
         // proxy Angular (cf. proxy.conf.json).
-        if (isProductionDomain()) {
+        // Si on est sur une page /admin/* (token Bearer expiré ou
+        // jamais posé), on rebondit sur /admin/login plutôt que sur
+        // la page de login contractor — modèle d'auth différent.
+        const onAdminPage = window.location.pathname.startsWith('/admin');
+        if (onAdminPage) {
+          window.location.assign('/admin/login');
+        } else if (isProductionDomain()) {
           window.location.href = 'https://tuita.fr/contractor/login';
         } else {
           window.location.assign('/login');
@@ -67,7 +73,14 @@ export function contractorCookieInterceptor(
  */
 function isOnSelfServedAuthPage(): boolean {
   const path = window.location.pathname;
-  return path.startsWith('/login') || path.startsWith('/signup');
+  // /admin/login a sa propre logique d'auth (OAuth2 Bearer, pas cookie) —
+  // un 401 ici doit rester local au composant (snackbar PIN invalide),
+  // pas déclencher un bounce vers la page de login contractor.
+  return (
+    path.startsWith('/login') ||
+    path.startsWith('/signup') ||
+    path.startsWith('/admin/login')
+  );
 }
 
 /**
