@@ -11,12 +11,25 @@ import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminSettingsReset$Params {
   key: string;
+  
+    /**
+     * Body optionnel — le backend lit `reason` (défaut "reset") qui est
+     * inséré dans l'audit trail AppSettingService::set().
+     */
+    body?: {
+
+/**
+ * Motif du reset, archivé en audit (défaut backend "reset").
+ */
+'reason'?: string;
+}
 }
 
 export function adminSettingsReset(http: HttpClient, rootUrl: string, params: AdminSettingsReset$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminSettingsReset.PATH, 'post');
   if (params) {
     rb.path('key', params.key, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

@@ -7,22 +7,21 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminPurchasesExport$Params {
 }
 
-export function adminPurchasesExport(http: HttpClient, rootUrl: string, params?: AdminPurchasesExport$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+export function adminPurchasesExport(http: HttpClient, rootUrl: string, params?: AdminPurchasesExport$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
   const rb = new RequestBuilder(rootUrl, adminPurchasesExport.PATH, 'get');
   if (params) {
   }
 
   return http.request(
-    rb.build({ responseType: 'json', accept: 'application/json', context })
+    rb.build({ responseType: 'blob', accept: 'text/csv', context })
   ).pipe(
     filter((r: any): r is HttpResponse<any> => r instanceof HttpResponse),
     map((r: HttpResponse<any>) => {
-      return r as StrictHttpResponse<SuccessEnvelope>;
+      return r as StrictHttpResponse<Blob>;
     })
   );
 }

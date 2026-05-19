@@ -7,12 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesDispute$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+'reason': string;
+'admin_email'?: string;
+}
 }
 
 export function adminInvoicesDispute(http: HttpClient, rootUrl: string, params: AdminInvoicesDispute$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

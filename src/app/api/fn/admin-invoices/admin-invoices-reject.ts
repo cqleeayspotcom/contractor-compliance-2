@@ -7,12 +7,18 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesReject$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+
+/**
+ * Motif du rejet (obligatoire).
+ */
+'reason': string;
+'admin_email'?: string;
+}
 }
 
 export function adminInvoicesReject(http: HttpClient, rootUrl: string, params: AdminInvoicesReject$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

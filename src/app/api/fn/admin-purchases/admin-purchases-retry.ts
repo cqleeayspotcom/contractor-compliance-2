@@ -11,12 +11,25 @@ import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminPurchasesRetry$Params {
   uuid: string;
+  
+    /**
+     * Body optionnel — actuellement le controller ne lit aucun champ.
+     * `reason` est documenté pour les futurs releases (audit logger).
+     */
+    body?: {
+
+/**
+ * Motif du retry (à venir — non lu par le backend J0+).
+ */
+'reason'?: string;
+}
 }
 
 export function adminPurchasesRetry(http: HttpClient, rootUrl: string, params: AdminPurchasesRetry$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminPurchasesRetry.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

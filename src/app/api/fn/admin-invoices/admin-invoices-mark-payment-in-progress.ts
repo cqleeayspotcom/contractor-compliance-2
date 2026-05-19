@@ -7,12 +7,19 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesMarkPaymentInProgress$Params {
   uuid: string;
-      body?: JsonObject
+      body?: {
+
+/**
+ * Identité de l'admin actant la transition (fallback :
+ * identité OAuth2 du bearer). Tracé dans la timeline
+ * + audit log.
+ */
+'admin_email'?: string;
+}
 }
 
 export function adminInvoicesMarkPaymentInProgress(http: HttpClient, rootUrl: string, params: AdminInvoicesMarkPaymentInProgress$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

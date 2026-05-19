@@ -7,12 +7,22 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesReopen$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+
+/**
+ * Motif de la réouverture (≥10 caractères, archivé dans `reopen_reason`).
+ */
+'reason': string;
+
+/**
+ * Fallback identité OAuth2 si absent.
+ */
+'admin_email'?: string;
+}
 }
 
 export function adminInvoicesReopen(http: HttpClient, rootUrl: string, params: AdminInvoicesReopen$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

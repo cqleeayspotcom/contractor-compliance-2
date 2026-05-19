@@ -7,12 +7,30 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesMarkPaid$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+
+/**
+ * Référence virement bancaire (obligatoire, masquée en logs).
+ */
+'payment_ref': string;
+'admin_email': string;
+
+/**
+ * Date de paiement effective (ISO 8601). Défaut = maintenant.
+ */
+'paid_at'?: string;
+
+/**
+ * Bag opaque transmis au MarkPaidService (chemins accélérés).
+ */
+'fast_path'?: {
+[key: string]: any;
+};
+}
 }
 
 export function adminInvoicesMarkPaid(http: HttpClient, rootUrl: string, params: AdminInvoicesMarkPaid$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

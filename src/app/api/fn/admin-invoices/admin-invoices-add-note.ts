@@ -7,12 +7,23 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesAddNote$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+
+/**
+ * Contenu de la note (préféré).
+ */
+'content'?: string;
+
+/**
+ * Alias historique de `content`.
+ */
+'note'?: string;
+'admin_email'?: string;
+}
 }
 
 export function adminInvoicesAddNote(http: HttpClient, rootUrl: string, params: AdminInvoicesAddNote$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

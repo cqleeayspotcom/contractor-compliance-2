@@ -11,12 +11,32 @@ import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesValidate$Params {
   uuid: string;
+      body: {
+'decision': 'approved' | 'rejected';
+'admin_email': string;
+
+/**
+ * Code de motif structuré (préférence sur `reason`).
+ */
+'reason_code'?: string;
+
+/**
+ * Motif texte libre (fallback de `reason_code`).
+ */
+'reason'?: string;
+
+/**
+ * ID de corrélation (généré si absent).
+ */
+'correlation_id'?: string;
+}
 }
 
 export function adminInvoicesValidate(http: HttpClient, rootUrl: string, params: AdminInvoicesValidate$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesValidate.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

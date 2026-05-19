@@ -231,7 +231,23 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     try {
       const res = await this.api.invoke(adminDashboardOverview);
       const data = (res as { data?: DashboardOverview })?.data ?? null;
-      this.overview.set(data);
+      // Validation de structure : le template lit `ov.pipeline.*` /
+      // `ov.alerts.*` / `ov.today_to_pay.*` sans guard imbriqué. Si
+      // le backend renvoie un payload partial (ex : 200 mais sans
+      // `pipeline` à cause d'une dégradation côté agrégateur), on
+      // refuse la donnée pour ne pas crasher le template.
+      const isValid = !!data
+        && typeof data === 'object'
+        && !!(data as DashboardOverview).pipeline
+        && !!(data as DashboardOverview).alerts
+        && !!(data as DashboardOverview).today_to_pay;
+      this.overview.set(isValid ? data : null);
+      if (!isValid && data !== null) {
+        this.handleError(
+          new Error('Overview payload incomplet (pipeline/alerts/today_to_pay manquant)'),
+          'overview',
+        );
+      }
     } catch (err) {
       this.overview.set(null);
       this.handleError(err, 'overview');

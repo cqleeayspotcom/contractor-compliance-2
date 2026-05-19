@@ -16,6 +16,27 @@ export interface AdminContractorsList$Params {
   status?: string;
   sort?: string;
   direction?: 'asc' | 'desc';
+
+/**
+ * Recherche libre (nom / email / phone — appliquée côté repository).
+ */
+  q?: string;
+
+/**
+ * Filtre exact sur le téléphone (`cc_users.phone`).
+ */
+  phone?: string;
+
+/**
+ * Filtre exact sur l'email (`cc_users.email`).
+ */
+  email?: string;
+
+/**
+ * Ordre de tri (le controller lit `order`, pas `direction`).
+ * Défaut backend `desc`.
+ */
+  order?: 'asc' | 'desc';
 }
 
 export function adminContractorsList(http: HttpClient, rootUrl: string, params?: AdminContractorsList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
@@ -27,6 +48,10 @@ export function adminContractorsList(http: HttpClient, rootUrl: string, params?:
     rb.query('status', params.status, {});
     rb.query('sort', params.sort, {});
     rb.query('direction', params.direction, {});
+    rb.query('q', params.q, {});
+    rb.query('phone', params.phone, {});
+    rb.query('email', params.email, {});
+    rb.query('order', params.order, {});
   }
 
   return http.request(

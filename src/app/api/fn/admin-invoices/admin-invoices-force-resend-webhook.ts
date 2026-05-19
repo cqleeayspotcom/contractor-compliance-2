@@ -7,12 +7,17 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesForceResendWebhook$Params {
   uuid: string;
-      body: JsonObject
+      body: {
+
+/**
+ * Nom de l'event à re-émettre (une seule famille par appel).
+ */
+'event': 'rejected' | 'ready_to_pay' | 'payment_in_progress' | 'paid' | 'reopened' | 'cancelled';
+}
 }
 
 export function adminInvoicesForceResendWebhook(http: HttpClient, rootUrl: string, params: AdminInvoicesForceResendWebhook$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
