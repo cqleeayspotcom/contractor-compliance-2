@@ -10,6 +10,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { firstValueFrom } from 'rxjs';
 
+import { Api } from '../../api/api';
+import { adminAuthRequestPin } from '../../api/fn/admin-auth/admin-auth-request-pin';
+
 /**
  * Page de connexion admin Tuita.
  *
@@ -35,11 +38,10 @@ import { firstValueFrom } from 'rxjs';
  *   qui ne marche pas pour un body JSON. Le wrapper module utilise le même
  *   storage OAuth2 mais via bodyParam() correctement.
  */
-interface RequestPinResponse {
-  sms_trip_token: string;
-  expires_at: string;
-  pincode_media: 'log' | 'slack' | 'email' | 'sms';
-}
+// POURQUOI : alias local sur le shape retourné par le SDK `adminAuthRequestPin`.
+// On reste à plat (le backend ne wrappe PAS dans `{ data: ... }` pour cette route
+// pré-auth, contrairement aux autres endpoints admin sous SuccessEnvelope).
+type PincodeMedia = 'log' | 'slack';
 
 interface SigninResponse {
   access_token: string;
@@ -72,7 +74,11 @@ type Step = 'email' | 'pin';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminLoginComponent {
+  // POURQUOI HttpClient reste injecté : /signin est une route OAuth2 vendor
+  // (laminas-api-tools/oauth2) hors spec OpenAPI du module → pas de fn SDK,
+  // appel brut form-urlencoded indispensable.
   private readonly http = inject(HttpClient);
+  private readonly api = inject(Api);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly snack = inject(MatSnackBar);
@@ -81,7 +87,7 @@ export class AdminLoginComponent {
   readonly email = signal('');
   readonly pin = signal('');
   readonly smsTripToken = signal<string | null>(null);
-  readonly pincodeMedia = signal<RequestPinResponse['pincode_media']>('log');
+  readonly pincodeMedia = signal<PincodeMedia>('log');
   readonly loading = signal(false);
 
   async submitEmail(): Promise<void> {
@@ -92,14 +98,10 @@ export class AdminLoginComponent {
     }
     this.loading.set(true);
     try {
-      const resp = await firstValueFrom(
-        this.http.post<RequestPinResponse>(
-          // SDK manquant : endpoint pré-auth (déclenchement du PIN admin)
-          // non exposé dans la spec OpenAPI — URL conservée en dur.
-          '/contractor-compliance/admin/auth/request-pin',
-          { email }
-        )
-      );
+      // POURQUOI SDK : `adminAuthRequestPin` est désormais exposé dans
+      // l'OpenAPI module. Le body est à plat `{ sms_trip_token, expires_at,
+      // pincode_media }` — pas d'enveloppe `{ data }` côté pré-auth.
+      const resp = await this.api.invoke(adminAuthRequestPin, { body: { email } });
       this.smsTripToken.set(resp.sms_trip_token);
       this.pincodeMedia.set(resp.pincode_media);
       this.step.set('pin');

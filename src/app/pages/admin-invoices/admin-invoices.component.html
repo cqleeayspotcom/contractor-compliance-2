@@ -8,7 +8,7 @@
     <div class="page-actions">
       @if (adminActorEmail()) {
         <span class="admin-actor-pill"
-              matTooltip="Identité utilisée pour valider/rejeter (envoyée comme X-Admin-Actor-Email/Name)">
+              matTooltip="Identité utilisée pour valider/rejeter (envoyée dans le body admin_email)">
           <mat-icon>badge</mat-icon>
           {{ adminActorName() }} ({{ adminActorEmail() }})
           <button mat-icon-button class="reset-actor-btn"

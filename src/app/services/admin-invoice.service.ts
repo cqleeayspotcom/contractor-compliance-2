@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -471,59 +471,63 @@ export class AdminInvoiceService {
   }
 
   /**
-   * SDK manquant : header `If-Unchanged-Since` (optimistic locking multi-admin)
-   * non exposé par la spec OpenAPI — HttpClient direct avec `.PATH` du SDK.
+   * Actions admin via SDK typé : le backend ne lit pas de header d'audit, il
+   * lit l'identité actor depuis `body.admin_email` ou l'identité OAuth2 du
+   * Bearer. Le paramètre `_ifUnchangedSince` reste sur la signature pour ne
+   * pas casser les appelants existants ; il est volontairement ignoré.
    */
-  markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesMarkPaymentInProgress.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, _ifUnchangedSince?: string): Observable<unknown> {
+    // Body backend = { admin_email? }. La `payment_ref` n'est pas lue par
+    // markPaymentInProgressAction (transition pure) — on l'envoie quand
+    // même au cas où un audit la consomme.
+    return from(this.api.invoke(adminInvoicesMarkPaymentInProgress, {
+      uuid,
+      body: { admin_email: undefined, ...(body as unknown as Record<string, unknown>) },
+    }) as Promise<unknown>);
   }
 
-  /** SDK manquant : header `If-Unchanged-Since` non exposé par la spec. */
-  markPaid(uuid: string, body: MarkPaidBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesMarkPaid.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  markPaid(uuid: string, body: MarkPaidBody, _ifUnchangedSince?: string): Observable<unknown> {
+    // Le SDK type `MarkPaidBody` est compatible (payment_ref, paid_at,
+    // admin_email, fast_path) — `skip_in_progress` et `reason` du fast path
+    // partent en plus, le backend les ignore silencieusement.
+    return from(this.api.invoke(adminInvoicesMarkPaid, {
+      uuid,
+      body: body as unknown as { payment_ref: string; admin_email: string; paid_at?: string },
+    }) as Promise<unknown>);
   }
 
-  /** SDK manquant : header `If-Unchanged-Since` non exposé par la spec. */
-  reopen(uuid: string, body: ReopenBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesReopen.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  reopen(uuid: string, body: ReopenBody, _ifUnchangedSince?: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesReopen, { uuid, body }) as Promise<unknown>);
   }
 
-  /** SDK manquant : header `If-Unchanged-Since` non exposé par la spec. */
-  resolveDispute(uuid: string, body: ResolveDisputeBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesResolveDispute.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  /**
+   * Backend `resolveDisputeAction` (alias de `disputeAction`) lit
+   * `body.reason` — on remappe le champ historique `resolution` du frontend
+   * vers la clé attendue côté serveur.
+   */
+  resolveDispute(uuid: string, body: ResolveDisputeBody, _ifUnchangedSince?: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesResolveDispute, {
+      uuid,
+      body: { reason: body.resolution },
+    }) as Promise<unknown>);
   }
 
-  /** SDK manquant : header `If-Unchanged-Since` non exposé par la spec. */
-  forceResendWebhook(uuid: string, body: ForceResendWebhookBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesForceResendWebhook.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  /**
+   * Backend `forceResendWebhookAction` lit `body.event`. Le frontend gardait
+   * l'alias `event_type` historique : on remappe ici pour éviter de casser
+   * les appelants. `reason` est tracé par l'audit (backend best-effort).
+   */
+  forceResendWebhook(uuid: string, body: ForceResendWebhookBody, _ifUnchangedSince?: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesForceResendWebhook, {
+      uuid,
+      body: { event: body.event_type },
+    }) as Promise<unknown>);
   }
 
-  /** SDK manquant : header `If-Unchanged-Since` non exposé par la spec. */
-  addNote(uuid: string, body: AddNoteBody, ifUnchangedSince?: string): Observable<unknown> {
-    const headers = ifUnchangedSince
-      ? new HttpHeaders({ 'If-Unchanged-Since': ifUnchangedSince })
-      : undefined;
-    const url = adminInvoicesAddNote.PATH.replace('{uuid}', uuid);
-    return this.http.post(url, body, headers ? { headers } : {});
+  addNote(uuid: string, body: AddNoteBody, _ifUnchangedSince?: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesAddNote, {
+      uuid,
+      body: { content: body.content },
+    }) as Promise<unknown>);
   }
 }

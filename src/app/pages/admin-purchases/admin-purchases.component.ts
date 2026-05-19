@@ -338,27 +338,21 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   private doRetry(row: PurchaseRow, reason: string): void {
-    // SDK manquant : `adminPurchasesRetry` n'expose pas le body `{ reason }`
-    // (signature généré sans payload). Fallback HttpClient — l'intercepteur
-    // Bearer admin gère l'auth, aucun header manuel.
-    this.http
-      .post<{ data: { uuid: string; status: string } }>(
-        adminPurchasesRetry.PATH.replace('{uuid}', row.uuid),
-        { reason },
-      )
-      .subscribe({
-        next: () => {
-          this.snack.open(`Achat ${row.uuid.substring(0, 8)} relance`, 'OK', {
-            duration: 4000,
-          });
-          this.refreshAll();
-        },
-        error: err => {
-          const msg =
-            err?.error?.error || err?.error?.message || 'Impossible de relancer cet achat';
-          this.snack.open(msg, 'OK', { duration: 6000 });
-          this.onHttpError(err, 'retry');
-        },
+    // POURQUOI SDK : `adminPurchasesRetry` expose désormais `body { reason }`
+    // (audit logger backend). On migre — l'intercepteur Bearer admin couvre l'auth.
+    this.api
+      .invoke(adminPurchasesRetry, { uuid: row.uuid, body: { reason } })
+      .then(() => {
+        this.snack.open(`Achat ${row.uuid.substring(0, 8)} relance`, 'OK', {
+          duration: 4000,
+        });
+        this.refreshAll();
+      })
+      .catch(err => {
+        const msg =
+          err?.error?.error || err?.error?.message || 'Impossible de relancer cet achat';
+        this.snack.open(msg, 'OK', { duration: 6000 });
+        this.onHttpError(err, 'retry');
       });
   }
 
@@ -374,50 +368,67 @@ export class AdminPurchasesComponent implements OnInit {
    * Statut → si l'admin n'a pas filtré, le backend exporte completed+refunded.
    */
   exportCsv(): void {
-    // SDK manquant : `adminPurchasesExport` généré renvoie SuccessEnvelope JSON
-    // alors que l'endpoint produit un CSV binaire avec Content-Disposition.
-    // On reste sur HttpClient en mode blob → passe par l'intercepteur Bearer
-    // admin (pas besoin de lire sessionStorage à la main, plus de `fetch`).
-    let params = new HttpParams();
-    if (this.statusFilter) params = params.set('status', this.statusFilter);
-    if (this.typeFilter) params = params.set('document_type', this.typeFilter);
-    if (this.sinceInput) params = params.set('since', this.sinceInput);
-    if (this.untilInput) params = params.set('until', this.untilInput);
+    // POURQUOI : la spec OpenAPI module n'expose pas encore les query params
+    // de filtre pour /purchases/export (status/type/since/until). Si l'admin
+    // a posé des filtres, on garde le HttpClient brut sur `adminPurchasesExport.PATH`
+    // pour transmettre les params. Sinon → SDK via `invoke$Response` pour
+    // récupérer le `HttpResponse<Blob>` complet (Content-Disposition).
+    const hasFilters = Boolean(
+      this.statusFilter || this.typeFilter || this.sinceInput || this.untilInput,
+    );
 
-    this.http
-      .get(adminPurchasesExport.PATH, {
-        params,
-        responseType: 'blob',
-        observe: 'response',
-      })
-      .subscribe({
-        next: response => {
-          const blob = response.body as Blob;
-          const contentDisposition = response.headers.get('Content-Disposition') ?? '';
-          const match = contentDisposition.match(/filename="?([^"]+)"?/);
-          const filename =
-            match?.[1] ?? `achats-documents_${new Date().toISOString().slice(0, 10)}.csv`;
+    if (hasFilters) {
+      let params = new HttpParams();
+      if (this.statusFilter) params = params.set('status', this.statusFilter);
+      if (this.typeFilter) params = params.set('document_type', this.typeFilter);
+      if (this.sinceInput) params = params.set('since', this.sinceInput);
+      if (this.untilInput) params = params.set('until', this.untilInput);
 
-          const objectUrl = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = objectUrl;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          window.URL.revokeObjectURL(objectUrl);
+      this.http
+        .get(adminPurchasesExport.PATH, {
+          params,
+          responseType: 'blob',
+          observe: 'response',
+        })
+        .subscribe({
+          next: response => this.handleCsvResponse(response.body as Blob, response.headers.get('Content-Disposition')),
+          error: err => this.handleCsvError(err),
+        });
+      return;
+    }
 
-          this.snack.open('Export CSV téléchargé', 'OK', { duration: 4000 });
-        },
-        error: err => {
-          if (err?.status === 401 || err?.status === 403) {
-            this.logout();
-            return;
-          }
-          this.snack.open("Échec de l'export CSV", 'OK', { duration: 6000 });
-          console.error('[admin-purchases] export', err);
-        },
-      });
+    // Pas de filtre → SDK Blob typé.
+    this.api
+      .invoke$Response(adminPurchasesExport)
+      .then(response => this.handleCsvResponse(response.body as Blob, response.headers.get('Content-Disposition')))
+      .catch(err => this.handleCsvError(err));
+  }
+
+  /** Déclenche le download du Blob CSV et lit le filename depuis Content-Disposition. */
+  private handleCsvResponse(blob: Blob, contentDisposition: string | null): void {
+    const match = (contentDisposition ?? '').match(/filename="?([^"]+)"?/);
+    const filename =
+      match?.[1] ?? `achats-documents_${new Date().toISOString().slice(0, 10)}.csv`;
+
+    const objectUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(objectUrl);
+
+    this.snack.open('Export CSV téléchargé', 'OK', { duration: 4000 });
+  }
+
+  private handleCsvError(err: any): void {
+    if (err?.status === 401 || err?.status === 403) {
+      this.logout();
+      return;
+    }
+    this.snack.open("Échec de l'export CSV", 'OK', { duration: 6000 });
+    console.error('[admin-purchases] export', err);
   }
 
   /** Purge la session admin et redirige vers /admin/login. */

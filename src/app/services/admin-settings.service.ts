@@ -1,9 +1,6 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom, map } from 'rxjs';
 
 import { Api } from '../api/api';
-import { ApiConfiguration } from '../api/api-configuration';
 import { adminSettingsList } from '../api/fn/admin-settings/admin-settings-list';
 import { adminSettingsGet } from '../api/fn/admin-settings/admin-settings-get';
 import { adminSettingsUpdate } from '../api/fn/admin-settings/admin-settings-update';
@@ -36,12 +33,6 @@ export interface BatchUpdateEntry {
 @Injectable({ providedIn: 'root' })
 export class AdminSettingsService {
   private readonly api = inject(Api);
-  // POURQUOI : le SDK généré pour `POST /settings/:key/reset` n'expose pas de
-  // body (omission dans l'OpenAPI), or le backend lit `reason` dans le body
-  // pour tracer la motivation du reset. On garde un HttpClient brut pour ce
-  // seul endpoint afin de préserver l'audit trail.
-  private readonly http = inject(HttpClient);
-  private readonly apiConfig = inject(ApiConfiguration);
 
   async list(): Promise<PlatformSetting[]> {
     const env = await this.api.invoke(adminSettingsList);
@@ -63,19 +54,11 @@ export class AdminSettingsService {
     return (env as { data?: PlatformSetting[] }).data ?? [];
   }
 
-  reset(key: string, reason: string): Promise<PlatformSetting> {
-    // Gap SDK : voir commentaire en tête de classe. URL alignée sur le PATH du
-    // SDK (`adminSettingsReset.PATH`) — ne pas oublier de basculer ici si le
-    // backend renomme la route.
-    // POURQUOI : URL dérivée du PATH du SDK auto-généré pour rester synchronisée
-    // avec l'OpenAPI ; le segment `{key}` est substitué localement car l'appel
-    // brut via HttpClient est nécessaire pour transmettre le body `reason`.
-    const path = adminSettingsReset.PATH.replace('{key}', encodeURIComponent(key));
-    const url = `${this.apiConfig.rootUrl}${path}`;
-    return firstValueFrom(
-      this.http
-        .post<{ data: PlatformSetting }>(url, { reason })
-        .pipe(map((r) => r.data)),
-    );
+  async reset(key: string, reason: string): Promise<PlatformSetting> {
+    // POURQUOI SDK : `adminSettingsReset` expose désormais un body optionnel
+    // `{ reason }` qui alimente l'audit trail `AppSettingService::set()`.
+    // Plus besoin de HttpClient brut — l'intercepteur Bearer admin gère l'auth.
+    const env = await this.api.invoke(adminSettingsReset, { key, body: { reason } });
+    return (env as { data: PlatformSetting }).data;
   }
 }

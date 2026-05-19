@@ -12,8 +12,11 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { firstValueFrom, interval, Subscription, fromEvent } from 'rxjs';
+// Pourquoi pas HttpClient/HttpHeaders ici : depuis 2026-05-19 toutes les actions
+// admin invoice passent par le SDK (cf. AdminInvoiceService) et la validation
+// locale utilise adminInvoicesValidate via api.invoke — plus de raw POST.
+import { Api } from '../../api/api';
+import { interval, Subscription, fromEvent } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -143,7 +146,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   private visibilitySub: Subscription | null = null;
 
   private readonly api = inject(AdminInvoiceService);
-  private readonly http = inject(HttpClient);
+  // Pour la validation locale via le SDK (adminInvoicesValidate).
+  private readonly sdk = inject(Api);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
@@ -1205,10 +1209,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Pivot 2026-05-13 — Action admin local : valider/rejeter une facture depuis
-   * le back-office du microservice. Envoie POST /admin/invoices/{uuid}/validate
-   * avec les headers X-Admin-Actor-Email + X-Admin-Actor-Name (lus depuis le
-   * sessionStorage admin).
+   * Action admin local : valider/rejeter une facture depuis le back-office.
+   * Envoie POST /admin/invoices/{uuid}/validate avec `admin_email` dans le
+   * body (l'identité admin est lue depuis sessionStorage et passée côté
+   * controller pour l'audit, pas via header).
    */
   approveFromBackOffice(inv: AdminInvoice): void {
     void this.submitLocalValidation(inv, 'approved');
@@ -1229,7 +1233,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     if (!email) {
       const input = window.prompt(
         'Configurez votre adresse email admin Tuita (audit obligatoire).\n'
-        + 'Elle sera persistée dans cette session et envoyée comme X-Admin-Actor-Email.',
+        + 'Elle sera persistée dans cette session et envoyée dans le body admin_email lors des validations.',
         '',
       );
       if (!input || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.trim())) {
@@ -1287,24 +1291,19 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       this.snack.open('Rejet annulé — raison trop courte.', 'OK', { duration: 4000 });
       return;
     }
-    // SDK manquant : `adminInvoicesValidate` ne déclare ni body
-    // (`{ status, comment }`) ni les headers d'audit `X-Admin-Actor-*` dans la
-    // spec OpenAPI — on utilise HttpClient direct via `.PATH` du SDK. Le
-    // Bearer est injecté par admin-key.interceptor (pas de header
-    // Authorization en clair ici).
-    const url = adminInvoicesValidate.PATH.replace('{uuid}', inv.uuid);
-    const headers = new HttpHeaders({
-      'X-Admin-Actor-Email': actorEmail,
-      'X-Admin-Actor-Name': actorName,
-    });
+    // `adminInvoicesValidate` expose un body typé `{ decision, admin_email,
+    // reason?, reason_code?, correlation_id? }`. L'identité admin est portée
+    // par `admin_email` dans le body (lecture côté backend pour l'audit) ;
+    // `actorName` reste mémorisé localement pour l'UI uniquement.
     try {
-      const body = await firstValueFrom(
-        this.http.post<{ data?: { approvals_count?: number; approvals_required?: number; invoice_status?: string } }>(
-          url,
-          { status, comment },
-          { headers },
-        ),
-      );
+      const body = await this.sdk.invoke(adminInvoicesValidate, {
+        uuid: inv.uuid,
+        body: {
+          decision: status,
+          admin_email: actorEmail,
+          reason: comment ?? undefined,
+        },
+      }) as { data?: { approvals_count?: number; approvals_required?: number; invoice_status?: string } };
       const count = body?.data?.approvals_count ?? 0;
       const required = body?.data?.approvals_required ?? 3;
       const newStatus = body?.data?.invoice_status;
