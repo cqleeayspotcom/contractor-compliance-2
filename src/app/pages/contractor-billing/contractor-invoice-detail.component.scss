@@ -357,9 +357,144 @@
   }
 }
 
+// Bloc "Sindi validé + délai 30j fin de mois + upsell Plan Pro" — friction
+// volontaire affichée au contractor Freemium après validation OCR.
+.payment-terms-block {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  padding: $t-gap-20;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-16;
+
+  &__sindi {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+
+    strong {
+      display: block;
+      font-size: $t-body-1;
+      font-weight: 600;
+      color: $t-text-black;
+    }
+
+    span {
+      font-size: $t-body-3;
+      color: $t-color-light;
+    }
+  }
+
+  &__icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    color: $base-green-800;
+    flex-shrink: 0;
+  }
+
+  &__note {
+    font-size: $t-body-3;
+    color: $t-color-light;
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  &__terms {
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-12;
+    padding-top: $t-gap-12;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  &__terms-row {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-12;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+      color: $t-color-light;
+      flex-shrink: 0;
+    }
+
+    &--highlight mat-icon {
+      color: $primary-700;
+    }
+
+    &--highlight .payment-terms-block__terms-value {
+      color: $primary-700;
+      font-weight: 700;
+    }
+  }
+
+  &__terms-label {
+    display: block;
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+
+  &__terms-value {
+    font-size: $t-body-1;
+    font-weight: 600;
+    color: $t-text-black;
+  }
+
+  // Upsell Plan Pro — bord + accent visuel pour attirer l'œil sans agressivité.
+  &__upsell {
+    margin-top: $t-gap-4;
+    padding: $t-gap-16;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba($primary-700, 0.06), rgba($primary-700, 0.02));
+    border: 1px solid rgba($primary-700, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: $t-gap-12;
+  }
+
+  &__upsell-text {
+    strong {
+      display: block;
+      font-size: $t-body-1;
+      font-weight: 700;
+      color: $t-text-black;
+      margin-bottom: $t-gap-4;
+    }
+
+    span {
+      font-size: $t-body-3;
+      color: $t-color-light;
+      line-height: 1.5;
+    }
+  }
+
+  &__upsell-cta {
+    align-self: flex-start;
+    gap: $t-gap-6;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
 @media (max-width: 600px) {
   .detail-page { padding: $t-gap-16; }
   .amount-card__main { flex-direction: column; gap: $t-gap-4; }
   .detail-actions { flex-direction: column; }
   .rejection-block { padding: $t-gap-12; }
+  .payment-terms-block {
+    padding: $t-gap-16;
+
+    &__upsell-cta {
+      align-self: stretch;
+      justify-content: center;
+    }
+  }
 }

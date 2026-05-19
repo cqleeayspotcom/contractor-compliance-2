@@ -221,6 +221,74 @@ export class ContractorInvoiceDetailComponent implements OnInit {
   }
 
   /**
+   * Date \u00e0 laquelle la v\u00e9rification automatique (OCR Mistral + r\u00e8gles m\u00e9tier)
+   * a accept\u00e9 la facture.
+   *
+   * Source : timeline.steps avec step='ocr_passed' et state='done'. C'est
+   * l'\u00e9tape automatique qui valide la facture Freemium. Pour les contractors
+   * Pro (`source='auto_generated'`), il n'y a pas d'\u00e9tape OCR.
+   *
+   * Pourquoi cette info compte : c'est la "date de d\u00e9p\u00f4t valid\u00e9e" qui d\u00e9marre
+   * le compteur des conditions de paiement 30j fin de mois (directive Moussa
+   * 2026-05-19). Tant que cette date n'est pas connue, on ne peut pas afficher
+   * la date pr\u00e9vue de paiement au contractor.
+   *
+   * NB nommage : on \u00e9vite "Sindi" qui n'est pas un terme public \u2014 la
+   * nomenclature UI utilise "V\u00e9rification automatique" (cf.
+   * InvoiceTimelineComponent.STEP_LABELS).
+   */
+  autoValidationAt(): string | null {
+    const inv = this.invoice();
+    if (!inv?.timeline) return null;
+    const ocrStep = inv.timeline.steps.find(s => s.step === 'ocr_passed');
+    if (!ocrStep || ocrStep.state !== 'done' || !ocrStep.at) return null;
+    return ocrStep.at;
+  }
+
+  /**
+   * Calcule la date pr\u00e9vue de paiement selon "30 jours fin de mois" \u2014 convention
+   * B2B fran\u00e7aise : on ajoute 30 jours \u00e0 la date de validation puis on arrondit
+   * \u00e0 la fin du mois contenant cette date.
+   *
+   * Exemple : facture valid\u00e9e le 19 mai \u2192 +30j = 18 juin \u2192 fin de mois = 30 juin.
+   *
+   * Volontairement c\u00f4t\u00e9 front : le calcul est purement informatif (le backend
+   * reste source de v\u00e9rit\u00e9 sur l'\u00e9ch\u00e9ance comptable r\u00e9elle). On affiche un
+   * "pr\u00e9visionnel" pour g\u00e9rer l'attente du contractor \u2014 pas une garantie.
+   */
+  expectedPaymentDate(): string | null {
+    const at = this.autoValidationAt();
+    if (!at) return null;
+    const base = new Date(at);
+    if (Number.isNaN(base.getTime())) return null;
+    const due = new Date(base.getTime());
+    due.setDate(due.getDate() + 30);
+    // Fin du mois contenant la date d'\u00e9ch\u00e9ance : 1er jour du mois suivant - 1 jour.
+    const endOfMonth = new Date(due.getFullYear(), due.getMonth() + 1, 0);
+    return endOfMonth.toISOString();
+  }
+
+  /**
+   * Vrai si la facture est en mode Freemium (upload\u00e9e manuellement par le
+   * contractor) \u2014 c'est la cible de l'upsell Plan Pro (passage \u00e0 la
+   * facturation auto-g\u00e9n\u00e9r\u00e9e + paiement plus rapide).
+   */
+  isFreemium(): boolean {
+    const inv = this.invoice();
+    return inv?.source === 'manual_upload';
+  }
+
+  /**
+   * Navigue vers la page Plan Pro upsell. Friction volontaire : on incite le
+   * contractor \u00e0 passer Pro pour \u00e9viter le d\u00e9lai 30j fin de mois (directive
+   * Moussa 2026-05-19 : "cr\u00e9e de la friction pour qu'il en a marre et paie
+   * le plan pro").
+   */
+  goToProUpsell(): void {
+    this.router.navigateByUrl('/purchases?from=invoice-detail&utm=payment-delay-friction');
+  }
+
+  /**
    * Copy user-friendly du rejet à afficher au contractor.
    * Mapping exhaustif dans `invoice-rejection-messages.ts` (inclut notamment
    * `invoice_too_many_pages` avec instruction "maximum 5 pages autorisées,

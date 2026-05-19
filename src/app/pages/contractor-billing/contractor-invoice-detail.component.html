@@ -57,6 +57,87 @@
       -->
       <app-invoice-timeline *ngIf="inv.timeline" [timeline]="inv.timeline"></app-invoice-timeline>
 
+      <!--
+        Bloc "Vérification automatique passée + délai 30j fin de mois" — affiché
+        uniquement quand l'étape OCR (vérification auto) est passée. C'est la
+        "date de dépôt validée" qui démarre légalement le compteur de paiement
+        (directive Moussa 2026-05-19).
+
+        Le bloc joue 2 rôles :
+        1) Transparence : le contractor sait QUAND il sera payé (date prévisionnelle).
+        2) Friction Freemium : on lui dit qu'avec Plan Pro, ce délai n'existe pas
+           (ou est nettement raccourci grâce à l'auto-génération). CTA upsell
+           uniquement si `isFreemium()` — un Pro n'a pas besoin de friction.
+
+        NB : on évite le nom interne "Sindi" (jamais exposé dans l'UI) et on
+        utilise la nomenclature publique "Vérification automatique" alignée
+        sur `STEP_LABELS.ocr_passed` du composant InvoiceTimeline.
+      -->
+      @if (autoValidationAt(); as validatedAt) {
+        <div class="payment-terms-block" role="status">
+          <div class="payment-terms-block__sindi">
+            <mat-icon class="payment-terms-block__icon">verified</mat-icon>
+            <div>
+              <strong>Votre facture a passé la vérification automatique</strong>
+              <span>le {{ formatDate(validatedAt) }}</span>
+            </div>
+          </div>
+
+          <p class="payment-terms-block__note">
+            Une revue manuelle par l'équipe Tuita peut encore être en cours.
+            La date ci-dessous est calculée à partir de la date de dépôt
+            validée automatiquement.
+          </p>
+
+          <div class="payment-terms-block__terms">
+            <div class="payment-terms-block__terms-row">
+              <mat-icon>schedule</mat-icon>
+              <div>
+                <span class="payment-terms-block__terms-label">Conditions de paiement</span>
+                <span class="payment-terms-block__terms-value">30 jours fin de mois</span>
+              </div>
+            </div>
+
+            @if (expectedPaymentDate(); as expected) {
+              <div class="payment-terms-block__terms-row payment-terms-block__terms-row--highlight">
+                <mat-icon>event_available</mat-icon>
+                <div>
+                  <span class="payment-terms-block__terms-label">Date prévue de paiement</span>
+                  <span class="payment-terms-block__terms-value">{{ formatDate(expected) }}</span>
+                </div>
+              </div>
+            }
+          </div>
+
+          @if (isFreemium()) {
+            <!--
+              Upsell Plan Pro — friction volontaire pour pousser le passage Pro.
+              Affiché uniquement pour les contractors Freemium (`source='manual_upload'`).
+              Plan Pro = facturation auto-générée + délai de paiement réduit.
+            -->
+            <div class="payment-terms-block__upsell">
+              <div class="payment-terms-block__upsell-text">
+                <strong>Marre d'attendre ?</strong>
+                <span>
+                  Les contractors Plan Pro voient leurs factures générées
+                  automatiquement dès la signature du PV — pas de dépôt manuel,
+                  pas de validation Sindi à attendre.
+                </span>
+              </div>
+              <button
+                mat-raised-button
+                color="primary"
+                class="payment-terms-block__upsell-cta"
+                (click)="goToProUpsell()"
+              >
+                <mat-icon>rocket_launch</mat-icon>
+                Passer au Plan Pro
+              </button>
+            </div>
+          }
+        </div>
+      }
+
       <!-- Info card -->
       <div class="info-card">
         <div class="info-card__row">
