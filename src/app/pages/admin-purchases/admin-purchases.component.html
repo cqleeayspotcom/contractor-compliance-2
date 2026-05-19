@@ -41,9 +41,9 @@
           <span class="kpi-label">Achats (30j)</span>
           <span class="kpi-value">{{ s.total }}</span>
           <span class="kpi-footer">
-            <span class="pill ok">{{ s.by_status.completed }} livres</span>
-            <span class="pill warn">{{ s.by_status.pending + s.by_status.processing }} en cours</span>
-            <span class="pill ko">{{ s.by_status.failed }} echecs</span>
+            <span class="pill ok">{{ s.by_status?.completed || 0 }} livres</span>
+            <span class="pill warn">{{ (s.by_status?.pending || 0) + (s.by_status?.processing || 0) }} en cours</span>
+            <span class="pill ko">{{ s.by_status?.failed || 0 }} echecs</span>
           </span>
         </mat-card>
 
@@ -74,7 +74,7 @@
         </mat-card>
       </section>
 
-      @if (s.top_errors.length > 0) {
+      @if ((s.top_errors?.length ?? 0) > 0) {
         <mat-card class="errors-card">
           <h3>Top erreurs Pappers (30j)</h3>
           <ul>
@@ -150,7 +150,7 @@
         <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
       }
 
-      <table mat-table [dataSource]="purchases()" [trackBy]="trackByUuid" matSort
+      <table mat-table [dataSource]="purchases() || []" [trackBy]="trackByUuid" matSort
              [matSortActive]="sort()" [matSortDirection]="direction()"
              (matSortChange)="onSortChange($event)" class="purchases-table">
         <ng-container matColumnDef="created_at">

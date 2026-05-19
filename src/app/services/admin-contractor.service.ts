@@ -287,6 +287,138 @@ const SDK_SUB_LIST_KEYS = ['page', 'per_page', 'status'] as const;
 /** Keys exposed by the SDK fns kyc-sessions/purchases (page/per_page only). */
 const SDK_MIN_LIST_KEYS = ['page', 'per_page'] as const;
 
+// ---------- Reshape backend → frontend ----------
+// Le backend Laminas (AdminContractorsController::showAction) renvoie une
+// forme historique {user, session_active, company, compliance, documents,
+// kyc, invoices, stripe, audit_trail} qui ne matche pas la forme
+// ContractorDetail attendue par les composants. On reshape ici pour
+// présenter `identity / compliance / kyc.summary / invoices.summary /
+// purchases.summary` sans toucher au backend.
+
+interface RawContractorDetail {
+  phone?: string | null;
+  user?: {
+    uuid?: string | null;
+    id?: string | null;
+    email?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    plan?: string | null;
+    created_at?: string | null;
+  } | null;
+  session_active?: { account_state?: string | null; plan?: string | null } | null;
+  company?: {
+    uuid?: string | null;
+    siren?: string | null;
+    company_name?: string | null;
+  } | null;
+  compliance?: {
+    score?: number | null;
+    status?: string | null;
+  } | null;
+  documents?: Array<{ status?: string | null; expires_at?: string | null }> | null;
+  kyc?: {
+    uuid?: string | null;
+    status?: string | null;
+    verified_at?: string | null;
+  } | null;
+  invoices?: {
+    counts_by_status?: Record<string, number> | null;
+  } | null;
+}
+
+function reshapeContractorDetail(phone: string, raw: RawContractorDetail | null | undefined): ContractorDetail {
+  const safe = raw ?? {};
+  const user = safe.user ?? {};
+  const company = safe.company ?? null;
+  const session = safe.session_active ?? null;
+  const docs = Array.isArray(safe.documents) ? safe.documents : [];
+  const invoiceCounts = safe.invoices?.counts_by_status ?? {};
+
+  const docStatusCount = (status: string): number =>
+    docs.filter(d => (d?.status ?? '') === status).length;
+  const docExpiredCount = docs.filter(d => {
+    const exp = d?.expires_at;
+    if (!exp) return false;
+    return new Date(exp).getTime() < Date.now();
+  }).length;
+  const docVerified = docStatusCount('verified');
+  const docPending = docStatusCount('pending');
+  const docRejected = docStatusCount('rejected');
+
+  return {
+    identity: {
+      phone: safe.phone ?? phone,
+      first_name: user.first_name ?? null,
+      last_name: user.last_name ?? null,
+      company_name: company?.company_name ?? null,
+      siren: company?.siren ?? null,
+      plan: user.plan ?? session?.plan ?? null,
+      account_state: session?.account_state ?? null,
+      user_uuid: user.uuid ?? user.id ?? null,
+      created_at: user.created_at ?? null,
+      company: company
+        ? {
+            uuid: company.uuid ?? '',
+            name: company.company_name ?? '',
+            siren: company.siren ?? null,
+            is_tuita_internal: false,
+          }
+        : null,
+    },
+    compliance: {
+      score: Number(safe.compliance?.score ?? 0),
+      is_compliant: (safe.compliance?.status ?? '') === 'compliant',
+      documents: {
+        summary: {
+          verified: docVerified,
+          pending: docPending,
+          rejected: docRejected,
+          expired: docExpiredCount,
+          missing: 0,
+          total: docs.length,
+        },
+      },
+    },
+    kyc: {
+      summary: {
+        total: safe.kyc ? 1 : 0,
+        approved: safe.kyc?.status === 'approved' ? 1 : 0,
+        rejected: safe.kyc?.status === 'rejected' ? 1 : 0,
+        pending: safe.kyc && safe.kyc.status !== 'approved' && safe.kyc.status !== 'rejected' ? 1 : 0,
+        latest: safe.kyc
+          ? {
+              uuid: safe.kyc.uuid ?? '',
+              status: safe.kyc.status ?? 'unknown',
+              biometric_provider: null,
+              created_at: null,
+              completed_at: safe.kyc.verified_at ?? null,
+            }
+          : null,
+      },
+    },
+    invoices: {
+      summary: {
+        total: Object.values(invoiceCounts).reduce((acc, n) => acc + (Number(n) || 0), 0),
+        paid_total_amount: 0,
+        pending_count: Number(invoiceCounts['pending_payment_validation'] ?? 0),
+        ready_to_pay_count: Number(invoiceCounts['ready_to_pay'] ?? 0),
+        payment_in_progress_count: Number(invoiceCounts['payment_in_progress'] ?? 0),
+        rejected_count: Number(invoiceCounts['rejected'] ?? 0),
+      },
+    },
+    purchases: {
+      summary: {
+        total: 0,
+        completed: 0,
+        pending: 0,
+        failed: 0,
+        total_amount_eur: 0,
+      },
+    },
+  };
+}
+
 @Injectable({ providedIn: 'root' })
 export class AdminContractorService {
   private readonly http = inject(HttpClient);
@@ -350,8 +482,8 @@ export class AdminContractorService {
 
   getContractor(phone: string): Observable<{ data: ContractorDetail }> {
     return adminContractorsShow(this.http, this.apiConfig.rootUrl, { phone }).pipe(
-      unwrapData<ContractorDetail>(),
-      map(data => ({ data })),
+      unwrapData<RawContractorDetail>(),
+      map(raw => ({ data: reshapeContractorDetail(phone, raw) })),
     );
   }
 

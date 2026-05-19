@@ -7,14 +7,17 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { JsonObject } from '../../models/json-object';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
-export interface ProfileNotifications$Params {
+export interface ProfileNotificationsUpdate$Params {
+      body: JsonObject
 }
 
-export function profileNotifications(http: HttpClient, rootUrl: string, params?: ProfileNotifications$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
-  const rb = new RequestBuilder(rootUrl, profileNotifications.PATH, 'get');
+export function profileNotificationsUpdate(http: HttpClient, rootUrl: string, params: ProfileNotificationsUpdate$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+  const rb = new RequestBuilder(rootUrl, profileNotificationsUpdate.PATH, 'patch');
   if (params) {
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(
@@ -27,4 +30,4 @@ export function profileNotifications(http: HttpClient, rootUrl: string, params?:
   );
 }
 
-profileNotifications.PATH = '/contractor-compliance/profile/notifications';
+profileNotificationsUpdate.PATH = '/contractor-compliance/profile/notifications';

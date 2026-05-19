@@ -1,9 +1,8 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { firstValueFrom, map } from 'rxjs';
 import { Api } from '../api/api';
 import { dashboardIndex } from '../api/fn/dashboard/dashboard-index';
 import { profileLogout } from '../api/fn/profile/profile-logout';
+import { profileNotificationsUpdate } from '../api/fn/profile/profile-notifications-update';
 
 export interface ProfileIdentity {
   phone: string | null;
@@ -34,7 +33,6 @@ export interface ContractorProfile {
 
 @Injectable({ providedIn: 'root' })
 export class ProfileService {
-  private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
 
   /**
@@ -82,18 +80,14 @@ export class ProfileService {
     };
   }
 
-  // Le SDK ne g�n�re que le GET sur `/profile/notifications` ; pour le PATCH
-  // backend on garde un HttpClient direct (le SDK courant ne couvre pas tous
-  // les verbes � � mettre � jour quand le g�n�rateur OpenAPI couvrira PATCH).
-  updateNotifications(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
-    return firstValueFrom(
-      this.http
-        .patch<{ data: { notifications: NotificationPreferences } }>(
-          '/contractor-compliance/profile/notifications',
-          prefs,
-        )
-        .pipe(map((r) => r.data.notifications)),
-    );
+  // PATCH /profile/notifications via SDK auto-généré depuis l'OpenAPI backend
+  // (alignement Laravel 2026-05-19 : verbe PATCH désormais déclaré dans le
+  // contrat OpenAPI, donc le SDK le couvre — plus besoin du HttpClient direct).
+  async updateNotifications(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+    const r = await this.api.invoke(profileNotificationsUpdate, { body: prefs as any }) as {
+      data?: { notifications?: NotificationPreferences };
+    };
+    return r?.data?.notifications ?? (prefs as NotificationPreferences);
   }
 
   async logout(): Promise<void> {

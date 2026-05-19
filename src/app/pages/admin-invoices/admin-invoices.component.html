@@ -88,7 +88,7 @@
           ></mat-progress-spinner>
         </div>
 
-        <table mat-table [dataSource]="state.rows" [trackBy]="trackByUuid" matSort
+        <table mat-table [dataSource]="state.rows || []" [trackBy]="trackByUuid" matSort
                [matSortActive]="sortFor(tabKey)"
                [matSortDirection]="directionFor(tabKey)"
                (matSortChange)="onSortChange(tabKey, $event)" class="invoices-table">
@@ -235,7 +235,7 @@
               (click)="openDetail(row)"></tr>
         </table>
 
-        <div *ngIf="!state.loading && state.rows.length === 0" class="empty-state">
+        <div *ngIf="!state.loading && (state.rows?.length ?? 0) === 0" class="empty-state">
           Aucune facture dans cette catégorie.
         </div>
 

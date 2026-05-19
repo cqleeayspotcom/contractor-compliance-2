@@ -230,28 +230,50 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
   private async loadOverview(): Promise<void> {
     try {
       const res = await this.api.invoke(adminDashboardOverview);
-      const data = (res as { data?: DashboardOverview })?.data ?? null;
-      // Validation de structure : le template lit `ov.pipeline.*` /
-      // `ov.alerts.*` / `ov.today_to_pay.*` sans guard imbriqué. Si
-      // le backend renvoie un payload partial (ex : 200 mais sans
-      // `pipeline` à cause d'une dégradation côté agrégateur), on
-      // refuse la donnée pour ne pas crasher le template.
-      const isValid = !!data
-        && typeof data === 'object'
-        && !!(data as DashboardOverview).pipeline
-        && !!(data as DashboardOverview).alerts
-        && !!(data as DashboardOverview).today_to_pay;
-      this.overview.set(isValid ? data : null);
-      if (!isValid && data !== null) {
-        this.handleError(
-          new Error('Overview payload incomplet (pipeline/alerts/today_to_pay manquant)'),
-          'overview',
-        );
-      }
+      const data = (res as { data?: Partial<DashboardOverview> })?.data ?? null;
+      // Si le backend renvoie un payload partiel (ancienne version de
+      // l'endpoint qui n'expose pas encore pipeline/alerts/today_to_pay),
+      // on remplit les trous avec une structure neutre pour que le
+      // template ne crashe pas sur `ov.pipeline.*`.
+      this.overview.set(data ? this.normalizeOverview(data) : null);
     } catch (err) {
       this.overview.set(null);
       this.handleError(err, 'overview');
     }
+  }
+
+  /** Remplit pipeline/alerts/today_to_pay avec des zéros si absents. */
+  private normalizeOverview(data: Partial<DashboardOverview>): DashboardOverview {
+    const emptyBucket: PipelineBucket = { count: 0, total_amount: 0, currency: 'EUR' };
+    return {
+      pipeline: {
+        validating:                 emptyBucket,
+        draft:                      emptyBucket,
+        pending_payment_validation: { ...emptyBucket, aging_buckets: { '0_3d': 0, '3_7d': 0, '7_plus': 0 } },
+        ready_to_pay:               emptyBucket,
+        payment_in_progress:        emptyBucket,
+        paid_today:                 emptyBucket,
+        rejected_today:             emptyBucket,
+        ...(data.pipeline ?? {}),
+      },
+      alerts: {
+        stuck_pending_validation_critical: 0,
+        stuck_ready_to_pay_critical: 0,
+        stuck_payment_in_progress_critical: 0,
+        failed_jobs_count: 0,
+        webhooks_dead_count: 0,
+        open_circuit_breakers: [],
+        paid_disputed_open_count: 0,
+        ...(data.alerts ?? {}),
+      },
+      today_to_pay: {
+        count: 0,
+        total_amount: 0,
+        currency: 'EUR',
+        oldest_ready_since: null,
+        ...(data.today_to_pay ?? {}),
+      },
+    };
   }
 
   private async loadHealth(): Promise<void> {

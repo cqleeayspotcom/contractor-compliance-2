@@ -678,11 +678,27 @@ paths:
         '200': { $ref: '#/components/responses/JsonOk' }
         default: { $ref: '#/components/responses/JsonError' }
 
+  # Alignement Laravel (2026-05-19) : GET (lecture) + PATCH (update delta)
+  # sur /profile/notifications. L'ancien combo GET+POST /notifications/preferences
+  # a été retiré côté backend (cf. 01-auth.config.php). Le dispatch verbe
+  # est résolu dans ContractorDashboardController::notificationsPreferencesAction
+  # via $request->isPatch().
   /contractor-compliance/profile/notifications:
     get:
       tags: [Profile]
-      operationId: profileNotifications
+      operationId: profileNotificationsGet
       security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+    patch:
+      tags: [Profile]
+      operationId: profileNotificationsUpdate
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
@@ -691,25 +707,6 @@ paths:
       tags: [Dashboard]
       operationId: dashboardIndex
       security: [{ contractorCookie: [] }]
-      responses:
-        '200': { $ref: '#/components/responses/JsonOk' }
-
-  /contractor-compliance/notifications/preferences:
-    get:
-      tags: [Dashboard]
-      operationId: notificationsPreferencesGet
-      security: [{ contractorCookie: [] }]
-      responses:
-        '200': { $ref: '#/components/responses/JsonOk' }
-    post:
-      tags: [Dashboard]
-      operationId: notificationsPreferencesUpdate
-      security: [{ contractorCookie: [] }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 

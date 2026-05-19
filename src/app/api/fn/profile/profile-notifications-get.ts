@@ -9,11 +9,11 @@ import { RequestBuilder } from '../../request-builder';
 
 import { SuccessEnvelope } from '../../models/success-envelope';
 
-export interface NotificationsPreferencesGet$Params {
+export interface ProfileNotificationsGet$Params {
 }
 
-export function notificationsPreferencesGet(http: HttpClient, rootUrl: string, params?: NotificationsPreferencesGet$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
-  const rb = new RequestBuilder(rootUrl, notificationsPreferencesGet.PATH, 'get');
+export function profileNotificationsGet(http: HttpClient, rootUrl: string, params?: ProfileNotificationsGet$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+  const rb = new RequestBuilder(rootUrl, profileNotificationsGet.PATH, 'get');
   if (params) {
   }
 
@@ -27,4 +27,4 @@ export function notificationsPreferencesGet(http: HttpClient, rootUrl: string, p
   );
 }
 
-notificationsPreferencesGet.PATH = '/contractor-compliance/notifications/preferences';
+profileNotificationsGet.PATH = '/contractor-compliance/profile/notifications';
