@@ -542,7 +542,68 @@ tags:
   - name: AdminInvitationCodes
   - name: AdminSettings
   - name: AdminSupervision
+  - name: AdminAuth
 paths:
+
+  # ============================================================
+  # Domaine 01 — Auth admin (pré-auth, demande de PIN par email)
+  # POURQUOI tag dédié AdminAuth : endpoint pré-authentification
+  # (security: []), pas concerné par bearerAuth comme le reste
+  # de l'admin.
+  # ============================================================
+  /contractor-compliance/admin/auth/request-pin:
+    post:
+      tags: [AdminAuth]
+      operationId: adminAuthRequestPin
+      summary: Demande d'un PIN admin par email (relais OAuth2 staff).
+      description: |
+        Pré-authentification staff/admin : l'utilisateur fournit son email,
+        le backend génère un PIN (oauth_user_sms_token), le diffuse via
+        Slack et/ou les logs applicatifs, puis renvoie un `sms_trip_token`
+        à passer en header `Sms-Trip` sur le POST /signin OAuth2 suivant.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email ou username staff (recherche permissive sur oauth_users).
+      responses:
+        '200':
+          description: PIN généré et diffusé. `sms_trip_token` à utiliser sur le signin.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [sms_trip_token, expires_at, pincode_media]
+                properties:
+                  sms_trip_token:
+                    type: string
+                    description: Token éphémère à passer en header `Sms-Trip` au signin.
+                  expires_at:
+                    type: string
+                    description: Date d'expiration du PIN (format Y-m-d H:i:s).
+                  pincode_media:
+                    type: string
+                    enum: [log, slack]
+                    description: Canal de diffusion effectif du PIN (slack si dispo, log sinon).
+        '401':
+          description: Email inconnu, désactivé ou non staff.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '422':
+          description: Email manquant ou invalide.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        default: { $ref: '#/components/responses/JsonError' }
 
   # ============================================================
   # Domaine 01 — Auth / profile / dashboard
@@ -1207,6 +1268,19 @@ paths:
       operationId: adminSettingsReset
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/KeyParam' }]
+      requestBody:
+        required: false
+        description: |
+          Body optionnel — le backend lit `reason` (défaut "reset") qui est
+          inséré dans l'audit trail AppSettingService::set().
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Motif du reset, archivé en audit (défaut backend "reset").
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # ============================================================
@@ -1224,6 +1298,28 @@ paths:
         - { $ref: '#/components/parameters/QueryStatus' }
         - { $ref: '#/components/parameters/QuerySort' }
         - { $ref: '#/components/parameters/QueryDirection' }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: Recherche libre (nom / email / phone — appliquée côté repository).
+        - name: phone
+          in: query
+          required: false
+          schema: { type: string }
+          description: Filtre exact sur le téléphone (`cc_users.phone`).
+        - name: email
+          in: query
+          required: false
+          schema: { type: string }
+          description: Filtre exact sur l'email (`cc_users.email`).
+        - name: order
+          in: query
+          required: false
+          schema: { type: string, enum: [asc, desc] }
+          description: |
+            Ordre de tri (le controller lit `order`, pas `direction`).
+            Défaut backend `desc`.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}:
@@ -1476,8 +1572,16 @@ paths:
     get:
       tags: [AdminPurchases]
       operationId: adminPurchasesExport
+      summary: Export CSV des achats (BOM UTF-8, séparateur `;`).
       security: [{ bearerAuth: [] }]
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+      responses:
+        '200':
+          description: Flux CSV (Content-Type text/csv; charset=utf-8).
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
 
   /contractor-compliance/admin/purchases/{uuid}:
     get:
@@ -1491,8 +1595,22 @@ paths:
     post:
       tags: [AdminPurchases]
       operationId: adminPurchasesRetry
+      summary: Force le re-dispatch du job Pappers (reset statut → `paid`).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: false
+        description: |
+          Body optionnel — actuellement le controller ne lit aucun champ.
+          `reason` est documenté pour les futurs releases (audit logger).
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: Motif du retry (à venir — non lu par le backend J0+).
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # ============================================================
@@ -1805,86 +1923,189 @@ paths:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesMarkPaymentInProgress
+      summary: Transition `ready_to_pay` → `payment_in_progress` (idempotente).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: false
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              properties:
+                admin_email:
+                  type: string
+                  format: email
+                  description: |
+                    Identité de l'admin actant la transition (fallback :
+                    identité OAuth2 du bearer). Tracé dans la timeline
+                    + audit log.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/mark-paid:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesMarkPaid
+      summary: Marque la facture comme payée (transition terminale).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [payment_ref, admin_email]
+              properties:
+                payment_ref:
+                  type: string
+                  description: Référence virement bancaire (obligatoire, masquée en logs).
+                admin_email:
+                  type: string
+                  format: email
+                paid_at:
+                  type: string
+                  format: date-time
+                  description: Date de paiement effective (ISO 8601). Défaut = maintenant.
+                fast_path:
+                  type: object
+                  additionalProperties: true
+                  description: Bag opaque transmis au MarkPaidService (chemins accélérés).
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/reopen:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesReopen
+      summary: Rouvre une facture `rejected` vers `draft` (corrige & re-pipeline).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  minLength: 10
+                  description: Motif de la réouverture (≥10 caractères, archivé dans `reopen_reason`).
+                admin_email:
+                  type: string
+                  format: email
+                  description: Fallback identité OAuth2 si absent.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/resolve-dispute:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesResolveDispute
+      summary: Alias historique de `dispute` (J5 stub) — déclenche `transitionToDispute`.
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  description: Motif du litige.
+                admin_email:
+                  type: string
+                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/force-resend-webhook:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesForceResendWebhook
+      summary: Reset le flag `webhook_<event>_sent_at` et redispatch l'event.
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [event]
+              properties:
+                event:
+                  type: string
+                  enum:
+                    - rejected
+                    - ready_to_pay
+                    - payment_in_progress
+                    - paid
+                    - reopened
+                    - cancelled
+                  description: Nom de l'event à re-émettre (une seule famille par appel).
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/add-note:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesAddNote
+      summary: Ajoute une note admin sur la facture (timeline + InvoiceAdminNote).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              # Le backend accepte `content` OU `note` (alias historique).
+              properties:
+                content:
+                  type: string
+                  description: Contenu de la note (préféré).
+                note:
+                  type: string
+                  description: Alias historique de `content`.
+                admin_email:
+                  type: string
+                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/validate:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesValidate
+      summary: |
+        Enregistre une décision admin (approved/rejected). À la 3ᵉ approbation,
+        la facture bascule en `ready_to_pay` (cf. InvoicePaymentValidationProcessor).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, admin_email]
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, rejected]
+                admin_email:
+                  type: string
+                  format: email
+                reason_code:
+                  type: string
+                  description: Code de motif structuré (préférence sur `reason`).
+                reason:
+                  type: string
+                  description: Motif texte libre (fallback de `reason_code`).
+                correlation_id:
+                  type: string
+                  description: ID de corrélation (généré si absent).
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/cancel:
@@ -1899,13 +2120,22 @@ paths:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesDispute
+      summary: Bascule la facture en `disputed`.
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                admin_email:
+                  type: string
+                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/expire:
@@ -1920,13 +2150,23 @@ paths:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesReject
+      summary: Rejette admin direct (alternative à `validate decision=rejected`).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason:
+                  type: string
+                  description: Motif du rejet (obligatoire).
+                admin_email:
+                  type: string
+                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/export:
