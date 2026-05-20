@@ -331,6 +331,37 @@ components:
           items: { $ref: '#/components/schemas/MissionOffer' }
         meta:
           $ref: '#/components/schemas/MissionOffersMeta'
+    AdminInvitationCodeCreateRequest:
+      type: object
+      # Contrat strict : seules ces 4 clés sont acceptées, generated_by_label
+      # obligatoire. additionalProperties=false évite qu'une clé mal nommée
+      # (ex. l'ancien valid_for_days) passe inaperçue côté SDK.
+      additionalProperties: false
+      required: [generated_by_label]
+      properties:
+        generated_by_label:
+          type: string
+          minLength: 2
+          description: |
+            Qui crée le code (email/nom Tuita). Obligatoire — le backend
+            rejette la création avec VALIDATION_FAILED
+            « generated_by_label est obligatoire » si le champ est vide.
+        note:
+          type: string
+          nullable: true
+          description: À qui le code est destiné (audit + heuristique mismatch).
+        max_uses:
+          type: integer
+          nullable: true
+          description: Nombre maximal d'usages ; null = illimité.
+        expires_in_days:
+          type: integer
+          default: 7
+          minimum: 1
+          maximum: 365
+          description: |
+            Durée de validité en jours, lue par le backend (défaut 7,
+            bornée 1–365).
   parameters:
     Uuid:
       name: uuid
@@ -472,6 +503,41 @@ components:
       in: query
       required: false
       schema: { type: string }
+    QueryDocumentType:
+      name: document_type
+      in: query
+      required: false
+      schema: { type: string }
+    QuerySince:
+      name: since
+      in: query
+      required: false
+      schema: { type: string, format: date }
+      description: "Borne basse de période (YYYY-MM-DD)."
+    QueryUntil:
+      name: until
+      in: query
+      required: false
+      schema: { type: string, format: date }
+      description: "Borne haute de période (YYYY-MM-DD)."
+    QueryDir:
+      name: dir
+      in: query
+      required: false
+      schema: { type: string, enum: [asc, desc] }
+      description: "Sens de tri des sous-listes admin (param `dir`, distinct de `direction`)."
+    QueryWithoutInvoice:
+      name: without_invoice
+      in: query
+      required: false
+      schema: { type: boolean }
+      description: "Si `true`, ne renvoie que les éléments sans facture associée."
+    QueryIncludeOldVersions:
+      name: include_old_versions
+      in: query
+      required: false
+      schema: { type: boolean }
+      description: "Inclut les anciennes versions de documents (re-uploads, renouvellements)."
     QueryArtifactPath:
       name: path
       in: query
@@ -1407,6 +1473,9 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsList
       security: [{ bearerAuth: [] }]
+      # Browse paginé + filtres + facets. Tous les params de BrowseQuery sont
+      # déclarés ici pour générer un SDK typé complet — supprime le fallback
+      # HttpClient de admin-contractor.service.ts (list).
       parameters:
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
@@ -1436,6 +1505,46 @@ paths:
           description: |
             Ordre de tri (le controller lit `order`, pas `direction`).
             Défaut backend `desc`.
+        - name: account_state
+          in: query
+          required: false
+          schema: { type: string }
+        - name: plan
+          in: query
+          required: false
+          schema: { type: string }
+        - name: kyc_status
+          in: query
+          required: false
+          schema: { type: string, enum: [approved, rejected, pending, none] }
+        - name: compliance
+          in: query
+          required: false
+          schema: { type: string, enum: [compliant, partial, blocked] }
+        - name: has_active_invoice
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: has_stuck_invoice
+          in: query
+          required: false
+          schema: { type: boolean }
+        - name: city
+          in: query
+          required: false
+          schema: { type: string }
+        - name: department
+          in: query
+          required: false
+          schema: { type: string }
+        - name: created_after
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: created_before
+          in: query
+          required: false
+          schema: { type: string, format: date }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}:
@@ -1451,11 +1560,19 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsDocuments
       security: [{ bearerAuth: [] }]
+      # Bloc ListQuery complet (cf. admin-contractor.service.ts) — SDK 100%.
       parameters:
         - { $ref: '#/components/parameters/PhoneId' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
         - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QueryWithoutInvoice' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDir' }
+        - { $ref: '#/components/parameters/QueryIncludeOldVersions' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/kyc-sessions:
@@ -1463,10 +1580,19 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsKycSessions
       security: [{ bearerAuth: [] }]
+      # Bloc ListQuery complet (cf. admin-contractor.service.ts) — SDK 100%.
       parameters:
         - { $ref: '#/components/parameters/PhoneId' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QueryWithoutInvoice' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDir' }
+        - { $ref: '#/components/parameters/QueryIncludeOldVersions' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/invoices:
@@ -1474,11 +1600,19 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsInvoices
       security: [{ bearerAuth: [] }]
+      # Bloc ListQuery complet (cf. admin-contractor.service.ts) — SDK 100%.
       parameters:
         - { $ref: '#/components/parameters/PhoneId' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
         - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QueryWithoutInvoice' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDir' }
+        - { $ref: '#/components/parameters/QueryIncludeOldVersions' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/purchases:
@@ -1486,10 +1620,19 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsPurchases
       security: [{ bearerAuth: [] }]
+      # Bloc ListQuery complet (cf. admin-contractor.service.ts) — SDK 100%.
       parameters:
         - { $ref: '#/components/parameters/PhoneId' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QueryWithoutInvoice' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDir' }
+        - { $ref: '#/components/parameters/QueryIncludeOldVersions' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/missions:
@@ -1497,11 +1640,19 @@ paths:
       tags: [AdminContractors]
       operationId: adminContractorsMissions
       security: [{ bearerAuth: [] }]
+      # Bloc ListQuery complet (cf. admin-contractor.service.ts) — SDK 100%.
       parameters:
         - { $ref: '#/components/parameters/PhoneId' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QuerySearch' }
         - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryType' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QueryWithoutInvoice' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDir' }
+        - { $ref: '#/components/parameters/QueryIncludeOldVersions' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/contractors/{phone}/compliance-summary:
@@ -1603,7 +1754,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema: { $ref: '#/components/schemas/AdminInvitationCodeCreateRequest' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invitation-codes/{code}:
@@ -1668,6 +1819,19 @@ paths:
       tags: [AdminPurchases]
       operationId: adminPurchasesList
       security: [{ bearerAuth: [] }]
+      # Params déclarés pour générer un SDK typé — supprime le HttpClient
+      # manuel de admin-purchases.component.ts (loadList).
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QuerySearch' }
+        - { $ref: '#/components/parameters/QueryStuck' }
+        - { $ref: '#/components/parameters/QuerySort' }
+        - { $ref: '#/components/parameters/QueryDirection' }
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QuerySince' }
+        - { $ref: '#/components/parameters/QueryUntil' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/purchases/stats:
@@ -1690,6 +1854,13 @@ paths:
       operationId: adminPurchasesExport
       summary: Export CSV des achats (BOM UTF-8, séparateur `;`).
       security: [{ bearerAuth: [] }]
+      # Filtres optionnels — repris à l'identique de l'écran (status / type /
+      # période). Permet l'export filtré 100% SDK (invoke$Response → Blob).
+      parameters:
+        - { $ref: '#/components/parameters/QueryStatus' }
+        - { $ref: '#/components/parameters/QueryDocumentType' }
+        - { $ref: '#/components/parameters/QuerySince' }
+        - { $ref: '#/components/parameters/QueryUntil' }
       responses:
         '200':
           description: Flux CSV (Content-Type text/csv; charset=utf-8).
@@ -1947,14 +2118,76 @@ paths:
       tags: [AdminInvoices]
       operationId: adminInvoicesList
       security: [{ bearerAuth: [] }]
+      # Recherche + filtres riches de l'écran admin factures. Les params sont
+      # déclarés ici pour que le SDK les génère typés — fini le HttpClient
+      # manuel dans admin-invoice.service.ts (searchInvoices). Le contrat HTTP
+      # reste identique : `status[]` en array bracketé (onglets multi-statuts).
       parameters:
-        - { $ref: '#/components/parameters/QueryStatus' }
         - { $ref: '#/components/parameters/QuerySearch' }
         - { $ref: '#/components/parameters/QueryStuck' }
         - { $ref: '#/components/parameters/QueryPage' }
         - { $ref: '#/components/parameters/QueryPerPage' }
         - { $ref: '#/components/parameters/QuerySort' }
         - { $ref: '#/components/parameters/QueryDirection' }
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status[]
+          in: query
+          required: false
+          description: "Filtre multi-statuts (onglets). Sérialisé `status[]=a&status[]=b`."
+          schema:
+            type: array
+            items: { type: string }
+        - name: contractor_phone
+          in: query
+          required: false
+          schema: { type: string }
+        - name: contractor_siren
+          in: query
+          required: false
+          schema: { type: string }
+        - name: mission_ref
+          in: query
+          required: false
+          schema: { type: string }
+        - name: amount_min
+          in: query
+          required: false
+          schema: { type: number }
+        - name: amount_max
+          in: query
+          required: false
+          schema: { type: number }
+        - name: date_from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: date_to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+        - name: validator_missing
+          in: query
+          required: false
+          schema: { type: string, enum: [compliance, production, accounting] }
+        - name: missing_validations
+          in: query
+          required: false
+          schema: { type: integer, enum: [1, 2, 3] }
+        - name: stale_days
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: plan
+          in: query
+          required: false
+          schema: { type: string, enum: [free, pro] }
+        - name: paid_disputed
+          in: query
+          required: false
+          schema: { type: boolean }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/pending-validation:

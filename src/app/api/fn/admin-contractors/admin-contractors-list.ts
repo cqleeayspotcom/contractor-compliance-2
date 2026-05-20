@@ -37,6 +37,16 @@ export interface AdminContractorsList$Params {
  * Défaut backend `desc`.
  */
   order?: 'asc' | 'desc';
+  account_state?: string;
+  plan?: string;
+  kyc_status?: 'approved' | 'rejected' | 'pending' | 'none';
+  compliance?: 'compliant' | 'partial' | 'blocked';
+  has_active_invoice?: boolean;
+  has_stuck_invoice?: boolean;
+  city?: string;
+  department?: string;
+  created_after?: string;
+  created_before?: string;
 }
 
 export function adminContractorsList(http: HttpClient, rootUrl: string, params?: AdminContractorsList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
@@ -52,6 +62,16 @@ export function adminContractorsList(http: HttpClient, rootUrl: string, params?:
     rb.query('phone', params.phone, {});
     rb.query('email', params.email, {});
     rb.query('order', params.order, {});
+    rb.query('account_state', params.account_state, {});
+    rb.query('plan', params.plan, {});
+    rb.query('kyc_status', params.kyc_status, {});
+    rb.query('compliance', params.compliance, {});
+    rb.query('has_active_invoice', params.has_active_invoice, {});
+    rb.query('has_stuck_invoice', params.has_stuck_invoice, {});
+    rb.query('city', params.city, {});
+    rb.query('department', params.department, {});
+    rb.query('created_after', params.created_after, {});
+    rb.query('created_before', params.created_before, {});
   }
 
   return http.request(

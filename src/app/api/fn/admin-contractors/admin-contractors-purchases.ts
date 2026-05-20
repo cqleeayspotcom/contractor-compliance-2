@@ -17,6 +17,26 @@ export interface AdminContractorsPurchases$Params {
   phone: string;
   page?: number;
   per_page?: number;
+  search?: string;
+  status?: string;
+  type?: string;
+  document_type?: string;
+
+/**
+ * Si `true`, ne renvoie que les éléments sans facture associée.
+ */
+  without_invoice?: boolean;
+  sort?: string;
+
+/**
+ * Sens de tri des sous-listes admin (param `dir`, distinct de `direction`).
+ */
+  dir?: 'asc' | 'desc';
+
+/**
+ * Inclut les anciennes versions de documents (re-uploads, renouvellements).
+ */
+  include_old_versions?: boolean;
 }
 
 export function adminContractorsPurchases(http: HttpClient, rootUrl: string, params: AdminContractorsPurchases$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
@@ -25,6 +45,14 @@ export function adminContractorsPurchases(http: HttpClient, rootUrl: string, par
     rb.path('phone', params.phone, {});
     rb.query('page', params.page, {});
     rb.query('per_page', params.per_page, {});
+    rb.query('search', params.search, {});
+    rb.query('status', params.status, {});
+    rb.query('type', params.type, {});
+    rb.query('document_type', params.document_type, {});
+    rb.query('without_invoice', params.without_invoice, {});
+    rb.query('sort', params.sort, {});
+    rb.query('dir', params.dir, {});
+    rb.query('include_old_versions', params.include_old_versions, {});
   }
 
   return http.request(

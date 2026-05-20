@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 
 import { DocumentScannerDialogComponent } from './document-scanner-dialog.component';
@@ -37,7 +36,6 @@ function setUp(opts: SetUpOptions = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
-      provideAnimations(),
       { provide: SCANNER_ENGINE_LOADER, useValue: loader },
       { provide: MatDialogRef, useValue: dialogRef },
       { provide: MAT_DIALOG_DATA, useValue: { file } },

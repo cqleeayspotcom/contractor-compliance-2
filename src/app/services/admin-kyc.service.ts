@@ -5,6 +5,9 @@ import { adminKycSessions } from '../api/fn/admin-kyc/admin-kyc-sessions';
 import { adminKycRejections } from '../api/fn/admin-kyc/admin-kyc-rejections';
 import { adminKycArtifactsList } from '../api/fn/admin-kyc/admin-kyc-artifacts-list';
 import { adminKycArtifactsView } from '../api/fn/admin-kyc/admin-kyc-artifacts-view';
+import { adminKycShow } from '../api/fn/admin-kyc/admin-kyc-show';
+import { adminKycReplay } from '../api/fn/admin-kyc/admin-kyc-replay';
+import { adminKycForceApprove } from '../api/fn/admin-kyc/admin-kyc-force-approve';
 
 export interface KycSessionRow {
   uuid: string;
@@ -91,5 +94,29 @@ export class AdminKycService {
   async fetchArtifactBlob(sessionUuid: string, path: string): Promise<string> {
     const blob = await this.api.invoke(adminKycArtifactsView, { uuid: sessionUuid, path });
     return URL.createObjectURL(blob as unknown as Blob);
+  }
+
+  /** Détail complet d'une session KYC (scores, artefacts, historique retry). */
+  async getSession(uuid: string): Promise<KycSessionRow> {
+    const env = await this.api.invoke(adminKycShow, { uuid });
+    return (env as unknown as { data: KycSessionRow }).data;
+  }
+
+  /**
+   * Rejoue le pipeline biométrique sur une session (nouvelle passe provider).
+   * Utile quand le provider était KO au moment de la 1re tentative.
+   */
+  async replaySession(sessionUuid: string): Promise<KycSessionRow> {
+    const env = await this.api.invoke(adminKycReplay, { sessionUuid });
+    return (env as unknown as { data: KycSessionRow }).data;
+  }
+
+  /**
+   * Validation manuelle forcée d'une session KYC : override la décision auto
+   * du pipeline biométrique (cas litige / score limite confirmé à la main).
+   */
+  async forceApprove(sessionUuid: string): Promise<KycSessionRow> {
+    const env = await this.api.invoke(adminKycForceApprove, { sessionUuid });
+    return (env as unknown as { data: KycSessionRow }).data;
   }
 }

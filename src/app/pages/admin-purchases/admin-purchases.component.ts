@@ -8,15 +8,15 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 
 import { Api } from '../../api/api';
 import { adminPurchasesShow } from '../../api/fn/admin-purchases/admin-purchases-show';
 import { adminPurchasesRetry } from '../../api/fn/admin-purchases/admin-purchases-retry';
-// POURQUOI : on importe les PATH du SDK pour les fallbacks HttpClient
-// (filtres / blob / body) afin de rester aligné avec la spec OpenAPI.
+// Migration SDK (2026-05-20) : les query params (filtres / pagination / tri /
+// période) sont désormais déclarés dans l'OpenAPI → 100% api.invoke, plus de
+// HttpClient manuel.
 import { adminPurchasesList } from '../../api/fn/admin-purchases/admin-purchases-list';
 import { adminPurchasesStats } from '../../api/fn/admin-purchases/admin-purchases-stats';
 import { adminPurchasesExport } from '../../api/fn/admin-purchases/admin-purchases-export';
@@ -160,7 +160,6 @@ export function statusColor(status: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AdminPurchasesComponent implements OnInit {
-  private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
@@ -239,50 +238,38 @@ export class AdminPurchasesComponent implements OnInit {
   }
 
   loadStats(): void {
-    // SDK manquant : `adminPurchasesStats` ne renvoie pas le type `PurchaseStats`
-    // côté généré (SuccessEnvelope brut). On reste sur HttpClient (qui passe par
-    // l'intercepteur Bearer admin) pour conserver le typage local précis.
-    this.http
-      .get<{ data: PurchaseStats }>(adminPurchasesStats.PATH)
-      .subscribe({
-        next: res => this.stats.set(res.data),
-        error: err => this.onHttpError(err, 'stats'),
-      });
+    this.api
+      .invoke(adminPurchasesStats)
+      .then(env => this.stats.set((env as unknown as { data: PurchaseStats }).data))
+      .catch(err => this.onHttpError(err, 'stats'));
   }
 
   loadList(): void {
     this.isLoading.set(true);
-    let params = new HttpParams()
-      .set('per_page', String(this.pageSize()))
-      .set('page', String(this.pageIndex() + 1))
-      .set('sort', this.sort())
-      .set('direction', this.direction());
-
-    if (this.statusFilter) params = params.set('status', this.statusFilter);
-    if (this.typeFilter) params = params.set('document_type', this.typeFilter);
-    if (this.searchInput.trim()) params = params.set('search', this.searchInput.trim());
-    if (this.sinceInput) params = params.set('since', this.sinceInput);
-    if (this.untilInput) params = params.set('until', this.untilInput);
-    if (this.stuckOnly()) params = params.set('stuck', '1');
-
-    // SDK manquant : `adminPurchasesList` généré n'expose pas les query params
-    // (status/type/search/since/until/stuck/sort/direction) → fallback HttpClient.
-    // L'intercepteur Bearer admin se charge de l'auth ; aucun header manuel ici.
-    this.http
-      .get<{ data: PurchaseRow[]; meta: { total: number } }>(
-        adminPurchasesList.PATH,
-        { params },
-      )
-      .subscribe({
-        next: res => {
-          this.purchases.set(res.data);
-          this.total.set(res.meta.total);
-          this.isLoading.set(false);
-        },
-        error: err => {
-          this.isLoading.set(false);
-          this.onHttpError(err, 'list');
-        },
+    // Tous les query params sont déclarés dans l'OpenAPI → SDK typé. Les
+    // valeurs vides sont passées en `undefined` (le RequestBuilder les omet).
+    this.api
+      .invoke(adminPurchasesList, {
+        per_page: this.pageSize(),
+        page: this.pageIndex() + 1,
+        sort: this.sort(),
+        direction: this.direction(),
+        status: this.statusFilter || undefined,
+        document_type: this.typeFilter || undefined,
+        search: this.searchInput.trim() || undefined,
+        since: this.sinceInput || undefined,
+        until: this.untilInput || undefined,
+        stuck: this.stuckOnly() || undefined,
+      })
+      .then(env => {
+        const res = env as unknown as { data: PurchaseRow[]; meta: { total: number } };
+        this.purchases.set(res.data);
+        this.total.set(res.meta.total);
+        this.isLoading.set(false);
+      })
+      .catch(err => {
+        this.isLoading.set(false);
+        this.onHttpError(err, 'list');
       });
   }
 
@@ -368,39 +355,22 @@ export class AdminPurchasesComponent implements OnInit {
    * Statut → si l'admin n'a pas filtré, le backend exporte completed+refunded.
    */
   exportCsv(): void {
-    // POURQUOI : la spec OpenAPI module n'expose pas encore les query params
-    // de filtre pour /purchases/export (status/type/since/until). Si l'admin
-    // a posé des filtres, on garde le HttpClient brut sur `adminPurchasesExport.PATH`
-    // pour transmettre les params. Sinon → SDK via `invoke$Response` pour
-    // récupérer le `HttpResponse<Blob>` complet (Content-Disposition).
-    const hasFilters = Boolean(
-      this.statusFilter || this.typeFilter || this.sinceInput || this.untilInput,
-    );
-
-    if (hasFilters) {
-      let params = new HttpParams();
-      if (this.statusFilter) params = params.set('status', this.statusFilter);
-      if (this.typeFilter) params = params.set('document_type', this.typeFilter);
-      if (this.sinceInput) params = params.set('since', this.sinceInput);
-      if (this.untilInput) params = params.set('until', this.untilInput);
-
-      this.http
-        .get(adminPurchasesExport.PATH, {
-          params,
-          responseType: 'blob',
-          observe: 'response',
-        })
-        .subscribe({
-          next: response => this.handleCsvResponse(response.body as Blob, response.headers.get('Content-Disposition')),
-          error: err => this.handleCsvError(err),
-        });
-      return;
-    }
-
-    // Pas de filtre → SDK Blob typé.
+    // Export 100% SDK : les filtres (status / type / période) sont déclarés
+    // dans l'OpenAPI, `invoke$Response` rend le `HttpResponse<Blob>` complet
+    // (corps CSV + en-tête Content-Disposition pour le nom de fichier).
     this.api
-      .invoke$Response(adminPurchasesExport)
-      .then(response => this.handleCsvResponse(response.body as Blob, response.headers.get('Content-Disposition')))
+      .invoke$Response(adminPurchasesExport, {
+        status: this.statusFilter || undefined,
+        document_type: this.typeFilter || undefined,
+        since: this.sinceInput || undefined,
+        until: this.untilInput || undefined,
+      })
+      .then(response =>
+        this.handleCsvResponse(
+          response.body as unknown as Blob,
+          response.headers.get('Content-Disposition'),
+        ),
+      )
       .catch(err => this.handleCsvError(err));
   }
 

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { AdminDialogService } from './admin-dialog.service';
 import { AdminMissionDialogComponent } from '../components/admin/admin-mission-dialog/admin-mission-dialog.component';
 
@@ -16,7 +15,7 @@ describe('AdminDialogService', () => {
   beforeEach(() => {
     dialog = new FakeMatDialog();
     TestBed.configureTestingModule({
-      providers: [provideAnimations(), AdminDialogService, { provide: MatDialog, useValue: dialog }],
+      providers: [AdminDialogService, { provide: MatDialog, useValue: dialog }],
     });
     service = TestBed.inject(AdminDialogService);
   });

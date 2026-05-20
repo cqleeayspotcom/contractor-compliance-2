@@ -1,10 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { AdminDialogShellComponent } from './admin-dialog-shell.component';
 
 describe('AdminDialogShellComponent', () => {
-  beforeEach(() => TestBed.configureTestingModule({ providers: [provideAnimations()] }));
+  beforeEach(() => TestBed.configureTestingModule({}));
 
   it('shows spinner when loading', () => {
     const f = TestBed.createComponent(AdminDialogShellComponent);

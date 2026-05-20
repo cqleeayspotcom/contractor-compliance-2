@@ -10,25 +10,55 @@ import { RequestBuilder } from '../../request-builder';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesList$Params {
-  status?: string;
   search?: string;
   stuck?: boolean;
   page?: number;
   per_page?: number;
   sort?: string;
   direction?: 'asc' | 'desc';
+  q?: string;
+
+/**
+ * Filtre multi-statuts (onglets). Sérialisé `status[]=a&status[]=b`.
+ */
+  'status[]'?: Array<string>;
+  contractor_phone?: string;
+  contractor_siren?: string;
+  mission_ref?: string;
+  amount_min?: number;
+  amount_max?: number;
+  date_from?: string;
+  date_to?: string;
+  validator_missing?: 'compliance' | 'production' | 'accounting';
+  missing_validations?: 1 | 2 | 3;
+  stale_days?: number;
+  plan?: 'free' | 'pro';
+  paid_disputed?: boolean;
 }
 
 export function adminInvoicesList(http: HttpClient, rootUrl: string, params?: AdminInvoicesList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesList.PATH, 'get');
   if (params) {
-    rb.query('status', params.status, {});
     rb.query('search', params.search, {});
     rb.query('stuck', params.stuck, {});
     rb.query('page', params.page, {});
     rb.query('per_page', params.per_page, {});
     rb.query('sort', params.sort, {});
     rb.query('direction', params.direction, {});
+    rb.query('q', params.q, {});
+    rb.query('status[]', params['status[]'], {});
+    rb.query('contractor_phone', params.contractor_phone, {});
+    rb.query('contractor_siren', params.contractor_siren, {});
+    rb.query('mission_ref', params.mission_ref, {});
+    rb.query('amount_min', params.amount_min, {});
+    rb.query('amount_max', params.amount_max, {});
+    rb.query('date_from', params.date_from, {});
+    rb.query('date_to', params.date_to, {});
+    rb.query('validator_missing', params.validator_missing, {});
+    rb.query('missing_validations', params.missing_validations, {});
+    rb.query('stale_days', params.stale_days, {});
+    rb.query('plan', params.plan, {});
+    rb.query('paid_disputed', params.paid_disputed, {});
   }
 
   return http.request(

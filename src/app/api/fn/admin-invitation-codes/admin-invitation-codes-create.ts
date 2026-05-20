@@ -7,11 +7,11 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { AdminInvitationCodeCreateRequest } from '../../models/admin-invitation-code-create-request';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvitationCodesCreate$Params {
-      body: JsonObject
+      body: AdminInvitationCodeCreateRequest
 }
 
 export function adminInvitationCodesCreate(http: HttpClient, rootUrl: string, params: AdminInvitationCodesCreate$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

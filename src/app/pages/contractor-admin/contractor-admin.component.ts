@@ -92,12 +92,19 @@ interface DashboardOverview {
   };
 }
 
+// Champs exposés par AdminSignupAttemptsController::indexAction (PHP).
+// ATTENTION : l'inscription contractor se fait par téléphone + code
+// d'invitation — il n'y a PAS d'email dans une tentative d'inscription.
 interface SignupAttemptRow {
-  id: string | number;
-  phone?: string | null;
-  email?: string | null;
+  uuid: string;
+  code_input?: string | null;
+  phone_input?: string | null;
   status?: string | null;
-  reason?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  company_name?: string | null;
+  siren?: string | null;
+  failure_detail?: string | null;
   created_at: string;
 }
 
@@ -166,7 +173,7 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     return this.accountStateEntries().reduce((sum, e) => sum + e.value, 0);
   });
 
-  readonly signupAttemptColumns = ['created_at', 'phone', 'email', 'status', 'reason'];
+  readonly signupAttemptColumns = ['created_at', 'phone', 'name', 'status', 'reason'];
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -468,7 +475,42 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     return item.key;
   }
 
-  trackBySignup(_index: number, item: SignupAttemptRow): string | number {
-    return item.id;
+  trackBySignup(_index: number, item: SignupAttemptRow): string {
+    return item.uuid;
+  }
+
+  /** Nom complet de la tentative, ou '—' si non renseigné (échec précoce). */
+  signupName(row: SignupAttemptRow): string {
+    const full = [row.first_name, row.last_name].filter(Boolean).join(' ').trim();
+    return full || '—';
+  }
+
+  /** Libellé FR du statut d'une tentative d'inscription (valeurs brutes
+   *  côté backend : cf. enum SignupAttemptStatus). */
+  signupStatusLabel(status: string | null | undefined): string {
+    const labels: Record<string, string> = {
+      success: 'Réussie',
+      invalid_format: 'Format invalide',
+      validation_failed: 'Validation échouée',
+      code_not_found: 'Code introuvable',
+      code_expired: 'Code expiré',
+      code_revoked: 'Code révoqué',
+      code_exhausted: 'Code déjà utilisé',
+      phone_already_registered: 'Téléphone déjà inscrit',
+      siren_not_found: 'SIREN introuvable',
+      siren_closed: 'SIREN radié',
+      siren_name_mismatch: 'Nom ≠ SIREN',
+      siren_out_of_sector: 'Secteur non éligible',
+      internal_error: 'Erreur interne',
+    };
+    return status ? (labels[status] ?? status) : '—';
+  }
+
+  /** Tonalité visuelle du statut : 'ok' = succès, 'error' = bug serveur,
+   *  'warn' = refus métier (code/SIREN/téléphone). */
+  signupStatusTone(status: string | null | undefined): 'ok' | 'warn' | 'error' {
+    if (status === 'success') return 'ok';
+    if (status === 'internal_error') return 'error';
+    return 'warn';
   }
 }

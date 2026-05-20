@@ -10,11 +10,39 @@ import { RequestBuilder } from '../../request-builder';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminPurchasesList$Params {
+  status?: string;
+  search?: string;
+  stuck?: boolean;
+  sort?: string;
+  direction?: 'asc' | 'desc';
+  page?: number;
+  per_page?: number;
+  document_type?: string;
+
+/**
+ * Borne basse de période (YYYY-MM-DD).
+ */
+  since?: string;
+
+/**
+ * Borne haute de période (YYYY-MM-DD).
+ */
+  until?: string;
 }
 
 export function adminPurchasesList(http: HttpClient, rootUrl: string, params?: AdminPurchasesList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminPurchasesList.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('search', params.search, {});
+    rb.query('stuck', params.stuck, {});
+    rb.query('sort', params.sort, {});
+    rb.query('direction', params.direction, {});
+    rb.query('page', params.page, {});
+    rb.query('per_page', params.per_page, {});
+    rb.query('document_type', params.document_type, {});
+    rb.query('since', params.since, {});
+    rb.query('until', params.until, {});
   }
 
   return http.request(

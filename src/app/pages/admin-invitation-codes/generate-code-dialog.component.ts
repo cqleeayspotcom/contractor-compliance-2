@@ -91,7 +91,8 @@ export class GenerateCodeDialogComponent {
     this.persistAdminLabel(this.generatedByLabel().trim());
 
     this.api.create({
-      valid_for_days: days,
+      // Clé attendue par le backend (createAction lit `expires_in_days`).
+      expires_in_days: days,
       max_uses: max,
       note: this.note().trim(),
       generated_by_label: this.generatedByLabel().trim(),

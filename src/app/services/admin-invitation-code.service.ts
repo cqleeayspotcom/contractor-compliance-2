@@ -79,7 +79,7 @@ export class AdminInvitationCodeService {
   }
 
   create(body: {
-    valid_for_days?: number;
+    expires_in_days?: number;
     max_uses?: number | null;
     note: string;
     generated_by_label: string;

@@ -9,11 +9,27 @@ import { RequestBuilder } from '../../request-builder';
 
 
 export interface AdminPurchasesExport$Params {
+  status?: string;
+  document_type?: string;
+
+/**
+ * Borne basse de période (YYYY-MM-DD).
+ */
+  since?: string;
+
+/**
+ * Borne haute de période (YYYY-MM-DD).
+ */
+  until?: string;
 }
 
 export function adminPurchasesExport(http: HttpClient, rootUrl: string, params?: AdminPurchasesExport$Params, context?: HttpContext): Observable<StrictHttpResponse<Blob>> {
   const rb = new RequestBuilder(rootUrl, adminPurchasesExport.PATH, 'get');
   if (params) {
+    rb.query('status', params.status, {});
+    rb.query('document_type', params.document_type, {});
+    rb.query('since', params.since, {});
+    rb.query('until', params.until, {});
   }
 
   return http.request(

@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { TestBed } from '@angular/core/testing';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { ContractorMiniCardComponent } from './contractor-mini-card.component';
 
 describe('ContractorMiniCardComponent', () => {
   it('renders contractor name + iban check', () => {
-    TestBed.configureTestingModule({ providers: [provideAnimations()] });
+    TestBed.configureTestingModule({});
     const f = TestBed.createComponent(ContractorMiniCardComponent);
     f.componentRef.setInput('contractor', {
       uuid: 'c1', first_name: 'Marc', last_name: 'Dupont',
@@ -20,7 +19,7 @@ describe('ContractorMiniCardComponent', () => {
   });
 
   it('emits openProfile on button click', () => {
-    TestBed.configureTestingModule({ providers: [provideAnimations()] });
+    TestBed.configureTestingModule({});
     const f = TestBed.createComponent(ContractorMiniCardComponent);
     f.componentRef.setInput('contractor', {
       uuid: 'c1', first_name: 'A', last_name: 'B', phone: null, company_name: null,

@@ -1,5 +1,14 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+
+/**
+ * Coerce un filtre booléen tolérant (`boolean | number | undefined`) vers
+ * `boolean | undefined` : `undefined`/`null` restent omis (le RequestBuilder
+ * SDK ne sérialise pas les params absents), toute autre valeur est castée.
+ */
+function toBool(v: boolean | number | undefined): boolean | undefined {
+  return v === undefined || v === null ? undefined : Boolean(v);
+}
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { ApiConfiguration } from '../api/api-configuration';
@@ -23,11 +32,11 @@ import { adminDocumentsFile } from '../api/fn/admin-documents/admin-documents-fi
  * admin-key.interceptor.ts. Les 401/403 sont gérés par le composant appelant
  * (purge sessionStorage + redirect /admin/login).
  *
- * Regle SDK first : toute route HTTP passe par le SDK genere
- * (src/app/api/fn/...). Quand un param hors spec OpenAPI est requis
- * (ex: include_old_versions, sort/dir, document_type, without_invoice...),
- * on retombe sur HttpClient mais l'URL vient toujours de `<fn>.PATH`
- * (jamais hardcodee). Idem pour le binaire blob (responseType).
+ * 100% SDK : toutes les routes passent par le SDK généré (src/app/api/fn/...).
+ * Tous les filtres (BrowseQuery + ListQuery : search, sort/dir, document_type,
+ * without_invoice, include_old_versions, etc.) sont déclarés dans l'OpenAPI —
+ * plus aucun fallback HttpClient manuel. Seule exception conservée : le
+ * téléchargement binaire blob (`fetchDocumentBlob`, responseType: 'blob').
  */
 
 // ---------- Summary ----------
@@ -276,17 +285,6 @@ export interface BrowseQuery {
   direction?: 'asc' | 'desc';
 }
 
-/**
- * Keys exposed par le SDK fn adminContractorsList ET partages avec BrowseQuery
- * sous le meme nom. BrowseQuery utilise `q`/`account_state` la ou le SDK
- * attend `search`/`status`, donc seuls les 4 ci-dessous matchent sans mapping.
- */
-const SDK_LIST_KEYS = ['page', 'per_page', 'sort', 'direction'] as const;
-/** Keys exposed by the SDK fns documents/invoices/missions. */
-const SDK_SUB_LIST_KEYS = ['page', 'per_page', 'status'] as const;
-/** Keys exposed by the SDK fns kyc-sessions/purchases (page/per_page only). */
-const SDK_MIN_LIST_KEYS = ['page', 'per_page'] as const;
-
 // ---------- Reshape backend → frontend ----------
 // Le backend Laminas (AdminContractorsController::showAction) renvoie une
 // forme historique {user, session_active, company, compliance, documents,
@@ -434,50 +432,51 @@ export class AdminContractorService {
     );
   }
 
-  private toParams(query?: ListQuery): HttpParams | undefined {
-    if (!query) return undefined;
-    let params = new HttpParams();
-    for (const [k, v] of Object.entries(query)) {
-      if (v !== undefined && v !== null && v !== '') {
-        params = params.set(k, String(v));
-      }
-    }
-    return params;
-  }
-
   /**
-   * Renvoie `true` si `query` contient au moins une cle hors `allowed`
-   * (param hors spec OpenAPI -> on doit retomber sur HttpClient).
-   */
-  private hasExtraKeys(query: object, allowed: readonly string[]): boolean {
-    return Object.entries(query as Record<string, unknown>).some(
-      ([k, v]) =>
-        v !== undefined && v !== null && v !== '' && !allowed.includes(k),
-    );
-  }
-
-  /**
-   * Browse pagine : liste tous les contractors avec filtres + facets.
+   * Browse paginé : liste tous les contractors avec filtres + facets.
    *
-   * BrowseQuery contient des filtres hors spec OpenAPI (q, account_state,
-   * kyc_status, compliance, has_active_invoice, etc.). Si l'un d'eux est
-   * present, on retombe sur HttpClient avec l'URL `adminContractorsList.PATH`
-   * (jamais hardcodee). Sinon on passe par le SDK.
+   * 100% SDK : tous les filtres de `BrowseQuery` sont déclarés dans l'OpenAPI
+   * → `adminContractorsList` les sérialise via le RequestBuilder généré.
    */
   list(query: BrowseQuery = {}): Observable<ContractorBrowseResponse> {
-    if (this.hasExtraKeys(query, SDK_LIST_KEYS)) {
-      const params = this.toParams(query as unknown as ListQuery);
-      return this.http.get<ContractorBrowseResponse>(
-        adminContractorsList.PATH,
-        params ? { params } : {},
-      );
-    }
     return adminContractorsList(this.http, this.apiConfig.rootUrl, {
       page: query.page,
       per_page: query.per_page,
+      q: query.q,
+      account_state: query.account_state,
+      plan: query.plan,
+      kyc_status: query.kyc_status,
+      compliance: query.compliance,
+      has_active_invoice: toBool(query.has_active_invoice),
+      has_stuck_invoice: toBool(query.has_stuck_invoice),
+      city: query.city,
+      department: query.department,
+      created_after: query.created_after,
+      created_before: query.created_before,
       sort: query.sort,
       direction: query.direction,
-    }).pipe(map(r => r.body as unknown as ContractorBrowseResponse));
+    }).pipe(
+      map((r) => {
+        // L'enveloppe canonique du module est `{ data, meta }` ; les facets
+        // sont rangees dans `meta.facets`. On les remonte au niveau attendu
+        // par le composant (`ContractorBrowseResponse.facets`).
+        const env = (r.body ?? {}) as unknown as {
+          data?: ContractorListRow[];
+          meta?: (PaginatedMeta & { facets?: ContractorBrowseFacets }) | null;
+        };
+        const meta = (env.meta ?? {}) as PaginatedMeta & { facets?: ContractorBrowseFacets };
+        return {
+          data: env.data ?? [],
+          meta,
+          facets: meta.facets ?? {
+            by_account_state: {},
+            by_plan: {},
+            by_kyc: {},
+            by_compliance: {},
+          },
+        };
+      }),
+    );
   }
 
   getContractor(phone: string): Observable<{ data: ContractorDetail }> {
@@ -487,88 +486,65 @@ export class AdminContractorService {
     );
   }
 
+  /**
+   * Mappe `ListQuery` (frontend) → params SDK des sous-listes contractor.
+   * Tous ces params sont déclarés dans l'OpenAPI → plus de fallback HttpClient.
+   */
+  private subParams(phone: string, query: ListQuery): {
+    phone: string;
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+    type?: string;
+    document_type?: string;
+    without_invoice?: boolean;
+    sort?: string;
+    dir?: 'asc' | 'desc';
+    include_old_versions?: boolean;
+  } {
+    return {
+      phone,
+      page: query.page,
+      per_page: query.per_page,
+      search: query.search,
+      status: query.status,
+      type: query.type,
+      document_type: query.document_type,
+      without_invoice: toBool(query.without_invoice),
+      sort: query.sort,
+      dir: query.dir,
+      include_old_versions: toBool(query.include_old_versions),
+    };
+  }
+
   listDocuments(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorDocumentRow>> {
-    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
-      // include_old_versions / type / document_type / sort / dir / search :
-      // hors spec OpenAPI -> HttpClient + .PATH.replace.
-      return this.http.get<Paginated<ContractorDocumentRow>>(
-        adminContractorsDocuments.PATH.replace('{phone}', encodeURIComponent(phone)),
-        { params: this.toParams(query) },
-      );
-    }
     return this.toPaginated<ContractorDocumentRow>(
-      adminContractorsDocuments(this.http, this.apiConfig.rootUrl, {
-        phone,
-        page: query.page,
-        per_page: query.per_page,
-        status: query.status,
-      }),
+      adminContractorsDocuments(this.http, this.apiConfig.rootUrl, this.subParams(phone, query)),
     );
   }
 
   listKycSessions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorKycRow>> {
-    if (this.hasExtraKeys(query, SDK_MIN_LIST_KEYS)) {
-      return this.http.get<Paginated<ContractorKycRow>>(
-        adminContractorsKycSessions.PATH.replace('{phone}', encodeURIComponent(phone)),
-        { params: this.toParams(query) },
-      );
-    }
     return this.toPaginated<ContractorKycRow>(
-      adminContractorsKycSessions(this.http, this.apiConfig.rootUrl, {
-        phone,
-        page: query.page,
-        per_page: query.per_page,
-      }),
+      adminContractorsKycSessions(this.http, this.apiConfig.rootUrl, this.subParams(phone, query)),
     );
   }
 
   listInvoices(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorInvoiceRow>> {
-    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
-      return this.http.get<Paginated<ContractorInvoiceRow>>(
-        adminContractorsInvoices.PATH.replace('{phone}', encodeURIComponent(phone)),
-        { params: this.toParams(query) },
-      );
-    }
     return this.toPaginated<ContractorInvoiceRow>(
-      adminContractorsInvoices(this.http, this.apiConfig.rootUrl, {
-        phone,
-        page: query.page,
-        per_page: query.per_page,
-        status: query.status,
-      }),
+      adminContractorsInvoices(this.http, this.apiConfig.rootUrl, this.subParams(phone, query)),
     );
   }
 
   listPurchases(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorPurchaseRow>> {
-    if (this.hasExtraKeys(query, SDK_MIN_LIST_KEYS)) {
-      return this.http.get<Paginated<ContractorPurchaseRow>>(
-        adminContractorsPurchases.PATH.replace('{phone}', encodeURIComponent(phone)),
-        { params: this.toParams(query) },
-      );
-    }
     return this.toPaginated<ContractorPurchaseRow>(
-      adminContractorsPurchases(this.http, this.apiConfig.rootUrl, {
-        phone,
-        page: query.page,
-        per_page: query.per_page,
-      }),
+      adminContractorsPurchases(this.http, this.apiConfig.rootUrl, this.subParams(phone, query)),
     );
   }
 
   listMissions(phone: string, query: ListQuery = {}): Observable<Paginated<ContractorMissionRow>> {
-    if (this.hasExtraKeys(query, SDK_SUB_LIST_KEYS)) {
-      return this.http.get<Paginated<ContractorMissionRow>>(
-        adminContractorsMissions.PATH.replace('{phone}', encodeURIComponent(phone)),
-        { params: this.toParams(query) },
-      );
-    }
     return this.toPaginated<ContractorMissionRow>(
-      adminContractorsMissions(this.http, this.apiConfig.rootUrl, {
-        phone,
-        page: query.page,
-        per_page: query.per_page,
-        status: query.status,
-      }),
+      adminContractorsMissions(this.http, this.apiConfig.rootUrl, this.subParams(phone, query)),
     );
   }
 

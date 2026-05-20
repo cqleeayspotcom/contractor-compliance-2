@@ -3,7 +3,6 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { AdminMissionDialogComponent, MissionDetail } from './admin-mission-dialog.component';
 
@@ -41,7 +40,6 @@ describe('AdminMissionDialogComponent', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        provideAnimations(),
         provideRouter([]),
         { provide: MAT_DIALOG_DATA, useValue: { missionRef: 'M-1' } },
         { provide: MatDialogRef, useValue: closeSpy },

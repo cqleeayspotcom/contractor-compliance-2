@@ -1,4 +1,3 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, from } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -19,6 +18,16 @@ import { adminInvoicesReopen } from '../api/fn/admin-invoices/admin-invoices-reo
 import { adminInvoicesResolveDispute } from '../api/fn/admin-invoices/admin-invoices-resolve-dispute';
 import { adminInvoicesForceResendWebhook } from '../api/fn/admin-invoices/admin-invoices-force-resend-webhook';
 import { adminInvoicesAddNote } from '../api/fn/admin-invoices/admin-invoices-add-note';
+import { adminInvoicesValidate } from '../api/fn/admin-invoices/admin-invoices-validate';
+import { adminInvoicesReject } from '../api/fn/admin-invoices/admin-invoices-reject';
+import { adminInvoicesCancel } from '../api/fn/admin-invoices/admin-invoices-cancel';
+import { adminInvoicesDispute } from '../api/fn/admin-invoices/admin-invoices-dispute';
+import { adminInvoicesExpire } from '../api/fn/admin-invoices/admin-invoices-expire';
+import { adminInvoicesExport } from '../api/fn/admin-invoices/admin-invoices-export';
+import { adminInvoicesTodayPayments } from '../api/fn/admin-invoices/admin-invoices-today-payments';
+import { adminInvoicesStatsByValidator } from '../api/fn/admin-invoices/admin-invoices-stats-by-validator';
+import { adminInvoicesStatsPipeline } from '../api/fn/admin-invoices/admin-invoices-stats-pipeline';
+import { adminInvoicesSendValidatorReminder } from '../api/fn/admin-invoices/admin-invoices-send-validator-reminder';
 
 /**
  * Admin Invoice Service
@@ -370,6 +379,33 @@ export interface AddNoteBody {
 }
 
 /**
+ * Décision d'un validateur sur une facture. `decision` est obligatoire :
+ * `approved` compte une approbation vers le quorum, `rejected` rejette.
+ */
+export interface ValidateBody {
+  decision: 'approved' | 'rejected';
+  admin_email: string;
+  /** Code de motif structuré (préféré à `reason`). */
+  reason_code?: string;
+  /** Motif texte libre (fallback de `reason_code`). */
+  reason?: string;
+  /** ID de corrélation (généré côté backend si absent). */
+  correlation_id?: string;
+}
+
+export interface RejectBody {
+  /** Motif du rejet — obligatoire côté backend. */
+  reason: string;
+  admin_email?: string;
+}
+
+export interface DisputeBody {
+  /** Motif du litige — obligatoire côté backend. */
+  reason: string;
+  admin_email?: string;
+}
+
+/**
  * Forme du body renvoyé par les endpoints listing du SDK (SuccessEnvelope).
  * On caste localement car le SDK généré retourne `JsonObject` opaque.
  */
@@ -377,7 +413,6 @@ type ListEnvelope = { data: AdminInvoice[]; meta?: PaginatedInvoices['meta'] };
 
 @Injectable({ providedIn: 'root' })
 export class AdminInvoiceService {
-  private readonly http = inject(HttpClient);
   private readonly api = inject(Api);
 
   // ---------------------------------------------------------------------
@@ -449,25 +484,34 @@ export class AdminInvoiceService {
   /**
    * Recherche full-text + filtres riches (status[], dates, montants, plan, etc.).
    *
-   * SDK manquant : `adminInvoicesList` ne déclare que status/search/stuck/page/
-   * per_page/sort/direction ; les filtres riches du screen admin (q,
-   * contractor_phone, contractor_siren, mission_ref, amount_min/max, date_from/to,
-   * status[] multi-valeur, missing_validations, stale_days, plan, paid_disputed,
-   * validator_missing) ne sont pas exposés par la spec OpenAPI. On bypasse le
-   * SDK pour conserver l'intégralité des filtres, en réutilisant `.PATH` pour
-   * rester aligné si la spec bouge.
+   * Migration SDK (2026-05-20) : tous les filtres sont désormais déclarés dans
+   * l'OpenAPI → `api.invoke` remplace le HttpClient manuel. Le param `status`
+   * (array) est mappé sur la clé bracketée `status[]` attendue par le backend
+   * (cf. AdminInvoiceController::buildFilters, branche `is_array($status)`).
    */
   searchInvoices(filters: InvoiceSearchFilters): Observable<PaginatedInvoices> {
-    let params = new HttpParams();
-    Object.entries(filters).forEach(([k, v]) => {
-      if (v === null || v === undefined || v === '') return;
-      if (Array.isArray(v)) {
-        v.forEach(item => { params = params.append(`${k}[]`, String(item)); });
-      } else {
-        params = params.set(k, String(v));
-      }
-    });
-    return this.http.get<PaginatedInvoices>(adminInvoicesList.PATH, { params });
+    const params = {
+      q: filters.q || undefined,
+      'status[]': filters.status?.length ? filters.status : undefined,
+      contractor_phone: filters.contractor_phone || undefined,
+      contractor_siren: filters.contractor_siren || undefined,
+      mission_ref: filters.mission_ref || undefined,
+      amount_min: filters.amount_min,
+      amount_max: filters.amount_max,
+      date_from: filters.date_from || undefined,
+      date_to: filters.date_to || undefined,
+      validator_missing: filters.validator_missing,
+      missing_validations: filters.missing_validations,
+      stale_days: filters.stale_days,
+      plan: filters.plan,
+      paid_disputed: filters.paid_disputed,
+      stuck: filters.stuck,
+      sort: filters.sort || undefined,
+      direction: filters.direction,
+      page: filters.page,
+      per_page: filters.per_page,
+    };
+    return from(this.api.invoke(adminInvoicesList, params) as Promise<PaginatedInvoices>);
   }
 
   /**
@@ -529,5 +573,67 @@ export class AdminInvoiceService {
       uuid,
       body: { content: body.content },
     }) as Promise<unknown>);
+  }
+
+  /**
+   * Décision d'un validateur (approuve / rejette) — action centrale du flow
+   * 3-validateurs (`POST /admin/invoices/:uuid/validate`). Le backend
+   * transitionne la facture une fois le quorum d'approbations atteint.
+   */
+  validate(uuid: string, body: ValidateBody): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesValidate, { uuid, body }) as Promise<unknown>);
+  }
+
+  /** Rejet direct d'une facture (force-reject admin, motif obligatoire). */
+  reject(uuid: string, body: RejectBody): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesReject, { uuid, body }) as Promise<unknown>);
+  }
+
+  /** Annule une facture : sortie de pipeline sans paiement. */
+  cancel(uuid: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesCancel, { uuid }) as Promise<unknown>);
+  }
+
+  /** Ouvre un litige sur une facture payée (paid → disputed), motif obligatoire. */
+  dispute(uuid: string, body: DisputeBody): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesDispute, { uuid, body }) as Promise<unknown>);
+  }
+
+  /** Marque une facture expirée (délai de validation dépassé). */
+  expire(uuid: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesExpire, { uuid }) as Promise<unknown>);
+  }
+
+  /** Relance par email les validateurs n'ayant pas encore statué. */
+  sendValidatorReminder(uuid: string): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesSendValidatorReminder, { uuid }) as Promise<unknown>);
+  }
+
+  /** Export compta des factures (réponse JSON enveloppée). */
+  exportInvoices(): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesExport) as Promise<{ data: unknown }>).pipe(
+      map(body => body.data),
+    );
+  }
+
+  /** Paiements du jour — dashboard trésorerie. */
+  getTodayPayments(): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesTodayPayments) as Promise<{ data: unknown }>).pipe(
+      map(body => body.data),
+    );
+  }
+
+  /** Stats d'activité par validateur (compliance / production / accounting). */
+  getStatsByValidator(): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesStatsByValidator) as Promise<{ data: unknown }>).pipe(
+      map(body => body.data),
+    );
+  }
+
+  /** Stats du pipeline de validation (volumétrie par statut). */
+  getStatsPipeline(): Observable<unknown> {
+    return from(this.api.invoke(adminInvoicesStatsPipeline) as Promise<{ data: unknown }>).pipe(
+      map(body => body.data),
+    );
   }
 }

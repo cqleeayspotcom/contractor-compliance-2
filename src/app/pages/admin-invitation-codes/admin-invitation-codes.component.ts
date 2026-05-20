@@ -196,10 +196,7 @@ export class AdminInvitationCodesComponent implements OnInit {
     return name || row.first_use.phone || '';
   }
 
-  /**
-   * Tooltip détaillé pour la colonne "1er inscrit" — date + indication
-   * mismatch éventuel pour informer l'admin.
-   */
+  /** Applique le tri serveur quand l'admin clique un en-tête de colonne. */
   onSortChange(s: Sort): void {
     // Map column template -> sort key backend.
     const colMap: Record<string, string> = {
@@ -216,6 +213,10 @@ export class AdminInvitationCodesComponent implements OnInit {
     this.refresh();
   }
 
+  /**
+   * Tooltip détaillé pour la colonne "1er inscrit" — date + indication
+   * mismatch éventuel pour informer l'admin.
+   */
   firstUseTooltip(row: InvitationCodeRow): string {
     if (!row.first_use) return 'Aucun inscrit pour l\'instant';
     const parts: string[] = [];
