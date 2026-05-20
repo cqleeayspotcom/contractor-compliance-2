@@ -6,6 +6,8 @@
 import { inject } from '@angular/core';
 import { CanDeactivateFn } from '@angular/router';
 import { Observable } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
+import { ConfirmationDialogComponent } from '../components/shared/confirmation-dialog.component';
 
 /**
  * Interface for components that can have unsaved changes
@@ -45,40 +47,15 @@ export const unsavedChangesGuard: CanDeactivateFn<CanComponentDeactivate> = (
     return component.showUnsavedChangesDialog();
   }
 
-  // Use default browser confirmation dialog
-  const confirmationMessage = `
-    You have unsaved changes that will be lost if you leave this page.
-    Are you sure you want to leave?
-  `;
-
-  // Show confirmation dialog
-  // Note: In production, you might want to use a modal service instead
-  return confirm(confirmationMessage);
-};
-
-/**
- * Alternative guard that uses a custom modal/dialog service
- * This is a more user-friendly approach than browser confirm
- */
-export const unsavedChangesWithModalGuard = (
-  modalService: any // Replace with your actual modal/dialog service
-): CanDeactivateFn<CanComponentDeactivate> => {
-  return (component: CanComponentDeactivate) => {
-    if (!component.hasUnsavedChanges || !component.hasUnsavedChanges()) {
-      return true;
-    }
-
-    if (component.showUnsavedChangesDialog) {
-      return component.showUnsavedChangesDialog();
-    }
-
-    // Use custom modal service instead of browser confirm
-    // This should be replaced with your actual modal service implementation
-    return modalService.confirm({
-      title: 'Unsaved Changes',
-      message: 'You have unsaved changes. Do you want to leave?',
-      confirmText: 'Leave',
-      cancelText: 'Stay'
-    });
-  };
+  // No custom dialog: fall back to the shared Material confirmation dialog
+  // (replaces the native browser `confirm()`).
+  const dialog = inject(MatDialog);
+  return ConfirmationDialogComponent.open(dialog, {
+    title: 'Modifications non enregistrées',
+    message:
+      'Vous avez des modifications non enregistrées qui seront perdues si vous quittez cette page. Voulez-vous vraiment partir ?',
+    confirmText: 'Quitter',
+    cancelText: 'Rester',
+    type: 'warning',
+  });
 };

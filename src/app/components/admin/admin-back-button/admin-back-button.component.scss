@@ -1,24 +1,13 @@
 :host {
-  display: inline-block;
-  margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .admin-back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
   color: #4b5563;
-  border-color: #d1d5db;
-  background: #fff;
-
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-  }
 
   &:hover {
-    background: #f9fafb;
     color: #111827;
   }
 }

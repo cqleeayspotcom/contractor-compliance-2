@@ -153,15 +153,6 @@ describe('AdminInvoiceService', () => {
     req.flush({});
   });
 
-  it('POST /{uuid}/force-resend-webhook remaps event_type → event', () => {
-    service.forceResendWebhook('uuid-1', { event_type: 'paid', reason: 'tuita.fr a manqué le webhook' }).subscribe();
-    const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/force-resend-webhook');
-    // Le backend `forceResendWebhookAction` lit `body.event` ; `reason` n'est
-    // pas transmis dans le corps (tracé séparément côté audit).
-    expect(req.request.body).toEqual({ event: 'paid' });
-    req.flush({});
-  });
-
   it('POST /{uuid}/add-note sends content', () => {
     service.addNote('uuid-1', { content: 'Note admin pour audit' }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/add-note');

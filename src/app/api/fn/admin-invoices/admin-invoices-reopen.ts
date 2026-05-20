@@ -17,11 +17,6 @@ export interface AdminInvoicesReopen$Params {
  * Motif de la réouverture (≥10 caractères, archivé dans `reopen_reason`).
  */
 'reason': string;
-
-/**
- * Fallback identité OAuth2 si absent.
- */
-'admin_email'?: string;
 }
 }
 

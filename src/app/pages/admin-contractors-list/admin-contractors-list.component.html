@@ -1,9 +1,7 @@
 <div class="page">
   <header class="page-header">
     <div class="header-left">
-      <a mat-icon-button routerLink="/admin" matTooltip="Retour au dashboard admin">
-        <mat-icon>arrow_back</mat-icon>
-      </a>
+      <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
       <h1>Prestataires</h1>
       <span class="counter" *ngIf="!loading()">{{ total() }} résultat{{ total() > 1 ? 's' : '' }}</span>
     </div>

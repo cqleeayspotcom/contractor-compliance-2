@@ -17,7 +17,6 @@ export interface AdminInvoicesReject$Params {
  * Motif du rejet (obligatoire).
  */
 'reason': string;
-'admin_email'?: string;
 }
 }
 

@@ -17,7 +17,6 @@ export interface AdminInvoicesMarkPaid$Params {
  * Référence virement bancaire (obligatoire, masquée en logs).
  */
 'payment_ref': string;
-'admin_email': string;
 
 /**
  * Date de paiement effective (ISO 8601). Défaut = maintenant.

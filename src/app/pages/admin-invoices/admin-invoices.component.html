@@ -1,23 +1,11 @@
 <div class="admin-invoices-page">
-  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
   <header class="page-header">
     <div class="page-title">
+      <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
       <mat-icon>receipt_long</mat-icon>
       <h1>Administration factures</h1>
     </div>
     <div class="page-actions">
-      @if (adminActorEmail()) {
-        <span class="admin-actor-pill"
-              matTooltip="Identité utilisée pour valider/rejeter (envoyée dans le body admin_email)">
-          <mat-icon>badge</mat-icon>
-          {{ adminActorName() }} ({{ adminActorEmail() }})
-          <button mat-icon-button class="reset-actor-btn"
-                  matTooltip="Changer d'identité admin"
-                  (click)="resetAdminActor()">
-            <mat-icon>logout</mat-icon>
-          </button>
-        </span>
-      }
       @if (lastSyncedAt()) {
         <span class="live-pill" matTooltip="Mise à jour automatique toutes les 30s">
           <span class="live-dot"></span> Live · {{ lastSyncedAt() | date:'HH:mm:ss' }}
@@ -111,6 +99,47 @@
                   <mat-chip *ngIf="staleSeverity(inv) === 'critical'" class="chip-rejected">
                     🔥 {{ ageDays(inv) }}j
                   </mat-chip>
+                  <!-- FIX 2026-05-20 (audit Claude) — badges visuels pour pré-tri rapide
+                       de la file de validation. Sans ces chips l'admin devait ouvrir le
+                       détail de chaque facture pour voir l'écart vs convenu mission et
+                       l'état du RIB ; ces 2 infos étant des bloquants potentiels. -->
+                  <mat-chip *ngIf="(inv.deviation_pct ?? 0) > 5 && (inv.deviation_pct ?? 0) <= 50"
+                            class="chip-warning"
+                            [matTooltip]="'Écart +' + inv.deviation_pct + '% vs montant convenu mission'">
+                    ⚠ +{{ inv.deviation_pct }}%
+                  </mat-chip>
+                  <mat-chip *ngIf="(inv.deviation_pct ?? 0) > 50"
+                            class="chip-rejected"
+                            [matTooltip]="'Écart suspect +' + inv.deviation_pct + '% vs mission'">
+                    🚨 +{{ inv.deviation_pct }}%
+                  </mat-chip>
+                  <mat-chip *ngIf="(inv.deviation_pct ?? 0) < -5"
+                            class="chip-warning"
+                            [matTooltip]="'Écart négatif vs montant convenu mission'">
+                    ⚠ {{ inv.deviation_pct }}%
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+            </ng-container>
+
+            <!-- Chips RIB — affichés sur ALL modes (pending, ready, in-progress, all)
+                 sauf paid/rejected où c'est inutile. RIB missing = blocage mark-paid,
+                 l'admin doit le savoir d'un coup d'œil. -->
+            <ng-container *ngIf="mode !== 'disputed' && inv.status !== 'paid' && inv.status !== 'rejected' && inv.status !== 'cancelled'">
+              <div class="validators-row" *ngIf="inv.rib?.status === 'missing'">
+                <mat-chip-set>
+                  <mat-chip class="chip-rejected"
+                            matTooltip="RIB manquant — le contractor doit saisir ses coordonnées bancaires avant le virement">
+                    🏦 RIB manquant
+                  </mat-chip>
+                </mat-chip-set>
+              </div>
+              <div class="validators-row" *ngIf="inv.rib?.status === 'verified' && inv.rib?.iban_last4">
+                <mat-chip-set>
+                  <mat-chip class="chip-ok"
+                            [matTooltip]="(inv.rib?.holder || '—') + ' · IBAN ****' + inv.rib.iban_last4">
+                    🏦 RIB ****{{ inv.rib.iban_last4 }}
+                  </mat-chip>
                 </mat-chip-set>
               </div>
             </ng-container>
@@ -129,6 +158,25 @@
               <code>{{ inv.mission_ref }}</code>
             </button>
             <span *ngIf="!inv.mission_ref" class="muted">—</span>
+          </td>
+        </ng-container>
+
+        <!-- Contractor (FIX 2026-05-20 - audit Claude). Affiche le nom de la
+             société émettrice + SIREN au survol. Cliquable pour ouvrir le
+             dossier contractor (vue 360 dans /admin/contractors/:phone).
+             Source : invoice.contractor_company_name / contractor_siren exposés
+             par AdminInvoiceController::serializeInvoice (lookup via fromCompanyId). -->
+        <ng-container matColumnDef="contractor">
+          <th mat-header-cell *matHeaderCellDef>Contractor</th>
+          <td mat-cell *matCellDef="let inv">
+            <span *ngIf="inv.contractor_company_name; else noContractor"
+                  class="contractor-name"
+                  [matTooltip]="inv.contractor_siren ? ('SIREN ' + inv.contractor_siren) : ''">
+              {{ inv.contractor_company_name }}
+            </span>
+            <ng-template #noContractor>
+              <span class="muted">—</span>
+            </ng-template>
           </td>
         </ng-container>
 
@@ -216,10 +264,6 @@
 
               <mat-divider></mat-divider>
 
-              <button mat-menu-item (click)="openForceResendWebhook(inv)">
-                <mat-icon>cloud_upload</mat-icon>
-                <span>Renvoyer un webhook</span>
-              </button>
               <button mat-menu-item (click)="openAddNote(inv)">
                 <mat-icon>note_add</mat-icon>
                 <span>Ajouter une note</span>
@@ -392,10 +436,6 @@
             <span>Résoudre le litige</span>
           </button>
           <mat-divider></mat-divider>
-          <button mat-menu-item (click)="dialogCtx.invoice && openForceResendWebhook(dialogCtx.invoice)">
-            <mat-icon>cloud_upload</mat-icon>
-            <span>Renvoyer un webhook</span>
-          </button>
           <button mat-menu-item (click)="dialogCtx.invoice && openAddNote(dialogCtx.invoice)">
             <mat-icon>note_add</mat-icon>
             <span>Ajouter une note</span>

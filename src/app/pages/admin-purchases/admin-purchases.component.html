@@ -1,19 +1,18 @@
 <div class="admin-purchases">
-  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
     <!-- ============================================================ -->
     <!-- HEADER + KPIs                                                 -->
     <!-- ============================================================ -->
     <header class="page-header">
-      <div>
-        <h1>Supervision des achats de documents</h1>
-        <p class="subtitle">
-          Suivi des achats Pappers ({{ extraitInpiPriceLabel() }} / unite) : KBIS, Avis SIRENE, Extrait INPI, Statuts.
-        </p>
+      <div class="page-header__title">
+        <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+        <div>
+          <h1>Supervision des achats de documents</h1>
+          <p class="subtitle">
+            Suivi des achats Pappers ({{ extraitInpiPriceLabel() }} / unite) : KBIS, Avis SIRENE, Extrait INPI, Statuts.
+          </p>
+        </div>
       </div>
       <div class="page-header__actions">
-        <button mat-stroked-button routerLink="/admin">
-          <mat-icon>arrow_back</mat-icon> Supervision
-        </button>
         <button mat-stroked-button (click)="refreshAll()">
           <mat-icon>refresh</mat-icon> Rafraichir
         </button>

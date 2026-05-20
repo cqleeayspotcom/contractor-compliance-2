@@ -1,0 +1,70 @@
+@use '../../../styles/variables' as *;
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  // Barre sombre prussian-blue : contraste fort avec le header contractor
+  // (blanc + liseré vert) pour qu'on voie au premier coup d'oeil qu'on est
+  // dans l'espace admin.
+  background-color: $t-logo-blue;
+  box-shadow: 0 2px 8px rgba($t-text-black, 0.18);
+
+  &__inner {
+    display: flex;
+    align-items: center;
+    gap: $t-gap-16;
+    height: 64px;
+    width: 100%;
+    padding: 0 $t-gap-32;
+  }
+
+  // Logo
+  &__logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    flex-shrink: 0;
+  }
+
+  &__logo-img {
+    height: 34px;
+    width: auto;
+  }
+
+  // Badge "Administration"
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-6;
+    padding: $t-gap-4 $t-gap-12;
+    border-radius: 999px;
+    background-color: rgba(#ffffff, 0.12);
+    color: #ffffff;
+    font-size: $t-body-3;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+  }
+
+  &__badge-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+// Responsive -- tighter padding on small screens
+@media (max-width: 600px) {
+  .admin-header {
+    &__inner {
+      padding: 0 $t-gap-16;
+      height: 56px;
+    }
+
+    &__logo-img {
+      height: 28px;
+    }
+  }
+}

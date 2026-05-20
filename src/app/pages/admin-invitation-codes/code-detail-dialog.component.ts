@@ -7,7 +7,7 @@ import {
 } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -21,6 +21,7 @@ import {
   InvitationCodeDetail,
 } from '../../services/admin-invitation-code.service';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
 
 interface DetailDialogData {
   uuid: string;
@@ -55,6 +56,7 @@ interface DetailDialogData {
 export class CodeDetailDialogComponent implements OnInit {
   private readonly api = inject(AdminInvitationCodeService);
   private readonly ref = inject<MatDialogRef<CodeDetailDialogComponent, boolean>>(MatDialogRef);
+  private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   readonly data = inject<DetailDialogData>(MAT_DIALOG_DATA);
 
@@ -105,15 +107,23 @@ export class CodeDetailDialogComponent implements OnInit {
   revoke(): void {
     const d = this.detail();
     if (!d || d.revoked_at) return;
-    if (!confirm(`Révoquer le code ${d.code} ?`)) return;
-    this.api.revoke(this.data.uuid).subscribe({
-      next: () => {
-        this.snack.open('Code révoqué.', '', { duration: 2000 });
-        this.ref.close(true);
-      },
-      error: () => {
-        this.snack.open('Échec de la révocation.', 'OK', { duration: 4000 });
-      },
+    ConfirmationDialogComponent.open(this.dialog, {
+      title: `Révoquer le code ${d.code} ?`,
+      message:
+        'Les contractors déjà inscrits via ce code restent actifs ; seul le code lui-même devient inutilisable.',
+      confirmText: 'Révoquer',
+      type: 'warning',
+    }).subscribe((ok) => {
+      if (!ok) return;
+      this.api.revoke(this.data.uuid).subscribe({
+        next: () => {
+          this.snack.open('Code révoqué.', '', { duration: 2000 });
+          this.ref.close(true);
+        },
+        error: () => {
+          this.snack.open('Échec de la révocation.', 'OK', { duration: 4000 });
+        },
+      });
     });
   }
 

@@ -13,7 +13,6 @@ export interface AdminInvoicesDispute$Params {
   uuid: string;
       body: {
 'reason': string;
-'admin_email'?: string;
 }
 }
 

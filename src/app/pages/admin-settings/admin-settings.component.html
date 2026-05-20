@@ -1,7 +1,7 @@
 <div class="settings">
-  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
   <div class="settings__header">
     <div class="settings__header-left">
+      <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
       <mat-icon class="settings__header-icon">tune</mat-icon>
       <div>
         <h1>Paramètres plateforme</h1>
@@ -9,10 +9,6 @@
       </div>
     </div>
     <div class="settings__header-actions">
-      <button mat-stroked-button routerLink="/admin">
-        <mat-icon>arrow_back</mat-icon>
-        Retour supervision
-      </button>
       <button mat-stroked-button (click)="refresh()" [disabled]="loading()">
         <mat-icon>refresh</mat-icon>
         Actualiser

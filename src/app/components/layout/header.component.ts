@@ -16,6 +16,16 @@ import { LogoutConfirmDialogComponent } from '../../pages/contractor-profile/log
  * Contractor header component matching the tuita.fr/contractor design.
  * Full-width white bar with logo on the left and navigation icon buttons on the right.
  * No sidebar -- this is the only navigation element.
+ *
+ * NB : ce header n'est utilisé QUE sur les routes contractor. L'espace admin
+ * a son propre header (`AdminHeaderComponent`).
+ *
+ * ⚠️ À FUSIONNER À LA FUSION FRONTEND ⚠️
+ * Ce composant est une réplique autonome du header contractor de tuita.fr,
+ * propre à la micro-app Contractor Compliance. Lors de la fusion de ce
+ * frontend dans le frontend tuita principal, NE PAS conserver ce composant :
+ * le remplacer par le vrai header contractor partagé de tuita.fr pour éviter
+ * d'avoir deux headers à maintenir en parallèle.
  */
 @Component({
   selector: 'app-header',

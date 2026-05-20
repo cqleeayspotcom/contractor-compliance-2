@@ -11,22 +11,12 @@ import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminInvoicesMarkPaymentInProgress$Params {
   uuid: string;
-      body?: {
-
-/**
- * Identité de l'admin actant la transition (fallback :
- * identité OAuth2 du bearer). Tracé dans la timeline
- * + audit log.
- */
-'admin_email'?: string;
-}
 }
 
 export function adminInvoicesMarkPaymentInProgress(http: HttpClient, rootUrl: string, params: AdminInvoicesMarkPaymentInProgress$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminInvoicesMarkPaymentInProgress.PATH, 'post');
   if (params) {
     rb.path('uuid', params.uuid, {});
-    rb.body(params.body, 'application/json');
   }
 
   return http.request(

@@ -64,19 +64,27 @@ export class AdminInvoiceFilterBarComponent {
 
   constructor() {
     // Effect: re-emit on any change (debounced for `q`).
+    // FIX 2026-05-20 (audit Claude) : alignement noms params front ↔ backend.
+    // Le backend AdminInvoiceController::buildFilters lit `min_amount`,
+    // `max_amount`, `missing_approvals`, `pending_since`. Le frontend envoyait
+    // historiquement `amount_min`, `amount_max`, `missing_validations`,
+    // `stale_days` qui étaient SILENCIEUSEMENT IGNORÉS par le backend (pas de
+    // 422 ni log) → l'utilisateur cliquait sur les chips, les sliders, et la
+    // liste ne se filtrait pas. Bug invisible côté UI car les requêtes
+    // partaient bien mais avec des params morts.
     effect(() => {
       // Read all signals so the effect tracks them
       const filters: InvoiceSearchFilters = {
         ...(this.q().trim().length >= 2 && { q: this.q().trim() }),
         ...(this.statuses().length > 0 && { status: this.statuses() }),
-        ...(this.amountMin() !== null && { amount_min: this.amountMin()! }),
-        ...(this.amountMax() !== null && { amount_max: this.amountMax()! }),
+        ...(this.amountMin() !== null && { min_amount: this.amountMin()! }),
+        ...(this.amountMax() !== null && { max_amount: this.amountMax()! }),
         ...(this.dateFrom() && { date_from: this.toIso(this.dateFrom()!) }),
         ...(this.dateTo() && { date_to: this.toIso(this.dateTo()!) }),
         sort: this.sort(),
         ...(this.validatorMissing() && { validator_missing: this.validatorMissing()! }),
-        ...(this.missingValidations() !== null && { missing_validations: this.missingValidations()! }),
-        ...(this.staleDays() !== null && { stale_days: this.staleDays()! }),
+        ...(this.missingValidations() !== null && { missing_approvals: this.missingValidations()! }),
+        ...(this.staleDays() !== null && { pending_since: this.staleDays()! }),
         ...(this.plan() && { plan: this.plan()! }),
         ...(this.stuck() && { stuck: true }),
         ...(this.paidDisputed() && { paid_disputed: true }),

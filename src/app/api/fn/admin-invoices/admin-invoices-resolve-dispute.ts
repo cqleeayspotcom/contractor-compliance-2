@@ -17,7 +17,6 @@ export interface AdminInvoicesResolveDispute$Params {
  * Motif du litige.
  */
 'reason': string;
-'admin_email'?: string;
 }
 }
 

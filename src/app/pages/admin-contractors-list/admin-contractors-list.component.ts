@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -34,6 +34,7 @@ import {
 } from '../../services/admin-contractor.service';
 import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 
 const DEPARTMENTS: string[] = [
   ...Array.from({ length: 95 }, (_, i) => String(i + 1).padStart(2, '0')),
@@ -51,7 +52,6 @@ const DEPARTMENTS: string[] = [
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     MatButtonModule,
     MatCardModule,
     MatChipsModule,
@@ -68,6 +68,7 @@ const DEPARTMENTS: string[] = [
     MatTooltipModule,
     MatDialogModule,
     PhoneDisplayPipe,
+    AdminBackButtonComponent,
   ],
   templateUrl: './admin-contractors-list.component.html',
   styleUrl: './admin-contractors-list.component.scss',

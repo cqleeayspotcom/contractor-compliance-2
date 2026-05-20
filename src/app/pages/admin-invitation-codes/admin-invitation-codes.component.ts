@@ -28,6 +28,7 @@ import {
 import { GenerateCodeDialogComponent, GenerateCodeResult } from './generate-code-dialog.component';
 import { CodeDetailDialogComponent } from './code-detail-dialog.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
+import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
 
 type StatusFilter = 'all' | 'active' | 'expired' | 'revoked';
 
@@ -143,18 +144,24 @@ export class AdminInvitationCodesComponent implements OnInit {
   revoke(row: InvitationCodeRow, ev: Event): void {
     ev.stopPropagation();
     if (row.revoked_at) return;
-    if (!confirm(`Révoquer le code ${row.code} ? Les contractors déjà inscrits via ce code restent actifs ; seul le code lui-même devient inutilisable.`)) {
-      return;
-    }
-    this.api.revoke(row.uuid).subscribe({
-      next: () => {
-        this.snack.open('Code révoqué.', 'OK', { duration: 3000 });
-        this.refresh();
-      },
-      error: (err) => {
-        const msg = err?.error?.error?.message ?? 'Échec de la révocation.';
-        this.snack.open(msg, 'OK', { duration: 5000 });
-      },
+    ConfirmationDialogComponent.open(this.dialog, {
+      title: `Révoquer le code ${row.code} ?`,
+      message:
+        'Les contractors déjà inscrits via ce code restent actifs ; seul le code lui-même devient inutilisable.',
+      confirmText: 'Révoquer',
+      type: 'warning',
+    }).subscribe((ok) => {
+      if (!ok) return;
+      this.api.revoke(row.uuid).subscribe({
+        next: () => {
+          this.snack.open('Code révoqué.', 'OK', { duration: 3000 });
+          this.refresh();
+        },
+        error: (err) => {
+          const msg = err?.error?.error?.message ?? 'Échec de la révocation.';
+          this.snack.open(msg, 'OK', { duration: 5000 });
+        },
+      });
     });
   }
 

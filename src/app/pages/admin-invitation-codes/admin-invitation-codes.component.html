@@ -1,9 +1,11 @@
 <section class="invitation-page">
-  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
   <header class="invitation-page__header">
-    <div>
-      <h1>Codes d'invitation contractor</h1>
-      <p>Génère un code d'inscription et suis qui s'est inscrit avec.</p>
+    <div class="invitation-page__title">
+      <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+      <div>
+        <h1>Codes d'invitation contractor</h1>
+        <p>Génère un code d'inscription et suis qui s'est inscrit avec.</p>
+      </div>
     </div>
     <button mat-flat-button color="primary" type="button" (click)="openGenerate()">
       <mat-icon>add_circle</mat-icon>

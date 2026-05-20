@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 
 import { Api } from '../../api/api';
@@ -138,7 +138,6 @@ export function statusColor(status: string): string {
   imports: [
     CommonModule,
     FormsModule,
-    RouterLink,
     AdminBackButtonComponent,
     MatButtonModule,
     MatCardModule,

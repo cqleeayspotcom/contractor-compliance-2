@@ -2347,20 +2347,6 @@ paths:
       summary: Transition `ready_to_pay` → `payment_in_progress` (idempotente).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                admin_email:
-                  type: string
-                  format: email
-                  description: |
-                    Identité de l'admin actant la transition (fallback :
-                    identité OAuth2 du bearer). Tracé dans la timeline
-                    + audit log.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/mark-paid:
@@ -2376,14 +2362,11 @@ paths:
           application/json:
             schema:
               type: object
-              required: [payment_ref, admin_email]
+              required: [payment_ref]
               properties:
                 payment_ref:
                   type: string
                   description: Référence virement bancaire (obligatoire, masquée en logs).
-                admin_email:
-                  type: string
-                  format: email
                 paid_at:
                   type: string
                   format: date-time
@@ -2413,10 +2396,6 @@ paths:
                   type: string
                   minLength: 10
                   description: Motif de la réouverture (≥10 caractères, archivé dans `reopen_reason`).
-                admin_email:
-                  type: string
-                  format: email
-                  description: Fallback identité OAuth2 si absent.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/resolve-dispute:
@@ -2437,9 +2416,6 @@ paths:
                 reason:
                   type: string
                   description: Motif du litige.
-                admin_email:
-                  type: string
-                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/force-resend-webhook:
@@ -2490,9 +2466,6 @@ paths:
                 note:
                   type: string
                   description: Alias historique de `content`.
-                admin_email:
-                  type: string
-                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/validate:
@@ -2510,14 +2483,15 @@ paths:
           application/json:
             schema:
               type: object
-              required: [decision, admin_email]
+              required: [decision]
+              description: |
+                L'identité de l'admin n'est pas transmise dans le body : le
+                backend la résout via le Bearer OAuth2 et l'utilise pour
+                l'audit (id de l'admin loggué).
               properties:
                 decision:
                   type: string
                   enum: [approved, rejected]
-                admin_email:
-                  type: string
-                  format: email
                 reason_code:
                   type: string
                   description: Code de motif structuré (préférence sur `reason`).
@@ -2554,9 +2528,6 @@ paths:
               properties:
                 reason:
                   type: string
-                admin_email:
-                  type: string
-                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/expire:
@@ -2585,9 +2556,6 @@ paths:
                 reason:
                   type: string
                   description: Motif du rejet (obligatoire).
-                admin_email:
-                  type: string
-                  format: email
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/export:

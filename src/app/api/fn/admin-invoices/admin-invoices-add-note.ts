@@ -22,7 +22,6 @@ export interface AdminInvoicesAddNote$Params {
  * Alias historique de `content`.
  */
 'note'?: string;
-'admin_email'?: string;
 }
 }
 

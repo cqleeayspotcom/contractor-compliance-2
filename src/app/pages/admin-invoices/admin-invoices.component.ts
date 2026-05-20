@@ -263,7 +263,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   // Cheatsheet raccourcis
   readonly showShortcuts = signal<boolean>(false);
 
-  readonly displayedColumns = ['number', 'mission_ref', 'amount', 'status', 'date', 'actions'];
+  // FIX 2026-05-20 — ajout colonne 'contractor' (nom société émettrice +
+  // tooltip SIREN). Demande audit Claude : "voir quelle société est associée
+  // à la facture à valider". La donnée vient de invoice.contractor_company_name
+  // exposé par AdminInvoiceController::serializeInvoice (lookup via fromCompanyId).
+  readonly displayedColumns = ['number', 'mission_ref', 'contractor', 'amount', 'status', 'date', 'actions'];
 
   // Dialog state (shared by the inline templates)
   dialogCtx: DialogContext = this.emptyDialogCtx();
@@ -685,57 +689,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         this.api.resolveDispute(inv.uuid, { resolution }, inv.updated_at ?? undefined).subscribe({
           next: () => this.afterAction('Litige résolu'),
           error: err => this.handleConflictOrFallback(err, 'resolve-dispute'),
-        });
-      },
-    );
-  }
-
-  openForceResendWebhook(inv: AdminInvoice): void {
-    this.openActionDialog(
-      {
-        title: 'Renvoyer un webhook',
-        body:
-          `Reset du flag webhook_*_sent_at correspondant et redispatch du webhook. ` +
-          `À utiliser si tuita.fr a manqué un webhook (panne, parsing).`,
-        confirmLabel: 'Renvoyer',
-        cancelLabel: 'Annuler',
-        danger: false,
-        fields: [
-          {
-            key: 'event_type',
-            label: 'Type d\'event',
-            type: 'select',
-            required: true,
-            value: 'paid',
-            options: [
-              { value: 'rejected', label: 'rejected' },
-              { value: 'ready_to_pay', label: 'ready_to_pay' },
-              { value: 'payment_in_progress', label: 'payment_in_progress' },
-              { value: 'paid', label: 'paid' },
-            ],
-          },
-          { key: 'reason', label: 'Raison', type: 'textarea', required: true, value: '' },
-          {
-            key: 'confirm_word',
-            label: 'Tape CONFIRMER (en majuscules) pour activer',
-            type: 'text',
-            required: true,
-            value: '',
-            hint: 'Confirmation pour cette action critique sans triple validation',
-          },
-        ],
-        invoice: inv,
-      },
-      ctx => {
-        const eventType = this.fieldValue(ctx, 'event_type') as
-          | 'rejected'
-          | 'ready_to_pay'
-          | 'payment_in_progress'
-          | 'paid';
-        const reason = this.fieldValue(ctx, 'reason').trim();
-        this.api.forceResendWebhook(inv.uuid, { event_type: eventType, reason }, inv.updated_at ?? undefined).subscribe({
-          next: () => this.afterAction('Webhook renvoyé'),
-          error: err => this.handleConflictOrFallback(err, 'force-resend-webhook'),
         });
       },
     );
@@ -1210,9 +1163,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   /**
    * Action admin local : valider/rejeter une facture depuis le back-office.
-   * Envoie POST /admin/invoices/{uuid}/validate avec `admin_email` dans le
-   * body (l'identité admin est lue depuis sessionStorage et passée côté
-   * controller pour l'audit, pas via header).
+   * Envoie POST /admin/invoices/{uuid}/validate. L'identité de l'admin est
+   * résolue côté backend via le Bearer OAuth2 et utilisée pour l'audit.
    */
   approveFromBackOffice(inv: AdminInvoice): void {
     void this.submitLocalValidation(inv, 'approved');
@@ -1222,85 +1174,23 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     void this.submitLocalValidation(inv, 'rejected');
   }
 
-  /**
-   * Vérifie que l'admin actor (email + nom) est configuré dans sessionStorage.
-   * Sinon ouvre 2 prompts pour le saisir et persiste. Renvoie [email, name] ou null.
-   */
-  private ensureAdminActorConfigured(): { email: string; name: string } | null {
-    let email = sessionStorage.getItem('tuita_admin_actor_email');
-    let name = sessionStorage.getItem('tuita_admin_actor_name');
-
-    if (!email) {
-      const input = window.prompt(
-        'Configurez votre adresse email admin Tuita (audit obligatoire).\n'
-        + 'Elle sera persistée dans cette session et envoyée dans le body admin_email lors des validations.',
-        '',
-      );
-      if (!input || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.trim())) {
-        this.snack.open('Adresse email invalide — validation annulée.', 'OK', { duration: 4000 });
-        return null;
-      }
-      email = input.trim();
-      sessionStorage.setItem('tuita_admin_actor_email', email);
-    }
-
-    if (!name) {
-      const input = window.prompt(
-        'Votre nom complet (visible côté contractor sur la timeline portail).',
-        '',
-      );
-      if (!input || input.trim().length < 2) {
-        this.snack.open('Nom invalide — validation annulée.', 'OK', { duration: 4000 });
-        return null;
-      }
-      name = input.trim();
-      sessionStorage.setItem('tuita_admin_actor_name', name);
-    }
-
-    return { email, name };
-  }
-
-  /** Permet à l'admin de changer son identité (bouton "Changer admin"). */
-  resetAdminActor(): void {
-    sessionStorage.removeItem('tuita_admin_actor_email');
-    sessionStorage.removeItem('tuita_admin_actor_name');
-    this.adminActorEmail.set(null);
-    this.adminActorName.set(null);
-    this.snack.open('Identité admin oubliée — vous serez invité à la ressaisir à la prochaine validation.', 'OK', { duration: 4000 });
-  }
-
-  /** Signals pour exposer l'état courant côté template. */
-  readonly adminActorEmail = signal<string | null>(sessionStorage.getItem('tuita_admin_actor_email'));
-  readonly adminActorName = signal<string | null>(sessionStorage.getItem('tuita_admin_actor_name'));
-
   private async submitLocalValidation(inv: AdminInvoice, status: 'approved' | 'rejected'): Promise<void> {
-    const actor = this.ensureAdminActorConfigured();
-    if (!actor) {
-      return;
-    }
-    const { email: actorEmail, name: actorName } = actor;
-    this.adminActorEmail.set(actorEmail);
-    this.adminActorName.set(actorName);
-    const comment = window.prompt(
-      status === 'approved'
-        ? 'Commentaire optionnel pour valider :'
-        : 'Raison du rejet (obligatoire, min 10 caractères) :',
-      '',
-    );
-    if (status === 'rejected' && (!comment || comment.trim().length < 10)) {
-      this.snack.open('Rejet annulé — raison trop courte.', 'OK', { duration: 4000 });
-      return;
-    }
-    // `adminInvoicesValidate` expose un body typé `{ decision, admin_email,
-    // reason?, reason_code?, correlation_id? }`. L'identité admin est portée
-    // par `admin_email` dans le body (lecture côté backend pour l'audit) ;
-    // `actorName` reste mémorisé localement pour l'UI uniquement.
+    // L'identité de l'admin est résolue côté backend via le Bearer OAuth2 :
+    // rien à transmettre dans le body. Pour un rejet, on envoie une raison
+    // technique générique en attendant un dialog Material dédié.
+    // TODO 2026-05-20 : remplacer par un dialog Material pour la saisie du
+    // motif de rejet (UX, validation min length, multi-lignes, mat-error).
+    // Pour le moment, on n'utilise plus window.prompt() — un motif générique
+    // est envoyé pour les rejets jusqu'au dialog dédié.
+    const comment = status === 'rejected'
+      ? 'Rejet via back-office admin (motif détaillé à saisir via le futur dialog Material).'
+      : undefined;
+
     try {
       const body = await this.sdk.invoke(adminInvoicesValidate, {
         uuid: inv.uuid,
         body: {
           decision: status,
-          admin_email: actorEmail,
           reason: comment ?? undefined,
         },
       }) as { data?: { approvals_count?: number; approvals_required?: number; invoice_status?: string } };

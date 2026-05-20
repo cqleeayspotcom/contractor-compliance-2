@@ -1,5 +1,16 @@
-<app-header></app-header>
+<!-- Header : admin dédié sur /admin/**, header contractor partout ailleurs.
+     Voir feedback Moussa — le header admin ne doit PAS être celui du contractor. -->
+@if (isAdminRoute()) {
+  <app-admin-header></app-admin-header>
+} @else {
+  <app-header></app-header>
+}
+
 <main class="contractor-content">
   <router-outlet></router-outlet>
 </main>
-<app-footer></app-footer>
+
+<!-- Footer : uniquement côté contractor. L'espace admin n'a pas de footer. -->
+@if (!isAdminRoute()) {
+  <app-footer></app-footer>
+}

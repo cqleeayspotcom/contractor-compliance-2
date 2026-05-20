@@ -15,6 +15,12 @@
     font-size: 1.5rem;
     font-weight: 600;
   }
+
+  &__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 }
 
 .loading-wrapper {

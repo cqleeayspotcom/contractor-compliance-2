@@ -1,9 +1,9 @@
 <button
-  mat-stroked-button
+  mat-icon-button
   class="admin-back-btn"
   [routerLink]="to()"
-  [attr.aria-label]="'Retour vers ' + label()"
+  [matTooltip]="label()"
+  [attr.aria-label]="label()"
 >
   <mat-icon>arrow_back</mat-icon>
-  <span>{{ label() }}</span>
 </button>

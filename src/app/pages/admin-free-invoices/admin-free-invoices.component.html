@@ -1,7 +1,9 @@
 <div class="page-wrapper">
-  <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
   <header class="page-header">
-    <h1>Factures libres — Administration</h1>
+    <div class="page-header__title">
+      <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
+      <h1>Factures libres — Administration</h1>
+    </div>
     <button mat-stroked-button (click)="refresh()">
       <mat-icon>refresh</mat-icon> Actualiser
     </button>

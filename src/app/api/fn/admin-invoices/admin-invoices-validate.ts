@@ -13,7 +13,6 @@ export interface AdminInvoicesValidate$Params {
   uuid: string;
       body: {
 'decision': 'approved' | 'rejected';
-'admin_email': string;
 
 /**
  * Code de motif structuré (préférence sur `reason`).

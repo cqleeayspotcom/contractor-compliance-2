@@ -16,7 +16,6 @@ import { adminInvoicesMarkPaymentInProgress } from '../api/fn/admin-invoices/adm
 import { adminInvoicesMarkPaid } from '../api/fn/admin-invoices/admin-invoices-mark-paid';
 import { adminInvoicesReopen } from '../api/fn/admin-invoices/admin-invoices-reopen';
 import { adminInvoicesResolveDispute } from '../api/fn/admin-invoices/admin-invoices-resolve-dispute';
-import { adminInvoicesForceResendWebhook } from '../api/fn/admin-invoices/admin-invoices-force-resend-webhook';
 import { adminInvoicesAddNote } from '../api/fn/admin-invoices/admin-invoices-add-note';
 import { adminInvoicesValidate } from '../api/fn/admin-invoices/admin-invoices-validate';
 import { adminInvoicesReject } from '../api/fn/admin-invoices/admin-invoices-reject';
@@ -368,11 +367,6 @@ export interface ResolveDisputeBody {
   resolution: string;
 }
 
-export interface ForceResendWebhookBody {
-  event_type: 'rejected' | 'ready_to_pay' | 'payment_in_progress' | 'paid';
-  reason: string;
-}
-
 export interface AddNoteBody {
   content: string;
   category?: string;
@@ -384,7 +378,6 @@ export interface AddNoteBody {
  */
 export interface ValidateBody {
   decision: 'approved' | 'rejected';
-  admin_email: string;
   /** Code de motif structuré (préféré à `reason`). */
   reason_code?: string;
   /** Motif texte libre (fallback de `reason_code`). */
@@ -396,13 +389,11 @@ export interface ValidateBody {
 export interface RejectBody {
   /** Motif du rejet — obligatoire côté backend. */
   reason: string;
-  admin_email?: string;
 }
 
 export interface DisputeBody {
   /** Motif du litige — obligatoire côté backend. */
   reason: string;
-  admin_email?: string;
 }
 
 /**
@@ -490,22 +481,34 @@ export class AdminInvoiceService {
    * (cf. AdminInvoiceController::buildFilters, branche `is_array($status)`).
    */
   searchInvoices(filters: InvoiceSearchFilters): Observable<PaginatedInvoices> {
+    // FIX 2026-05-20 (audit Claude) : alignement noms params front ↔ backend.
+    // Le backend lit `min_amount`, `max_amount`, `missing_approvals`,
+    // `pending_since`, `blocked`. Le service envoyait historiquement
+    // `amount_min`, `amount_max`, `missing_validations`, `stale_days`. Tous
+    // ces params étaient SILENCIEUSEMENT IGNORÉS par le backend (pas de 422
+    // ni log), si bien que la search bar, les chips ≥3j/7j/14j, les sliders
+    // €, la checkbox Bloquées et les chips Approbations 0/3 1/3 2/3 ne
+    // filtraient rien. On accepte les deux noms côté interface (rétrocompat)
+    // mais on n'envoie au backend que les noms qu'il comprend.
     const params = {
       q: filters.q || undefined,
       'status[]': filters.status?.length ? filters.status : undefined,
       contractor_phone: filters.contractor_phone || undefined,
       contractor_siren: filters.contractor_siren || undefined,
       mission_ref: filters.mission_ref || undefined,
-      amount_min: filters.amount_min,
-      amount_max: filters.amount_max,
+      // accepte les deux variantes côté interface ; émet vers le backend les
+      // noms qu'il reconnaît.
+      min_amount: (filters as any).min_amount ?? filters.amount_min,
+      max_amount: (filters as any).max_amount ?? filters.amount_max,
       date_from: filters.date_from || undefined,
       date_to: filters.date_to || undefined,
       validator_missing: filters.validator_missing,
-      missing_validations: filters.missing_validations,
-      stale_days: filters.stale_days,
+      missing_approvals: (filters as any).missing_approvals ?? filters.missing_validations,
+      pending_since: (filters as any).pending_since ?? filters.stale_days,
       plan: filters.plan,
       paid_disputed: filters.paid_disputed,
       stuck: filters.stuck,
+      blocked: (filters as any).blocked,
       sort: filters.sort || undefined,
       direction: filters.direction,
       page: filters.page,
@@ -515,28 +518,24 @@ export class AdminInvoiceService {
   }
 
   /**
-   * Actions admin via SDK typé : le backend ne lit pas de header d'audit, il
-   * lit l'identité actor depuis `body.admin_email` ou l'identité OAuth2 du
-   * Bearer. Le paramètre `_ifUnchangedSince` reste sur la signature pour ne
-   * pas casser les appelants existants ; il est volontairement ignoré.
+   * Actions admin via SDK typé : l'identité de l'admin est résolue côté
+   * backend via le Bearer OAuth2 (jamais transmise dans le body). Le
+   * paramètre `_ifUnchangedSince` reste sur la signature pour ne pas casser
+   * les appelants existants ; il est volontairement ignoré.
    */
-  markPaymentInProgress(uuid: string, body: MarkPaymentInProgressBody, _ifUnchangedSince?: string): Observable<unknown> {
-    // Body backend = { admin_email? }. La `payment_ref` n'est pas lue par
-    // markPaymentInProgressAction (transition pure) — on l'envoie quand
-    // même au cas où un audit la consomme.
+  markPaymentInProgress(uuid: string, _body?: MarkPaymentInProgressBody, _ifUnchangedSince?: string): Observable<unknown> {
+    // Transition pure côté backend : aucun body attendu.
     return from(this.api.invoke(adminInvoicesMarkPaymentInProgress, {
       uuid,
-      body: { admin_email: undefined, ...(body as unknown as Record<string, unknown>) },
     }) as Promise<unknown>);
   }
 
   markPaid(uuid: string, body: MarkPaidBody, _ifUnchangedSince?: string): Observable<unknown> {
-    // Le SDK type `MarkPaidBody` est compatible (payment_ref, paid_at,
-    // admin_email, fast_path) — `skip_in_progress` et `reason` du fast path
-    // partent en plus, le backend les ignore silencieusement.
+    // Body SDK = { payment_ref, paid_at?, fast_path? } — `skip_in_progress`
+    // et `reason` du fast path partent en plus, le backend les ignore.
     return from(this.api.invoke(adminInvoicesMarkPaid, {
       uuid,
-      body: body as unknown as { payment_ref: string; admin_email: string; paid_at?: string },
+      body: body as unknown as { payment_ref: string; paid_at?: string },
     }) as Promise<unknown>);
   }
 
@@ -553,18 +552,6 @@ export class AdminInvoiceService {
     return from(this.api.invoke(adminInvoicesResolveDispute, {
       uuid,
       body: { reason: body.resolution },
-    }) as Promise<unknown>);
-  }
-
-  /**
-   * Backend `forceResendWebhookAction` lit `body.event`. Le frontend gardait
-   * l'alias `event_type` historique : on remappe ici pour éviter de casser
-   * les appelants. `reason` est tracé par l'audit (backend best-effort).
-   */
-  forceResendWebhook(uuid: string, body: ForceResendWebhookBody, _ifUnchangedSince?: string): Observable<unknown> {
-    return from(this.api.invoke(adminInvoicesForceResendWebhook, {
-      uuid,
-      body: { event: body.event_type },
     }) as Promise<unknown>);
   }
 
@@ -637,3 +624,4 @@ export class AdminInvoiceService {
     );
   }
 }
+

@@ -1,0 +1,18 @@
+<!-- ⚠️ À FUSIONNER À LA FUSION FRONTEND ⚠️ -->
+<!-- Header propre à l'espace admin de la micro-app Contractor Compliance.    -->
+<!-- À la fusion dans le frontend tuita principal, le remplacer par le vrai   -->
+<!-- header back-office / admin de tuita.fr (voir admin-header.component.ts). -->
+<header class="admin-header">
+  <div class="admin-header__inner">
+    <!-- Logo (variante blanche — barre sombre) -->
+    <a routerLink="/admin" class="admin-header__logo" aria-label="Tuita Admin - Accueil">
+      <img src="/assets/logos/logo-tuita-white.svg" alt="Tuita" class="admin-header__logo-img" />
+    </a>
+
+    <!-- Badge identifiant clairement l'espace admin -->
+    <span class="admin-header__badge">
+      <mat-icon class="admin-header__badge-icon">admin_panel_settings</mat-icon>
+      Administration
+    </span>
+  </div>
+</header>
