@@ -15,13 +15,17 @@ import { MatCardModule } from '@angular/material/card';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTableModule } from '@angular/material/table';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { Api } from '../../api/api';
 import { adminDashboardOverview } from '../../api/fn/admin/admin-dashboard-overview';
 import { adminComplianceStats } from '../../api/fn/admin/admin-compliance-stats';
 import { adminSignupAttemptsList } from '../../api/fn/admin/admin-signup-attempts-list';
+import { adminDashboardOutreach } from '../../api/fn/admin/admin-dashboard-outreach';
 import { adminHealth } from '../../api/fn/admin-supervision/admin-health';
+
+import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
 
 // ---------------------------------------------------------------------------
 // Types — shapes attendues dans `data` côté backend (cf. AdminDashboardController,
@@ -108,6 +112,49 @@ interface SignupAttemptRow {
   created_at: string;
 }
 
+// Champs exposés par AdminOutreachController::outreachAction (PHP) —
+// cf. ContractorOutreachReportService::buildReport().
+interface TopInvitationCodeRow {
+  code: string;
+  generated_by_label: string | null;
+  generated_by_admin_id: number | null;
+  uses_count: number;
+  max_uses: number | null;
+  status: 'active' | 'revoked' | 'expired' | 'exhausted';
+}
+
+interface QcmBlockedRow {
+  user_id: string;
+  name: string | null;
+  phone: string | null;
+  attempts: number;
+  last_score: number | null;
+  last_attempt_at: string | null;
+}
+
+interface QcmCertifiedRow {
+  user_id: string;
+  name: string | null;
+  phone: string | null;
+  attempts_to_pass: number;
+  certified_at: string | null;
+  last_score: number | null;
+}
+
+interface LastSignup {
+  name: string | null;
+  phone: string | null;
+  created_at: string;
+  code_input: string | null;
+}
+
+interface OutreachData {
+  top_invitation_codes: TopInvitationCodeRow[];
+  qcm_blocked: QcmBlockedRow[];
+  qcm_certified: QcmCertifiedRow[];
+  last_signup: LastSignup | null;
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -123,6 +170,7 @@ interface SignupAttemptRow {
     MatIconModule,
     MatProgressBarModule,
     MatTableModule,
+    MatDialogModule,
   ],
   templateUrl: './contractor-admin.component.html',
   styleUrl: './contractor-admin.component.scss',
@@ -132,6 +180,7 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
   private readonly api = inject(Api);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly dialog = inject(MatDialog);
 
   // POURQUOI un timer plutôt qu'un polling RxJS : le composant n'est monté
   // que sur /admin (root du back-office), refresh 30s suffisant pour des KPIs
@@ -158,6 +207,10 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
   readonly overview = signal<DashboardOverview | null>(null);
   readonly signupAttempts = signal<SignupAttemptRow[]>([]);
   readonly infraCollapsed = signal<boolean>(true);
+  readonly topInvitationCodes = signal<TopInvitationCodeRow[]>([]);
+  readonly qcmBlocked = signal<QcmBlockedRow[]>([]);
+  readonly qcmCertified = signal<QcmCertifiedRow[]>([]);
+  readonly lastSignup = signal<LastSignup | null>(null);
 
   // ---------------------------------------------------------------------------
   // Computed
@@ -174,6 +227,9 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
   });
 
   readonly signupAttemptColumns = ['created_at', 'phone', 'name', 'status', 'reason'];
+  readonly topCodeColumns = ['code', 'generated_by', 'uses', 'status'];
+  readonly qcmBlockedColumns = ['name', 'phone', 'attempts', 'last_score', 'actions'];
+  readonly qcmCertifiedColumns = ['name', 'phone', 'attempts_to_pass', 'certified_at', 'actions'];
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -231,6 +287,7 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
       this.loadHealth(),
       this.loadComplianceStats(),
       this.loadSignupAttempts(),
+      this.loadOutreach(),
     ]).then(() => this.isLoading.set(false));
   }
 
@@ -334,6 +391,23 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     } catch (err) {
       this.signupAttempts.set([]);
       this.handleError(err, 'signup-attempts');
+    }
+  }
+
+  private async loadOutreach(): Promise<void> {
+    try {
+      const res = await this.api.invoke(adminDashboardOutreach);
+      const data = (res as { data?: OutreachData })?.data;
+      this.topInvitationCodes.set(data?.top_invitation_codes ?? []);
+      this.qcmBlocked.set(data?.qcm_blocked ?? []);
+      this.qcmCertified.set(data?.qcm_certified ?? []);
+      this.lastSignup.set(data?.last_signup ?? null);
+    } catch (err) {
+      this.topInvitationCodes.set([]);
+      this.qcmBlocked.set([]);
+      this.qcmCertified.set([]);
+      this.lastSignup.set(null);
+      this.handleError(err, 'outreach');
     }
   }
 
@@ -512,5 +586,43 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     if (status === 'success') return 'ok';
     if (status === 'internal_error') return 'error';
     return 'warn';
+  }
+
+  /**
+   * Ouvre la fiche contractor (modal existant) à partir de son téléphone.
+   * Le modal AdminContractorComponent est piloté par téléphone — même
+   * contrat que admin-contractors-list.component.ts.
+   */
+  openContractorModal(phone: string | null): void {
+    if (!phone) {
+      return;
+    }
+    this.dialog.open(AdminContractorComponent, {
+      data: { phone },
+      width: '95vw',
+      maxWidth: '1400px',
+      maxHeight: '95vh',
+      panelClass: 'admin-contractor-dialog',
+      autoFocus: false,
+    });
+  }
+
+  /** Libellé FR du statut d'un code d'invitation. */
+  codeStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      active: 'Actif',
+      revoked: 'Révoqué',
+      expired: 'Expiré',
+      exhausted: 'Épuisé',
+    };
+    return labels[status] ?? status;
+  }
+
+  trackByCode(_index: number, item: TopInvitationCodeRow): string {
+    return item.code;
+  }
+
+  trackByUserId(_index: number, item: { user_id: string }): string {
+    return item.user_id;
   }
 }

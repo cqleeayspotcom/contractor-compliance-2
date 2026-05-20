@@ -1122,3 +1122,62 @@
     color: #991b1b;
   }
 }
+
+// --- Widgets « À contacter » ---------------------------------------------
+
+.cadmin__widget-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+
+  &--warn { color: #DC2626; }
+  &--ok   { color: #04A777; }
+}
+
+// QCM bloqués / certifiés côte à côte ; repliement en colonne sur petit écran.
+.cadmin__widget-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.outreach-table {
+  width: 100%;
+
+  a {
+    color: #699CBE;
+    text-decoration: none;
+    font-weight: 600;
+
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.cadmin__last-signup-body {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cadmin__last-signup-name { font-weight: 600; }
+
+.cadmin__last-signup-phone {
+  color: #699CBE;
+  text-decoration: none;
+  font-weight: 600;
+
+  &:hover { text-decoration: underline; }
+}
+
+.cadmin__last-signup-meta {
+  color: #6B7280;
+  font-size: 0.875rem;
+}

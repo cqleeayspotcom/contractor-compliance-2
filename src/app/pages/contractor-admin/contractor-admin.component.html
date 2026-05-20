@@ -243,6 +243,180 @@
   </section>
 
   <!-- ================================================================ -->
+  <!-- 2bis. À CONTACTER — widgets actionnables                         -->
+  <!-- Listes pour qu'un employé Tuita appelle / ouvre la fiche d'un    -->
+  <!-- contractor pertinent (codes invitation, QCM bloqués/certifiés).  -->
+  <!-- ================================================================ -->
+
+  <section class="cadmin__section">
+    <h2 class="cadmin__section-title">
+      <mat-icon>support_agent</mat-icon>
+      À contacter
+    </h2>
+
+    <!-- Top codes d'invitation -->
+    <div class="cadmin__card">
+      <h3 class="cadmin__widget-title">
+        <mat-icon>confirmation_number</mat-icon>
+        Top codes d'invitation
+      </h3>
+      @if (topInvitationCodes().length > 0) {
+        <table mat-table [dataSource]="topInvitationCodes()" [trackBy]="trackByCode" class="outreach-table">
+          <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef>Code</th>
+            <td mat-cell *matCellDef="let row"><strong>{{ row.code }}</strong></td>
+          </ng-container>
+          <ng-container matColumnDef="generated_by">
+            <th mat-header-cell *matHeaderCellDef>Généré par</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.generated_by_label || ('Admin #' + (row.generated_by_admin_id || '?')) }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="uses">
+            <th mat-header-cell *matHeaderCellDef>Utilisations</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.uses_count }}{{ row.max_uses ? ' / ' + row.max_uses : '' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Statut</th>
+            <td mat-cell *matCellDef="let row">{{ codeStatusLabel(row.status) }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="topCodeColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: topCodeColumns;"></tr>
+        </table>
+      } @else if (!isLoading()) {
+        <div class="cadmin__empty cadmin__empty--inline">
+          <mat-icon>inbox</mat-icon>
+          <span>Aucun code d'invitation utilisé</span>
+        </div>
+      }
+    </div>
+
+    <!-- QCM bloqués / certifiés — côte à côte -->
+    <div class="cadmin__widget-grid">
+      <div class="cadmin__card">
+        <h3 class="cadmin__widget-title cadmin__widget-title--warn">
+          <mat-icon>report</mat-icon>
+          QCM — Bloqués
+        </h3>
+        @if (qcmBlocked().length > 0) {
+          <table mat-table [dataSource]="qcmBlocked()" [trackBy]="trackByUserId" class="outreach-table">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let row">{{ row.name || '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="phone">
+              <th mat-header-cell *matHeaderCellDef>Téléphone</th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.phone) {
+                  <a [href]="'tel:' + row.phone">{{ row.phone }}</a>
+                } @else { — }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="attempts">
+              <th mat-header-cell *matHeaderCellDef>Tentatives</th>
+              <td mat-cell *matCellDef="let row">{{ row.attempts }}</td>
+            </ng-container>
+            <ng-container matColumnDef="last_score">
+              <th mat-header-cell *matHeaderCellDef>Dernier score</th>
+              <td mat-cell *matCellDef="let row">{{ row.last_score ?? '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                <button mat-icon-button [disabled]="!row.phone"
+                        (click)="openContractorModal(row.phone)" title="Ouvrir la fiche">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="qcmBlockedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: qcmBlockedColumns;"></tr>
+          </table>
+        } @else if (!isLoading()) {
+          <div class="cadmin__empty cadmin__empty--inline">
+            <mat-icon>check_circle</mat-icon>
+            <span>Aucun contractor bloqué</span>
+          </div>
+        }
+      </div>
+
+      <div class="cadmin__card">
+        <h3 class="cadmin__widget-title cadmin__widget-title--ok">
+          <mat-icon>verified</mat-icon>
+          QCM — Certifiés
+        </h3>
+        @if (qcmCertified().length > 0) {
+          <table mat-table [dataSource]="qcmCertified()" [trackBy]="trackByUserId" class="outreach-table">
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Nom</th>
+              <td mat-cell *matCellDef="let row">{{ row.name || '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="phone">
+              <th mat-header-cell *matHeaderCellDef>Téléphone</th>
+              <td mat-cell *matCellDef="let row">
+                @if (row.phone) {
+                  <a [href]="'tel:' + row.phone">{{ row.phone }}</a>
+                } @else { — }
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="attempts_to_pass">
+              <th mat-header-cell *matHeaderCellDef>Tentatives</th>
+              <td mat-cell *matCellDef="let row">{{ row.attempts_to_pass }}</td>
+            </ng-container>
+            <ng-container matColumnDef="certified_at">
+              <th mat-header-cell *matHeaderCellDef>Certifié le</th>
+              <td mat-cell *matCellDef="let row">{{ row.certified_at | date:'short' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                <button mat-icon-button [disabled]="!row.phone"
+                        (click)="openContractorModal(row.phone)" title="Ouvrir la fiche">
+                  <mat-icon>open_in_new</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="qcmCertifiedColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: qcmCertifiedColumns;"></tr>
+          </table>
+        } @else if (!isLoading()) {
+          <div class="cadmin__empty cadmin__empty--inline">
+            <mat-icon>inbox</mat-icon>
+            <span>Aucun contractor certifié</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Dernier inscrit -->
+    @if (lastSignup(); as last) {
+      <div class="cadmin__card cadmin__last-signup">
+        <h3 class="cadmin__widget-title">
+          <mat-icon>person_add</mat-icon>
+          Dernier inscrit
+        </h3>
+        <div class="cadmin__last-signup-body">
+          <span class="cadmin__last-signup-name">{{ last.name || '—' }}</span>
+          @if (last.phone) {
+            <a class="cadmin__last-signup-phone" [href]="'tel:' + last.phone">{{ last.phone }}</a>
+          }
+          <span class="cadmin__last-signup-meta">
+            {{ last.created_at | date:'short' }}
+            @if (last.code_input) { · code {{ last.code_input }} }
+          </span>
+          <button mat-stroked-button [disabled]="!last.phone"
+                  (click)="openContractorModal(last.phone)">
+            <mat-icon>open_in_new</mat-icon>
+            Ouvrir la fiche
+          </button>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- ================================================================ -->
   <!-- 3. INFRASTRUCTURE (repliable) — santé services                   -->
   <!-- ================================================================ -->
 
@@ -274,7 +448,7 @@
                 {{ healthIcon(svc.status) }}
               </mat-icon>
               <span class="health-card__status" [style.color]="healthColor(svc.status)">
-                {{ svc.status === 'healthy' ? 'OK' : svc.status === 'degraded' ? 'Dégradé' : 'Hors ligne' }}
+                {{ svc.status === 'healthy' ? 'OK' : svc.status === 'degraded' ? 'Dégradé' : svc.status === 'unknown' ? 'Non testé' : 'Hors ligne' }}
               </span>
             </div>
             <div class="health-card__latency">
