@@ -324,3 +324,60 @@
     }
   }
 }
+
+// Justificatifs joints à la demande — liste compacte de liens téléchargeables.
+.card-justifs {
+  margin-top: $t-gap-12;
+
+  &__label {
+    display: block;
+    font-size: $t-body-3;
+    font-weight: 600;
+    color: $t-color-light;
+    margin-bottom: $t-gap-4;
+  }
+
+  &__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $t-gap-8;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: $t-gap-4;
+    max-width: 220px;
+    padding: $t-gap-4 $t-gap-8;
+    border: 1px solid rgba($t-text-black, 0.12);
+    border-radius: $t-card-border-radius;
+    background: $t-back-grey-light;
+    color: $t-color;
+    text-decoration: none;
+    font-size: $t-body-3;
+    transition: border-color 120ms ease, background-color 120ms ease;
+
+    &:hover {
+      border-color: $t-logo-blue;
+      background: $t-back-grey-medium;
+    }
+
+    mat-icon {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      font-size: 16px;
+      line-height: 16px;
+      color: $t-logo-blue;
+    }
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}

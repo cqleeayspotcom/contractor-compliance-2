@@ -59,6 +59,27 @@
             }
           </dl>
 
+          @if (r.justificatifs.length > 0) {
+            <div class="card-justifs">
+              <span class="card-justifs__label">Justificatifs ({{ r.justificatifs.length }})</span>
+              <ul class="card-justifs__list">
+                @for (j of r.justificatifs; track j.uuid) {
+                  <li>
+                    <a
+                      [href]="justificatifUrl(r.uuid, j.uuid)"
+                      target="_blank"
+                      rel="noopener"
+                      class="card-justifs__link"
+                    >
+                      <mat-icon>description</mat-icon>
+                      <span>{{ j.original_name }}</span>
+                    </a>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
+
           @if (r.status === 'approved') {
             <p class="next-step">
               Émettez maintenant votre facture officielle de

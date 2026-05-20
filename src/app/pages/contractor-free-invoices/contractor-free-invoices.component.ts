@@ -86,6 +86,11 @@ export class ContractorFreeInvoicesComponent implements OnInit {
     });
   }
 
+  /** URL de téléchargement d'un justificatif joint à la demande. */
+  justificatifUrl(requestUuid: string, justificatifUuid: string): string {
+    return this.svc.justificatifUrl(requestUuid, justificatifUuid);
+  }
+
   statusLabel(s: string): string {
     return ({
       pending_approval: 'En attente d\'approbation',

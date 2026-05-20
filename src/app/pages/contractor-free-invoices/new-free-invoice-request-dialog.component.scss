@@ -93,17 +93,21 @@ mat-form-field {
   }
 }
 
-.files {
+.justificatifs {
   margin-top: $t-gap-20;
 
   &__title {
     display: flex;
     flex-direction: column;
     gap: $t-gap-2;
-    margin: 0 0 $t-gap-12;
+    margin: 0 0 $t-gap-4;
     font-size: $t-body-1;
     font-weight: 600;
     color: $t-color;
+  }
+
+  &__req {
+    color: $t-error-color;
   }
 
   &__hint {
@@ -112,32 +116,70 @@ mat-form-field {
     color: $t-color-light;
   }
 
-  &__list {
-    list-style: none;
-    padding: 0;
-    margin: $t-gap-12 0 0;
-    display: flex;
-    flex-direction: column;
-    gap: $t-gap-8;
+  &__help {
+    margin: 0 0 $t-gap-12;
+    font-size: $t-body-3;
+    color: $t-color-light;
+  }
+}
+
+.justif-actions {
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-12;
+}
+
+.justif-photo-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $t-gap-8;
+  padding: $t-gap-12 $t-gap-16;
+  border-radius: $t-card-border-radius;
+  background: $t-logo-blue;
+  color: #fff;
+  font-family: $t-default-font;
+  font-size: $t-body-1;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 120ms ease;
+
+  &:hover {
+    filter: brightness(0.94);
   }
 
-  &__item {
-    display: flex;
-    align-items: center;
-    gap: $t-gap-12;
-    padding: $t-gap-10 $t-gap-12;
-    border: 1px solid rgba($t-text-black, 0.1);
-    border-radius: $t-card-border-radius;
-    background: $t-back-grey-light;
-    transition: border-color 120ms ease, background-color 120ms ease;
-
-    &:hover {
-      border-color: rgba($t-text-black, 0.18);
-      background: $t-back-grey-medium;
-    }
+  &:focus-within {
+    outline: 2px solid rgba($t-logo-blue, 0.4);
+    outline-offset: 2px;
   }
 
-  &__item-icon {
+  mat-icon {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+    line-height: 20px;
+  }
+}
+
+.justif-list {
+  list-style: none;
+  padding: 0;
+  margin: $t-gap-12 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: $t-gap-8;
+}
+
+.justif-item {
+  display: flex;
+  align-items: center;
+  gap: $t-gap-12;
+  padding: $t-gap-10 $t-gap-12;
+  border: 1px solid rgba($t-text-black, 0.1);
+  border-radius: $t-card-border-radius;
+  background: $t-back-grey-light;
+
+  &__icon {
     flex: 0 0 auto;
     width: 32px;
     height: 32px;
@@ -157,7 +199,7 @@ mat-form-field {
     }
   }
 
-  &__item-info {
+  &__info {
     flex: 1 1 auto;
     min-width: 0;
     display: flex;
@@ -165,7 +207,7 @@ mat-form-field {
     gap: 2px;
   }
 
-  &__item-name {
+  &__name {
     font-size: $t-body-2;
     font-weight: 500;
     color: $t-color;
@@ -174,12 +216,12 @@ mat-form-field {
     white-space: nowrap;
   }
 
-  &__item-size {
+  &__size {
     font-size: $t-body-3;
     color: $t-color-light;
   }
 
-  &__item-remove {
+  &__remove {
     flex: 0 0 auto;
     color: $t-color-light;
 
@@ -187,6 +229,13 @@ mat-form-field {
       color: $t-error-color;
     }
   }
+}
+
+.justif-empty {
+  margin: $t-gap-12 0 0;
+  font-size: $t-body-3;
+  color: $t-color-extra-light;
+  font-style: italic;
 }
 
 .dropzone {
@@ -217,21 +266,6 @@ mat-form-field {
     border-color: $t-logo-blue;
     background: rgba($t-logo-blue, 0.06);
     transform: scale(1.01);
-  }
-
-  &--filled {
-    padding: $t-gap-16 $t-gap-12;
-
-    .dropzone__icon {
-      width: 28px;
-      height: 28px;
-      font-size: 28px;
-      line-height: 28px;
-    }
-
-    .dropzone__title {
-      font-size: $t-body-2;
-    }
   }
 
   &__icon {

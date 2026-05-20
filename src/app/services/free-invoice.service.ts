@@ -29,6 +29,18 @@ export type FreeInvoiceStatus =
   | 'paid';
 
 /**
+ * Justificatif (pièce d'appui) joint par le contractor à une demande de
+ * facture libre — ticket, photo de chantier, devis. À ne pas confondre avec
+ * la facture PDF uploadée après approbation.
+ */
+export interface FreeInvoiceJustificatif {
+  uuid: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+}
+
+/**
  * Demande de facture libre — reflète EXACTEMENT le payload backend
  * `FreeInvoiceService::serialize()` (liste + détail, contractor comme admin).
  *
@@ -55,6 +67,7 @@ export interface FreeInvoiceRequestSummary {
   cancelled_at: string | null;
   expires_at: string | null;
   attachments_count: number;
+  justificatifs: FreeInvoiceJustificatif[];
   pdf_path: string | null;
   created_at: string;
 }
@@ -110,18 +123,35 @@ export class FreeInvoiceService {
   }
 
   /**
-   * Crée une demande de facture libre. Corps JSON — le backend
-   * `createRequest()` n'accepte aucun fichier à cette étape : le PDF de la
-   * facture s'uploade APRÈS l'approbation Tuita via `upload()`. Montant
-   * attendu en centimes (le dialog convertit les euros saisis).
+   * Crée une demande de facture libre — multipart/form-data : champs texte
+   * + justificatifs (≥ 1 obligatoire). On passe par `HttpClient` direct (pas
+   * le SDK) car c'est un upload de fichiers, exactement comme `upload()`
+   * ci-dessous. Montant attendu en centimes (le dialog convertit les euros).
    */
   create(body: {
     client_name: string;
     description: string;
     amount_ttc_cents: number;
     mission_refs?: string[];
+    justificatifs: File[];
   }): Observable<{ data: FreeInvoiceCreateResult }> {
-    return from(this.api.invoke(invoicesFreeRequest, { body }) as Promise<{ data: FreeInvoiceCreateResult }>);
+    const fd = new FormData();
+    fd.append('client_name', body.client_name);
+    fd.append('description', body.description);
+    fd.append('amount_ttc_cents', String(body.amount_ttc_cents));
+    (body.mission_refs ?? []).forEach((ref) => fd.append('mission_refs[]', ref));
+    body.justificatifs.forEach((f) => fd.append('justificatifs[]', f, f.name));
+    const url = `${this.apiConfig.rootUrl}${invoicesFreeRequest.PATH}`;
+    return this.http.post<{ data: FreeInvoiceCreateResult }>(url, fd, { withCredentials: true });
+  }
+
+  /**
+   * URL de téléchargement d'un justificatif. Auth par cookie contractor —
+   * directement utilisable dans un `href` (le navigateur joint le cookie).
+   */
+  justificatifUrl(requestUuid: string, justificatifUuid: string): string {
+    return `${this.apiConfig.rootUrl}/contractor-compliance/invoices/free/`
+      + `${encodeURIComponent(requestUuid)}/justificatifs/${encodeURIComponent(justificatifUuid)}`;
   }
 
   getEligibleMissions(): Observable<EligibleMission[]> {
