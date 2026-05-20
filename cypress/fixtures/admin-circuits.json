@@ -1,9 +1,0 @@
-{
-  "data": [
-    { "service": "tuita_main", "state": "closed", "failure_count": 0, "opened_at": null },
-    { "service": "mistral", "state": "closed", "failure_count": 0, "opened_at": null },
-    { "service": "deepface", "state": "closed", "failure_count": 0, "opened_at": null },
-    { "service": "pappers", "state": "closed", "failure_count": 0, "opened_at": null },
-    { "service": "api_entreprise", "state": "closed", "failure_count": 0, "opened_at": null }
-  ]
-}

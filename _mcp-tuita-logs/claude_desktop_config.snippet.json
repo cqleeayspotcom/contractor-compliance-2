@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "tuita-logs": {
+      "command": "wsl.exe",
+      "args": [
+        "-d",
+        "Ubuntu",
+        "--exec",
+        "/home/msa/mcp-tuita-logs/.venv/bin/python",
+        "/home/msa/mcp-tuita-logs/server.py"
+      ]
+    }
+  }
+}

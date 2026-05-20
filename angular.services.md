@@ -454,7 +454,6 @@ All admin services target `/api/contractor/admin/*` endpoints and inject the `X-
 - `markPaid(uuid, paid_at, payment_ref, skip_in_progress?, reason?)` — strict D1, fast path with `skip_in_progress=true` requires `reason`
 - `reopen(uuid, reason)` — D2, clones a `REJECTED` invoice (max 2 per `mission_ref`)
 - `resolveDispute(uuid)` — D3, post-PAID dispute resolution
-- `forceResendWebhook(uuid, event_type, reason)` — resets `webhook_*_sent_at` flag and re-dispatches
 - `addNote(uuid, note)`, `getAuditTrail(uuid)` — chronological history
 
 ### AdminSettingsService

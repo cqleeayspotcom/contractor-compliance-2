@@ -1,0 +1,15 @@
+{
+  "_comment": "Serveur MCP 'tuita-logs' : donne a Claude un acces lecture aux logs du backend (containers Docker platform-backend) et du frontend (ng serve). Sert a recuperer automatiquement les OTP SMS et les erreurs serveur pendant un test E2E. Le script tourne dans WSL Ubuntu. Installation et mode d'emploi complets : _mcp-tuita-logs/README.md. Apres modification, recharger la fenetre VSCode pour que Claude Code recharge le MCP.",
+  "mcpServers": {
+    "tuita-logs": {
+      "command": "wsl.exe",
+      "args": [
+        "-d",
+        "Ubuntu",
+        "--exec",
+        "/home/msa/mcp-tuita-logs/.venv/bin/python",
+        "/home/msa/mcp-tuita-logs/server.py"
+      ]
+    }
+  }
+}
