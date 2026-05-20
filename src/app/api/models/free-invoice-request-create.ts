@@ -19,6 +19,11 @@ export interface FreeInvoiceRequestCreate {
   description: string;
 
   /**
+   * Justificatifs joints à la demande (PDF/JPG/PNG/WEBP, 20 Mo max chacun, 10 maximum). Au moins 1 obligatoire.
+   */
+  justificatifs: Array<Blob>;
+
+  /**
    * Références de missions Tuita associées (optionnel).
    */
   mission_refs?: Array<string>;

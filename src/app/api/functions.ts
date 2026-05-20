@@ -153,6 +153,8 @@ export type { AdminContractorsPurchaseDocument$Params as AdminContractorsPurchas
 export { adminContractorsPurchaseDocument as adminContractorsPurchaseDocument } from './fn/admin-contractors/admin-contractors-purchase-document';
 export type { AdminDashboardOverview$Params as AdminDashboardOverview$Params } from './fn/admin/admin-dashboard-overview';
 export { adminDashboardOverview as adminDashboardOverview } from './fn/admin/admin-dashboard-overview';
+export type { AdminDashboardOutreach$Params as AdminDashboardOutreach$Params } from './fn/admin/admin-dashboard-outreach';
+export { adminDashboardOutreach as adminDashboardOutreach } from './fn/admin/admin-dashboard-outreach';
 export type { AdminSignupAttemptsList$Params as AdminSignupAttemptsList$Params } from './fn/admin/admin-signup-attempts-list';
 export { adminSignupAttemptsList as adminSignupAttemptsList } from './fn/admin/admin-signup-attempts-list';
 export type { AdminMissionShow$Params as AdminMissionShow$Params } from './fn/admin/admin-mission-show';
