@@ -7,17 +7,14 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { FreeInvoiceRequestCreate } from '../../models/free-invoice-request-create';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
-export interface InvoicesFreeRequest$Params {
-      body: FreeInvoiceRequestCreate
+export interface ProfileShow$Params {
 }
 
-export function invoicesFreeRequest(http: HttpClient, rootUrl: string, params: InvoicesFreeRequest$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
-  const rb = new RequestBuilder(rootUrl, invoicesFreeRequest.PATH, 'post');
+export function profileShow(http: HttpClient, rootUrl: string, params?: ProfileShow$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+  const rb = new RequestBuilder(rootUrl, profileShow.PATH, 'get');
   if (params) {
-    rb.body(params.body, 'application/json');
   }
 
   return http.request(
@@ -30,4 +27,4 @@ export function invoicesFreeRequest(http: HttpClient, rootUrl: string, params: I
   );
 }
 
-invoicesFreeRequest.PATH = '/contractor-compliance/invoices/free/request';
+profileShow.PATH = '/contractor-compliance/profile';

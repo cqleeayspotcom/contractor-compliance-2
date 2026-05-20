@@ -69,12 +69,19 @@ export class FreeInvoiceService {
     return from(this.api.invoke(invoicesFreeGet, { uuid }) as Promise<{ data: FreeInvoiceRequestSummary }>);
   }
 
-  // upload progress: HttpClient direct, SDK ne gère pas (FormData multipart
-  // avec subject + requested_amount_ttc + mission_ref + pdf; le SDK ne typifie
-  // que `file?: Blob` côté body).
-  create(formData: FormData): Observable<{ data: FreeInvoiceRequestSummary }> {
-    const url = `${this.apiConfig.rootUrl}${invoicesFreeRequest.PATH}`;
-    return this.http.post<{ data: FreeInvoiceRequestSummary }>(url, formData, { withCredentials: true });
+  /**
+   * Crée une demande de facture libre. Corps JSON — le backend
+   * `createRequest()` n'accepte aucun fichier à cette étape : le PDF de la
+   * facture s'uploade APRÈS l'approbation Tuita via `upload()`. Montant
+   * attendu en centimes (le dialog convertit les euros saisis).
+   */
+  create(body: {
+    client_name: string;
+    description: string;
+    amount_ttc_cents: number;
+    mission_refs?: string[];
+  }): Observable<{ data: FreeInvoiceRequestSummary }> {
+    return from(this.api.invoke(invoicesFreeRequest, { body }) as Promise<{ data: FreeInvoiceRequestSummary }>);
   }
 
   getEligibleMissions(): Observable<EligibleMission[]> {

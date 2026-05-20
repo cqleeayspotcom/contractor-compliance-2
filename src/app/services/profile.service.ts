@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Api } from '../api/api';
-import { dashboardIndex } from '../api/fn/dashboard/dashboard-index';
+import { profileShow } from '../api/fn/profile/profile-show';
 import { profileLogout } from '../api/fn/profile/profile-logout';
 import { profileNotificationsUpdate } from '../api/fn/profile/profile-notifications-update';
 
@@ -36,40 +36,37 @@ export class ProfileService {
   private readonly api = inject(Api);
 
   /**
-   * R�cup�re le profil contractor (identit� + pr�f�rences notif email) en
-   * lisant le dashboard via le SDK g�n�r� : pas de route `/profile` s�par�e
-   * c�t� Tuita, le dashboard agr�ge d�j� ces deux blocs (�conomie d'un
-   * endpoint qui aurait dupliqu� les m�mes donn�es).
+   * Récupère le profil contractor (identité + préférences notif email) via le
+   * SDK généré `profileShow` → `GET /contractor-compliance/profile`.
+   *
+   * IMPORTANT (régression 2026-05-20) : ce service lisait auparavant le
+   * dashboard (`dashboardIndex`) en supposant qu'il agrégeait un bloc
+   * `notifications`. Or `ContractorDashboardController::indexAction` ne renvoie
+   * AUCUN bloc `notifications` — l'email de notification enregistré ne se
+   * réaffichait donc jamais après un rechargement de la page profil (il était
+   * pourtant bien persisté en base par le PATCH). Le backend expose désormais
+   * un endpoint dédié `GET /profile` (ContractorProfileController::showAction)
+   * qui agrège identity + notifications + bank_details : on lit celui-là.
    */
   async getProfile(): Promise<ContractorProfile> {
-    // Le dashboard backend renvoie le bloc `contractor` en camelCase :
-    //   { phone, firstName, lastName, companyName, siren }
-    // (cf. ContractorDashboardController::indexAction côté Laminas).
-    // L'interface frontend ProfileIdentity reste en snake_case par convention
-    // — on mappe ici. Avant ce mapping (avant 2026-05-18), c.first_name /
-    // c.company_name etaient toujours undefined -> le profil affichait "-"
-    // meme quand la session avait l'info.
-    const r = await this.api.invoke(dashboardIndex) as {
+    // `GET /profile` renvoie le bloc `identity` déjà en snake_case
+    // (cf. ContractorProfileController::buildIdentity) — pas de remapping
+    // camelCase → snake_case nécessaire, contrairement au dashboard.
+    const r = await this.api.invoke(profileShow) as {
       data?: {
-        contractor?: {
-          phone?: string | null;
-          firstName?: string | null;
-          lastName?: string | null;
-          companyName?: string | null;
-          siren?: string | null;
-        };
+        identity?: Partial<ProfileIdentity>;
         notifications?: Partial<NotificationPreferences>;
       };
     };
-    const c = r?.data?.contractor ?? {};
+    const i = r?.data?.identity ?? {};
     const n = r?.data?.notifications ?? {};
     return {
       identity: {
-        phone: c.phone ?? null,
-        first_name: c.firstName ?? null,
-        last_name: c.lastName ?? null,
-        company_name: c.companyName ?? null,
-        siren: c.siren ?? null,
+        phone: i.phone ?? null,
+        first_name: i.first_name ?? null,
+        last_name: i.last_name ?? null,
+        company_name: i.company_name ?? null,
+        siren: i.siren ?? null,
       },
       notifications: {
         email_address: n.email_address ?? null,
@@ -84,10 +81,15 @@ export class ProfileService {
   // (alignement Laravel 2026-05-19 : verbe PATCH désormais déclaré dans le
   // contrat OpenAPI, donc le SDK le couvre — plus besoin du HttpClient direct).
   async updateNotifications(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+    // La réponse backend (notificationsPreferencesAction::serializePreference)
+    // est l'objet préférences À PLAT sous `data` — { email_address, email_* } —
+    // et NON { data: { notifications: {...} } }. On lit donc `data` directement,
+    // sinon on retombait toujours sur le fallback `prefs` (le payload envoyé) et
+    // toute normalisation serveur (trim de l'email) était perdue.
     const r = await this.api.invoke(profileNotificationsUpdate, { body: prefs as any }) as {
-      data?: { notifications?: NotificationPreferences };
+      data?: NotificationPreferences;
     };
-    return r?.data?.notifications ?? (prefs as NotificationPreferences);
+    return r?.data ?? (prefs as NotificationPreferences);
   }
 
   async logout(): Promise<void> {

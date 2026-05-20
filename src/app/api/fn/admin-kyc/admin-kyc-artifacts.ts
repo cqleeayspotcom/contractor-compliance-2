@@ -7,17 +7,16 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { FreeInvoiceRequestCreate } from '../../models/free-invoice-request-create';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
-export interface InvoicesFreeRequest$Params {
-      body: FreeInvoiceRequestCreate
+export interface AdminKycArtifacts$Params {
+  uuid: string;
 }
 
-export function invoicesFreeRequest(http: HttpClient, rootUrl: string, params: InvoicesFreeRequest$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
-  const rb = new RequestBuilder(rootUrl, invoicesFreeRequest.PATH, 'post');
+export function adminKycArtifacts(http: HttpClient, rootUrl: string, params: AdminKycArtifacts$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+  const rb = new RequestBuilder(rootUrl, adminKycArtifacts.PATH, 'get');
   if (params) {
-    rb.body(params.body, 'application/json');
+    rb.path('uuid', params.uuid, {});
   }
 
   return http.request(
@@ -30,4 +29,4 @@ export function invoicesFreeRequest(http: HttpClient, rootUrl: string, params: I
   );
 }
 
-invoicesFreeRequest.PATH = '/contractor-compliance/invoices/free/request';
+adminKycArtifacts.PATH = '/contractor-compliance/admin/kyc/{uuid}/artifacts';

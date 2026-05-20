@@ -387,6 +387,27 @@ components:
           description: |
             Réponses du QCM indexées par numéro de question (1..24) → A/B/C.
             Complètes pour /complete, partielles autorisées pour /answers.
+    FreeInvoiceRequestCreate:
+      type: object
+      # Création d'une demande de facture libre. Corps JSON sans fichier : le
+      # backend createRequest() crée la demande ; le PDF de la facture s'uploade
+      # APRÈS approbation via /invoices/free/{uuid}/upload.
+      required: [client_name, description, amount_ttc_cents]
+      properties:
+        client_name:
+          type: string
+          description: Nom du client (personne/société) que le contractor facture.
+        description:
+          type: string
+          description: Description de la prestation facturée.
+        amount_ttc_cents:
+          type: integer
+          minimum: 1
+          description: Montant TTC en centimes (le front convertit les euros saisis).
+        mission_refs:
+          type: array
+          items: { type: string }
+          description: Références de missions Tuita associées (optionnel).
   parameters:
     Uuid:
       name: uuid
@@ -750,6 +771,20 @@ paths:
                 last_name: { type: string }
                 siren: { type: string }
                 company_name: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        default: { $ref: '#/components/responses/JsonError' }
+
+  # Ajout 2026-05-20 (P4.1) : profil contractor agrégé (identity + notifications
+  # + bank_details). cf. ContractorProfileController::showAction.
+  /contractor-compliance/profile:
+    get:
+      tags: [Profile]
+      operationId: profileShow
+      summary: |
+        Profil contractor agrégé : identity, notifications, bank_details.
+        cf. ContractorProfileController::showAction.
+      security: [{ contractorCookie: [] }]
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
         default: { $ref: '#/components/responses/JsonError' }
@@ -1314,7 +1349,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema: { $ref: '#/components/schemas/FreeInvoiceRequestCreate' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/invoices/free/{uuid}:
@@ -2028,6 +2063,22 @@ paths:
         Renvoie l'URL signée (TTL 1h) de la vidéo selfie KYC.
         Réponse JSON `{ session_uuid, video_url, available, reason? }` —
         cf. AdminKycController::artifactsViewAction (pas un flux binaire).
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/Uuid' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # Ajout 2026-05-20 (P4.3) : artefacts KYC en JSON structuré (video, best_frame,
+  # document, biometric_result + URLs signées TTL 15 min) — distinct de
+  # `artifacts/view` qui ne renvoie que l'URL vidéo. cf. AdminKycController::artifactsAction
+  /contractor-compliance/admin/kyc/{uuid}/artifacts:
+    get:
+      tags: [AdminKyc]
+      operationId: adminKycArtifacts
+      summary: |
+        Artefacts KYC structurés (video, best_frame, document, biometric_result),
+        URLs signées TTL 15 min. cf. AdminKycController::artifactsAction.
       security: [{ bearerAuth: [] }]
       parameters:
         - { $ref: '#/components/parameters/Uuid' }

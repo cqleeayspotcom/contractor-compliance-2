@@ -7,6 +7,8 @@ export type { InvitationCodesCheck$Params as InvitationCodesCheck$Params } from 
 export { invitationCodesCheck as invitationCodesCheck } from './fn/signup/invitation-codes-check';
 export type { SignupCreate$Params as SignupCreate$Params } from './fn/signup/signup-create';
 export { signupCreate as signupCreate } from './fn/signup/signup-create';
+export type { ProfileShow$Params as ProfileShow$Params } from './fn/profile/profile-show';
+export { profileShow as profileShow } from './fn/profile/profile-show';
 export type { ProfileLogout$Params as ProfileLogout$Params } from './fn/profile/profile-logout';
 export { profileLogout as profileLogout } from './fn/profile/profile-logout';
 export type { ProfileNotificationsGet$Params as ProfileNotificationsGet$Params } from './fn/profile/profile-notifications-get';
@@ -253,6 +255,8 @@ export type { AdminKycShow$Params as AdminKycShow$Params } from './fn/admin-kyc/
 export { adminKycShow as adminKycShow } from './fn/admin-kyc/admin-kyc-show';
 export type { AdminKycArtifactsView$Params as AdminKycArtifactsView$Params } from './fn/admin-kyc/admin-kyc-artifacts-view';
 export { adminKycArtifactsView as adminKycArtifactsView } from './fn/admin-kyc/admin-kyc-artifacts-view';
+export type { AdminKycArtifacts$Params as AdminKycArtifacts$Params } from './fn/admin-kyc/admin-kyc-artifacts';
+export { adminKycArtifacts as adminKycArtifacts } from './fn/admin-kyc/admin-kyc-artifacts';
 export type { AdminKycReplay$Params as AdminKycReplay$Params } from './fn/admin-kyc/admin-kyc-replay';
 export { adminKycReplay as adminKycReplay } from './fn/admin-kyc/admin-kyc-replay';
 export type { AdminKycForceApprove$Params as AdminKycForceApprove$Params } from './fn/admin-kyc/admin-kyc-force-approve';

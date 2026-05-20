@@ -11,6 +11,7 @@ export type { ContractorMissionListResponse } from './models/contractor-mission-
 export type { Empty } from './models/empty';
 export type { ErrorEnvelope } from './models/error-envelope';
 export type { ErrorResponse } from './models/error-response';
+export type { FreeInvoiceRequestCreate } from './models/free-invoice-request-create';
 export { InvoiceStatusFront } from './models/invoice-status-front';
 export type { JsonArray } from './models/json-array';
 export type { JsonObject } from './models/json-object';
