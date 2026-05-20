@@ -1,4 +1,4 @@
-import { ApplicationConfig, APP_INITIALIZER } from '@angular/core';
+import { ApplicationConfig, APP_INITIALIZER, LOCALE_ID } from '@angular/core';
 import {
   provideRouter,
   withComponentInputBinding
@@ -6,7 +6,14 @@ import {
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { MAT_SNACK_BAR_DEFAULT_OPTIONS } from '@angular/material/snack-bar';
+import { registerLocaleData } from '@angular/common';
+import localeFr from '@angular/common/locales/fr';
 import { firstValueFrom } from 'rxjs';
+
+// Sans ça, Angular utilise en-US par défaut : les pipes date/number/currency
+// affichent les dates au format américain (5/20/26, 9:16 AM). On enregistre
+// les données de la locale fr puis on force LOCALE_ID à 'fr-FR' (voir plus bas).
+registerLocaleData(localeFr);
 
 import { routes } from './app.routes';
 import { contractorCookieInterceptor } from './interceptors/contractor-cookie.interceptor';
@@ -90,6 +97,9 @@ export const appConfig: ApplicationConfig = {
     ),
 
     provideAnimations(),
+
+    // Toute l'app en français : dates → 20/05/2026 09:16, etc.
+    { provide: LOCALE_ID, useValue: 'fr-FR' },
 
     LoadingService,
     ContractorSessionService,
