@@ -14,6 +14,9 @@ import { documentsUpload } from '../api/fn/documents/documents-upload';
 import { documentsDownload } from '../api/fn/documents/documents-download';
 import { documentsPurchase } from '../api/fn/documents/documents-purchase';
 import { documentsGet } from '../api/fn/documents/documents-get';
+import { documentsPurchasable } from '../api/fn/documents/documents-purchasable';
+import { documentsPurchases } from '../api/fn/documents/documents-purchases';
+import { documentsPurchaseBundle } from '../api/fn/documents/documents-purchase-bundle';
 import { kycChallenge } from '../api/fn/kyc/kyc-challenge';
 import { kycVideo } from '../api/fn/kyc/kyc-video';
 import { kycStatus } from '../api/fn/kyc/kyc-status';
@@ -26,10 +29,14 @@ import { invoicesUpload } from '../api/fn/invoices/invoices-upload';
 import { invoicesPdf } from '../api/fn/invoices/invoices-pdf';
 import { invoicesShow } from '../api/fn/invoices/invoices-show';
 import { invoicesTimeline } from '../api/fn/invoices/invoices-timeline';
+import { invoicesReupload } from '../api/fn/invoices/invoices-reupload';
 import { certificationQcmStart } from '../api/fn/certification/certification-qcm-start';
 import { certificationQcmHeartbeat } from '../api/fn/certification/certification-qcm-heartbeat';
 import { certificationQcmSubmit } from '../api/fn/certification/certification-qcm-submit';
 import { certificationStatus } from '../api/fn/certification/certification-status';
+import { certificationComplete } from '../api/fn/certification/certification-complete';
+import { certificationHeartbeat } from '../api/fn/certification/certification-heartbeat';
+import { certificationAnswers } from '../api/fn/certification/certification-answers';
 import { missionsActive } from '../api/fn/missions/missions-active';
 import { missionsHistory } from '../api/fn/missions/missions-history';
 import { missionsShow } from '../api/fn/missions/missions-show';
@@ -390,6 +397,45 @@ export class ContractorApiService {
     return this.purchaseDocument('kbis', siren);
   }
 
+  /**
+   * Catalogue des documents achetables (KBIS, URSSAF, attestation fiscale,
+   * statuts, etc.) avec métadonnées prix + descriptions. Sert l'écran
+   * « Acheter un document » côté contractor.
+   */
+  getPurchasableDocuments(): Observable<any> {
+    return from(this.api.invoke(documentsPurchasable) as Promise<{ data: any }>).pipe(
+      map((res) => res.data),
+    );
+  }
+
+  /**
+   * Historique des achats de documents du contractor (lignes
+   * service_additional_payment scopées sur lui).
+   */
+  getDocumentPurchases(page = 1, perPage = 20): Observable<PaginatedResponse<any>> {
+    return documentsPurchases(this.http, this.rootUrl, { page, per_page: perPage }).pipe(
+      unwrapDataMeta<any[], PaginatedResponse<any>['meta']>(),
+      map(({ data, meta }) => ({
+        success: true,
+        data,
+        meta: meta ?? { current_page: page, total: data.length, per_page: perPage, last_page: 1 },
+      })),
+    );
+  }
+
+  /**
+   * Achat groupé (bundle) : un seul paiement Stripe couvre plusieurs documents
+   * Pappers en une transaction. Le backend retourne le client_secret de
+   * Stripe Embedded Checkout (idem `subscribe`).
+   */
+  purchaseDocumentBundle(documentTypes: string[], siren: string): Observable<any> {
+    return from(
+      this.api.invoke(documentsPurchaseBundle, {
+        body: { document_types: documentTypes, siren } as any,
+      }) as Promise<{ data: any }>,
+    ).pipe(map((res) => res.data));
+  }
+
   // --- KYC ---
 
   generateChallenge(): Observable<KycChallenge> {
@@ -618,18 +664,18 @@ export class ContractorApiService {
   }
 
   /**
-   * Reupload d'une facture dï¿½jï¿½ rejetï¿½e : pas de route dï¿½diï¿½e cï¿½tï¿½ Tuita,
-   * on rejoue `POST /invoices/upload`. Le backend dï¿½tecte le doublon sur la
-   * mï¿½me mission et remplace la facture prï¿½cï¿½dente. Le paramï¿½tre
-   * `invoiceUuid` est ignorï¿½ (conservï¿½ pour compatibilitï¿½ composants).
+   * Reupload d'une facture déjà rejetée via la route dédiée Tuita
+   * `POST /invoices/{uuid}/reupload` : transitionne `rejected` →
+   * `pending_payment_validation` avec un event timeline « reuploaded ».
+   *
+   * Exception SDK : upload multipart synchrone (le SDK ne stream pas le
+   * FormData), URL dérivée du PATH du SDK pour suivre un rename backend.
    */
-  reuploadInvoice(_invoiceUuid: string, file: File, missionRef?: string, amountTtc?: number): Observable<any> {
+  reuploadInvoice(invoiceUuid: string, file: File, _missionRef?: string, _amountTtc?: number): Observable<any> {
     const formData = new FormData();
     formData.append('file', file);
-    if (missionRef) formData.append('mission_ref', missionRef);
-    if (amountTtc != null) formData.append('amount_ttc', String(amountTtc));
-    // Exception SDK : meme route que uploadInvoice (multipart synchrone).
-    return this.http.post(`${this.rootUrl}${invoicesUpload.PATH}`, formData).pipe(
+    const path = invoicesReupload.PATH.replace('{uuid}', encodeURIComponent(invoiceUuid));
+    return this.http.post(`${this.rootUrl}${path}`, formData).pipe(
       timeout(SYNC_UPLOAD_TIMEOUT_MS),
     );
   }
@@ -702,6 +748,37 @@ export class ContractorApiService {
     return from(this.api.invoke(certificationStatus) as Promise<any>).pipe(
       map((res) => res.data),
     );
+  }
+
+  /**
+   * Sauvegarde delta des réponses du parcours certification (route dédiée
+   * `PATCH /certification/answers`) — distinct du submit final QCM. Permet
+   * au composant de persister le draft sans clôturer la session.
+   */
+  saveCertificationAnswers(answers: Record<string, string>): Observable<any> {
+    return from(
+      this.api.invoke(certificationAnswers, { body: { answers } as any }) as Promise<any>,
+    ).pipe(map((res) => res?.data ?? res));
+  }
+
+  /**
+   * Keep-alive du parcours certification (anti-déconnexion côté backend) —
+   * route dédiée `POST /certification/heartbeat`, indépendante du QCM
+   * `certification/qcm/:attempt/heartbeat` (attemp-scoped).
+   */
+  pingCertificationSession(): Observable<void> {
+    return from(this.api.invoke(certificationHeartbeat) as unknown as Promise<void>);
+  }
+
+  /**
+   * Clôture finale du parcours certification (post-QCM + post-réponses) :
+   * `POST /certification/complete`. Le backend marque le contractor
+   * certifié et déclenche les hooks aval (notification, score global).
+   */
+  completeCertificationFlow(payload: Record<string, unknown> = {}): Observable<any> {
+    return from(
+      this.api.invoke(certificationComplete, { body: payload as any }) as Promise<any>,
+    ).pipe(map((res) => res?.data ?? res));
   }
 
   // --- Missions ---

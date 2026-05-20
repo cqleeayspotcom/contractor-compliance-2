@@ -15,6 +15,7 @@ import { kycVideo } from '../api/fn/kyc/kyc-video';
 import { kycMobileLink } from '../api/fn/kyc/kyc-mobile-link';
 import { kycMobileValidateToken } from '../api/fn/kyc-mobile/kyc-mobile-validate-token';
 import { kycMobileSubmitVideo } from '../api/fn/kyc-mobile/kyc-mobile-submit-video';
+import { kycMobileChallenges } from '../api/fn/kyc-mobile/kyc-mobile-challenges';
 
 export type KycChallenge = 'turn_left' | 'turn_right' | 'blink' | 'smile';
 
@@ -155,6 +156,18 @@ export class KycService {
   /** Validate a QR code token and retrieve the challenge (public). */
   validateMobileToken(token: string): Observable<KycMobileTokenResponse> {
     return from(this.api.invoke(kycMobileValidateToken, { token })).pipe(
+      map(r => (r as any)?.data as KycMobileTokenResponse)
+    );
+  }
+
+  /**
+   * Récupère les 2 challenges biométriques pour la SPA mobile SANS
+   * consommer le token (pendant JSON du viewAction HTML legacy). Permet
+   * au composant React/Angular mobile de hydrater l'UI avant l'enregistrement
+   * vidéo, là où `validateMobileToken` consomme le capability.
+   */
+  getMobileChallenges(token: string): Observable<KycMobileTokenResponse> {
+    return from(this.api.invoke(kycMobileChallenges, { token })).pipe(
       map(r => (r as any)?.data as KycMobileTokenResponse)
     );
   }

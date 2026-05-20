@@ -10,6 +10,7 @@ import { invoicesFreeEligibleMissions } from '../api/fn/invoices-free/invoices-f
 import { invoicesFreeList } from '../api/fn/invoices-free/invoices-free-list';
 import { invoicesFreeRequest } from '../api/fn/invoices-free/invoices-free-request';
 import { invoicesFreeUpload } from '../api/fn/invoices-free/invoices-free-upload';
+import { invoicesFreeStatus } from '../api/fn/invoices-free/invoices-free-status';
 
 // Routes backend Tuita : `/contractor-compliance/invoices/free*`. On passe
 // par le proxy Angular (pas d'environment.apiUrl ici, le SDK pose la base).
@@ -84,6 +85,18 @@ export class FreeInvoiceService {
 
   cancel(uuid: string): Observable<unknown> {
     return from(this.api.invoke(invoicesFreeCancel, { uuid }));
+  }
+
+  /**
+   * Polling léger du statut d'une facture libre pendant l'upload async
+   * (OCR + validation Cyndi). Retourne le bloc complet
+   * `FreeInvoiceRequestSummary` actualisé pour rafraîchir l'UI sans
+   * recharger la liste.
+   */
+  status(uuid: string): Observable<FreeInvoiceRequestSummary> {
+    return from(
+      this.api.invoke(invoicesFreeStatus, { uuid }) as Promise<{ data: FreeInvoiceRequestSummary }>,
+    ).pipe(map((res) => res.data));
   }
 
   // upload progress: HttpClient direct, SDK ne gère pas la progression upload

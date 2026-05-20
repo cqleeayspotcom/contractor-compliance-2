@@ -794,6 +794,42 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
+  # Catalogue des documents/packs achetables (métadonnées prix + descriptions)
+  # consommé par l'écran "Acheter un document" côté contractor.
+  /contractor-compliance/documents/purchasable:
+    get:
+      tags: [Documents]
+      operationId: documentsPurchasable
+      security: [{ contractorCookie: [] }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # Historique d'achats du contractor (factures additional_payment).
+  /contractor-compliance/documents/purchases:
+    get:
+      tags: [Documents]
+      operationId: documentsPurchases
+      security: [{ contractorCookie: [] }]
+      parameters:
+        - { $ref: '#/components/parameters/QueryPage' }
+        - { $ref: '#/components/parameters/QueryPerPage' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # Achat groupé (bundle) — 1 seul paiement Stripe couvrant plusieurs documents.
+  /contractor-compliance/documents/purchase-bundle:
+    post:
+      tags: [Documents]
+      operationId: documentsPurchaseBundle
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
   /contractor-compliance/billing/subscription:
     get:
       tags: [Billing]
@@ -941,6 +977,27 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
 
+  # Endpoint JSON pour SPA mobile : récupère les 2 challenges biométriques
+  # sans consommer le token (pendant JSON du viewAction HTML legacy).
+  /contractor-compliance/kyc/mobile/{token}/challenges:
+    get:
+      tags: [KycMobile]
+      operationId: kycMobileChallenges
+      security: []
+      parameters: [{ $ref: '#/components/parameters/Token' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        '404':
+          description: Token inconnu
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '410':
+          description: Token expire ou deja consomme
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
   # ============================================================
   # Domaine 05 — Invoices contractor + missions + certification
   # ============================================================
@@ -989,6 +1046,25 @@ paths:
       operationId: invoicesTimeline
       security: [{ contractorCookie: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+
+  # Réupload après rejet : transitionne rejected -> pending_payment_validation
+  # avec timeline event "reuploaded" (multipart, fichier PDF/image).
+  /contractor-compliance/invoices/{uuid}/reupload:
+    post:
+      tags: [Invoices]
+      operationId: invoicesReupload
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
@@ -1101,6 +1177,40 @@ paths:
       parameters: [{ $ref: '#/components/parameters/Attempt' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
+  # Submission finale du parcours certification (clôture la session).
+  /contractor-compliance/certification/complete:
+    post:
+      tags: [Certification]
+      operationId: certificationComplete
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # Keep-alive du parcours certification (anti-déconnexion).
+  /contractor-compliance/certification/heartbeat:
+    post:
+      tags: [Certification]
+      operationId: certificationHeartbeat
+      security: [{ contractorCookie: [] }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # Sauvegarde draft des réponses certification (mise à jour delta).
+  /contractor-compliance/certification/answers:
+    patch:
+      tags: [Certification]
+      operationId: certificationAnswers
+      security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/JsonObject' }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
   # ============================================================
   # Domaine 06 — Free invoices (contractor)
   # ============================================================
@@ -1163,6 +1273,15 @@ paths:
               type: object
               properties:
                 file: { type: string, format: binary }
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
+  # Polling OCR progress + statut côté contractor d'une facture libre.
+  /contractor-compliance/invoices/free/{uuid}/status:
+    get:
+      tags: [InvoicesFree]
+      operationId: invoicesFreeStatus
+      security: [{ contractorCookie: [] }]
+      parameters: [{ $ref: '#/components/parameters/Uuid' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # ============================================================

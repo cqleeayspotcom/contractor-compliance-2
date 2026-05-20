@@ -29,6 +29,12 @@ export type { DocumentsDownload$Params as DocumentsDownload$Params } from './fn/
 export { documentsDownload as documentsDownload } from './fn/documents/documents-download';
 export type { DocumentsPurchase$Params as DocumentsPurchase$Params } from './fn/documents/documents-purchase';
 export { documentsPurchase as documentsPurchase } from './fn/documents/documents-purchase';
+export type { DocumentsPurchasable$Params as DocumentsPurchasable$Params } from './fn/documents/documents-purchasable';
+export { documentsPurchasable as documentsPurchasable } from './fn/documents/documents-purchasable';
+export type { DocumentsPurchases$Params as DocumentsPurchases$Params } from './fn/documents/documents-purchases';
+export { documentsPurchases as documentsPurchases } from './fn/documents/documents-purchases';
+export type { DocumentsPurchaseBundle$Params as DocumentsPurchaseBundle$Params } from './fn/documents/documents-purchase-bundle';
+export { documentsPurchaseBundle as documentsPurchaseBundle } from './fn/documents/documents-purchase-bundle';
 export type { BillingSubscription$Params as BillingSubscription$Params } from './fn/billing/billing-subscription';
 export { billingSubscription as billingSubscription } from './fn/billing/billing-subscription';
 export type { BillingSubscribe$Params as BillingSubscribe$Params } from './fn/billing/billing-subscribe';
@@ -49,6 +55,8 @@ export type { KycMobileValidateToken$Params as KycMobileValidateToken$Params } f
 export { kycMobileValidateToken as kycMobileValidateToken } from './fn/kyc-mobile/kyc-mobile-validate-token';
 export type { KycMobileSubmitVideo$Params as KycMobileSubmitVideo$Params } from './fn/kyc-mobile/kyc-mobile-submit-video';
 export { kycMobileSubmitVideo as kycMobileSubmitVideo } from './fn/kyc-mobile/kyc-mobile-submit-video';
+export type { KycMobileChallenges$Params as KycMobileChallenges$Params } from './fn/kyc-mobile/kyc-mobile-challenges';
+export { kycMobileChallenges as kycMobileChallenges } from './fn/kyc-mobile/kyc-mobile-challenges';
 export type { InvoicesUpload$Params as InvoicesUpload$Params } from './fn/invoices/invoices-upload';
 export { invoicesUpload as invoicesUpload } from './fn/invoices/invoices-upload';
 export type { InvoicesList$Params as InvoicesList$Params } from './fn/invoices/invoices-list';
@@ -57,6 +65,8 @@ export type { InvoicesPdf$Params as InvoicesPdf$Params } from './fn/invoices/inv
 export { invoicesPdf as invoicesPdf } from './fn/invoices/invoices-pdf';
 export type { InvoicesTimeline$Params as InvoicesTimeline$Params } from './fn/invoices/invoices-timeline';
 export { invoicesTimeline as invoicesTimeline } from './fn/invoices/invoices-timeline';
+export type { InvoicesReupload$Params as InvoicesReupload$Params } from './fn/invoices/invoices-reupload';
+export { invoicesReupload as invoicesReupload } from './fn/invoices/invoices-reupload';
 export type { InvoicesShow$Params as InvoicesShow$Params } from './fn/invoices/invoices-show';
 export { invoicesShow as invoicesShow } from './fn/invoices/invoices-show';
 export type { MissionsOffers$Params as MissionsOffers$Params } from './fn/missions/missions-offers';
@@ -77,6 +87,12 @@ export type { CertificationQcmSubmit$Params as CertificationQcmSubmit$Params } f
 export { certificationQcmSubmit as certificationQcmSubmit } from './fn/certification/certification-qcm-submit';
 export type { CertificationQcmHeartbeat$Params as CertificationQcmHeartbeat$Params } from './fn/certification/certification-qcm-heartbeat';
 export { certificationQcmHeartbeat as certificationQcmHeartbeat } from './fn/certification/certification-qcm-heartbeat';
+export type { CertificationComplete$Params as CertificationComplete$Params } from './fn/certification/certification-complete';
+export { certificationComplete as certificationComplete } from './fn/certification/certification-complete';
+export type { CertificationHeartbeat$Params as CertificationHeartbeat$Params } from './fn/certification/certification-heartbeat';
+export { certificationHeartbeat as certificationHeartbeat } from './fn/certification/certification-heartbeat';
+export type { CertificationAnswers$Params as CertificationAnswers$Params } from './fn/certification/certification-answers';
+export { certificationAnswers as certificationAnswers } from './fn/certification/certification-answers';
 export type { InvoicesFreeEligibleMissions$Params as InvoicesFreeEligibleMissions$Params } from './fn/invoices-free/invoices-free-eligible-missions';
 export { invoicesFreeEligibleMissions as invoicesFreeEligibleMissions } from './fn/invoices-free/invoices-free-eligible-missions';
 export type { InvoicesFreeList$Params as InvoicesFreeList$Params } from './fn/invoices-free/invoices-free-list';
@@ -89,6 +105,8 @@ export type { InvoicesFreeCancel$Params as InvoicesFreeCancel$Params } from './f
 export { invoicesFreeCancel as invoicesFreeCancel } from './fn/invoices-free/invoices-free-cancel';
 export type { InvoicesFreeUpload$Params as InvoicesFreeUpload$Params } from './fn/invoices-free/invoices-free-upload';
 export { invoicesFreeUpload as invoicesFreeUpload } from './fn/invoices-free/invoices-free-upload';
+export type { InvoicesFreeStatus$Params as InvoicesFreeStatus$Params } from './fn/invoices-free/invoices-free-status';
+export { invoicesFreeStatus as invoicesFreeStatus } from './fn/invoices-free/invoices-free-status';
 export type { PayFreeInvoiceShow$Params as PayFreeInvoiceShow$Params } from './fn/pay-public/pay-free-invoice-show';
 export { payFreeInvoiceShow as payFreeInvoiceShow } from './fn/pay-public/pay-free-invoice-show';
 export type { PayFreeInvoiceCreateIntent$Params as PayFreeInvoiceCreateIntent$Params } from './fn/pay-public/pay-free-invoice-create-intent';
