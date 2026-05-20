@@ -362,6 +362,31 @@ components:
           description: |
             Durée de validité en jours, lue par le backend (défaut 7,
             bornée 1–365).
+    CertificationHeartbeatRequest:
+      type: object
+      required: [attempt_uuid]
+      properties:
+        attempt_uuid:
+          type: string
+          format: uuid
+          description: UUID de la tentative QCM active à prolonger.
+    CertificationAnswersRequest:
+      type: object
+      # POURQUOI attempt_uuid dans le body : le backend identifie la
+      # tentative par attempt_uuid lu dans le corps JSON, jamais par un
+      # segment d'URL (la PK QcmAttempt est un UUID).
+      required: [attempt_uuid, answers]
+      properties:
+        attempt_uuid:
+          type: string
+          format: uuid
+          description: UUID de la tentative QCM.
+        answers:
+          type: object
+          additionalProperties: { type: string }
+          description: |
+            Réponses du QCM indexées par numéro de question (1..24) → A/B/C.
+            Complètes pour /complete, partielles autorisées pour /answers.
   parameters:
     Uuid:
       name: uuid
@@ -403,12 +428,6 @@ components:
       required: true
       schema:
         type: string
-    Attempt:
-      name: attempt
-      in: path
-      required: true
-      schema:
-        type: integer
     Token:
       name: token
       in: path
@@ -820,10 +839,15 @@ paths:
       tags: [Documents]
       operationId: documentsList
       security: [{ contractorCookie: [] }]
+      # Le backend (ContractorDocumentController::listAction) ne pagine pas et
+      # ne filtre pas par statut/type — volume < 20 docs/contractor, le filtrage
+      # se fait côté client. Seul include_archived est lu. Contrat aligné sur
+      # l'implémentation réelle (status/type/page retirés : ils étaient morts).
       parameters:
-        - { $ref: '#/components/parameters/QueryStatus' }
-        - { $ref: '#/components/parameters/QueryType' }
-        - { $ref: '#/components/parameters/QueryPage' }
+        - name: include_archived
+          in: query
+          required: false
+          schema: { type: boolean }
       responses:
         '200': { $ref: '#/components/responses/JsonOk' }
 
@@ -1222,27 +1246,6 @@ paths:
       security: [{ contractorCookie: [] }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
-  /contractor-compliance/certification/qcm/{attempt}/submit:
-    post:
-      tags: [Certification]
-      operationId: certificationQcmSubmit
-      security: [{ contractorCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Attempt' }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
-
-  /contractor-compliance/certification/qcm/{attempt}/heartbeat:
-    post:
-      tags: [Certification]
-      operationId: certificationQcmHeartbeat
-      security: [{ contractorCookie: [] }]
-      parameters: [{ $ref: '#/components/parameters/Attempt' }]
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
-
   # Submission finale du parcours certification (clôture la session).
   /contractor-compliance/certification/complete:
     post:
@@ -1253,7 +1256,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema: { $ref: '#/components/schemas/CertificationAnswersRequest' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # Keep-alive du parcours certification (anti-déconnexion).
@@ -1262,6 +1265,11 @@ paths:
       tags: [Certification]
       operationId: certificationHeartbeat
       security: [{ contractorCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CertificationHeartbeatRequest' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # Sauvegarde draft des réponses certification (mise à jour delta).
@@ -1274,7 +1282,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema: { $ref: '#/components/schemas/CertificationAnswersRequest' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   # ============================================================
@@ -2009,24 +2017,22 @@ paths:
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
-  /contractor-compliance/admin/kyc/sessions/{uuid}/artifacts:
-    get:
-      tags: [AdminKyc]
-      operationId: adminKycArtifactsList
-      security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Uuid' }]
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
-
+  # Correction prod (2026-05-20) : l'ancienne route `adminKycArtifactsList`
+  # (`/kyc/sessions/{uuid}/artifacts`) N'EXISTE PAS côté backend — elle a été
+  # retirée. Une session KYC = une vidéo selfie, exposée par `artifacts/view`.
   /contractor-compliance/admin/kyc/{uuid}/artifacts/view:
     get:
       tags: [AdminKyc]
       operationId: adminKycArtifactsView
+      summary: |
+        Renvoie l'URL signée (TTL 1h) de la vidéo selfie KYC.
+        Réponse JSON `{ session_uuid, video_url, available, reason? }` —
+        cf. AdminKycController::artifactsViewAction (pas un flux binaire).
       security: [{ bearerAuth: [] }]
       parameters:
         - { $ref: '#/components/parameters/Uuid' }
-        - { $ref: '#/components/parameters/QueryArtifactPath' }
       responses:
-        '200': { $ref: '#/components/responses/BinaryOk' }
+        '200': { $ref: '#/components/responses/JsonOk' }
 
   /contractor-compliance/admin/kyc/{sessionUuid}/replay:
     post:

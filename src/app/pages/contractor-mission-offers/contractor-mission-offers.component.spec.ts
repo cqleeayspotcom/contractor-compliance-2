@@ -20,20 +20,19 @@ describe('ContractorMissionOffersComponent', () => {
     fixture.detectChanges();
 
     const req = httpMock.expectOne((r) => r.url.endsWith('/missions/offers'));
+    // Enveloppe canonique `{ data: MissionOffer[], meta }` — `can_accept` ∈ meta.
     req.flush({
-      data: {
-        data: [{
-          mission_ref: 'FIBRE-1', title: 'Raccordement fibre', category: 'fibre',
-          expected_amount_ttc: 310, scheduled_at: '2026-06-01T10:00:00Z',
-          address: { street: '8 rue X', city: 'Paris', postal_code: '75008', department: '75' },
-          description_short: 'd', required_badges: [],
-          expires_at: '2026-05-15T18:00:00Z', offered_at: '2026-05-11T08:00:00Z',
-        }],
-        can_accept: true,
-      },
+      data: [{
+        mission_ref: 'FIBRE-1', title: 'Raccordement fibre', category: 'fibre',
+        expected_amount_ttc: 310, scheduled_at: '2026-06-01T10:00:00Z',
+        address: { street: '8 rue X', city: 'Paris', postal_code: '75008', department: '75' },
+        description_short: 'd', required_badges: [],
+        expires_at: '2026-05-15T18:00:00Z', offered_at: '2026-05-11T08:00:00Z',
+      }],
+      meta: { can_accept: true },
     });
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
 
     const text = fixture.nativeElement.textContent as string;
@@ -45,9 +44,9 @@ describe('ContractorMissionOffersComponent', () => {
     const fixture = TestBed.createComponent(ContractorMissionOffersComponent);
     fixture.detectChanges();
     httpMock.expectOne((r) => r.url.endsWith('/missions/offers'))
-      .flush({ data: { data: [], can_accept: true } });
+      .flush({ data: [], meta: { can_accept: true } });
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('Aucune offre');
   });
@@ -61,7 +60,7 @@ describe('ContractorMissionOffersComponent', () => {
         { status: 503, statusText: 'Service Unavailable' },
       );
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toContain('indisponible');
     expect(fixture.nativeElement.querySelector('button[data-testid="retry"]')).toBeTruthy();

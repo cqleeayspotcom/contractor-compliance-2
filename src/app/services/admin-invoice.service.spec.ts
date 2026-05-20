@@ -40,7 +40,7 @@ describe('AdminInvoiceService', () => {
     req.flush({ data: [], meta: { total: 0 } });
   });
 
-  it('GET /pending-validation returns paginated list', () => {
+  it('GET /pending-validation returns paginated list', async () => {
     let captured: unknown;
     service.listPendingValidation(2, 50).subscribe(res => (captured = res));
     const req = http.expectOne(r =>
@@ -49,6 +49,8 @@ describe('AdminInvoiceService', () => {
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('per_page')).toBe('50');
     req.flush({ data: [{ uuid: 'a', status: 'pending_payment_validation' }], meta: { total: 1 } });
+    // `api.invoke` est Promise-based → l'émission passe par une microtask.
+    await new Promise(r => setTimeout(r));
     expect((captured as { meta: { total: number } }).meta.total).toBe(1);
   });
 
@@ -80,12 +82,13 @@ describe('AdminInvoiceService', () => {
   // Single invoice + audit
   // ---------------------------------------------------------------------
 
-  it('GET /{uuid} returns single invoice', () => {
+  it('GET /{uuid} returns single invoice', async () => {
     let captured: unknown;
     service.getInvoice('uuid-1').subscribe(res => (captured = res));
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1');
     expect(req.request.method).toBe('GET');
     req.flush({ data: { uuid: 'uuid-1', status: 'paid' } });
+    await new Promise(r => setTimeout(r));
     expect((captured as { data: { status: string } }).data.status).toBe('paid');
   });
 
@@ -142,17 +145,20 @@ describe('AdminInvoiceService', () => {
     req.flush({});
   });
 
-  it('POST /{uuid}/resolve-dispute sends resolution', () => {
+  it('POST /{uuid}/resolve-dispute remaps resolution → reason', () => {
     service.resolveDispute('uuid-1', { resolution: 'litige clos par compta' }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/resolve-dispute');
-    expect(req.request.body.resolution).toBe('litige clos par compta');
+    // Le service remappe `resolution` → `reason` (clé lue par le backend).
+    expect(req.request.body).toEqual({ reason: 'litige clos par compta' });
     req.flush({});
   });
 
-  it('POST /{uuid}/force-resend-webhook sends event_type + reason', () => {
+  it('POST /{uuid}/force-resend-webhook remaps event_type → event', () => {
     service.forceResendWebhook('uuid-1', { event_type: 'paid', reason: 'tuita.fr a manqué le webhook' }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/force-resend-webhook');
-    expect(req.request.body).toEqual({ event_type: 'paid', reason: 'tuita.fr a manqué le webhook' });
+    // Le backend `forceResendWebhookAction` lit `body.event` ; `reason` n'est
+    // pas transmis dans le corps (tracé séparément côté audit).
+    expect(req.request.body).toEqual({ event: 'paid' });
     req.flush({});
   });
 

@@ -7,11 +7,11 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { CertificationAnswersRequest } from '../../models/certification-answers-request';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface CertificationComplete$Params {
-      body: JsonObject
+      body: CertificationAnswersRequest
 }
 
 export function certificationComplete(http: HttpClient, rootUrl: string, params: CertificationComplete$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

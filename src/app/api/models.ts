@@ -3,6 +3,8 @@
 
 export type { AdminInvitationCodeCreateRequest } from './models/admin-invitation-code-create-request';
 export type { ApiError } from './models/api-error';
+export type { CertificationAnswersRequest } from './models/certification-answers-request';
+export type { CertificationHeartbeatRequest } from './models/certification-heartbeat-request';
 export type { ContractorMission } from './models/contractor-mission';
 export type { ContractorMissionDetailResponse } from './models/contractor-mission-detail-response';
 export type { ContractorMissionListResponse } from './models/contractor-mission-list-response';

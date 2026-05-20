@@ -110,25 +110,16 @@ export class AdminKycSessionDialogComponent implements OnInit, OnDestroy {
 
     this.api
       .getArtifacts(this.session.uuid)
-      .then(async (list) => {
-        const enriched: ArtifactWithUrl[] = [];
-        for (const a of list) {
-          const item: ArtifactWithUrl = { ...a };
-          try {
-            item.blobUrl = await this.api.fetchArtifactBlob(this.session.uuid, a.path);
-          } catch (e) {
-            item.loadError = true;
-            console.warn('[admin-kyc] artifact load failed', a.path, e);
-          }
-          enriched.push(item);
-        }
-        this.artifacts.set(enriched);
+      .then((list) => {
+        // `path` est déjà une URL signée (TTL 1h) directement exploitable
+        // comme `src` d'un <video> — plus de fetch blob intermédiaire.
+        this.artifacts.set(list.map((a) => ({ ...a, blobUrl: a.path })));
         this.artifactsLoading.set(false);
       })
       .catch((err) => {
         this.artifactsLoading.set(false);
         this.artifactsError.set('Impossible de charger les artefacts.');
-        console.error('[admin-kyc] artifacts list failed', err);
+        console.error('[admin-kyc] artifacts load failed', err);
       });
   }
 

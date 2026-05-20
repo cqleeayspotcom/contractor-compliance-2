@@ -5,6 +5,7 @@ import { provideNoopAnimations } from '@angular/platform-browser/animations';
 
 import { MissionPickerComponent } from './mission-picker.component';
 import { ContractorApiService, ContractorMission, MissionsResponse } from '../../services/contractor-api.service';
+import { InvoiceStatusFront } from '../../api/models/invoice-status-front';
 
 function mission(overrides: Partial<ContractorMission> = {}): ContractorMission {
   return {
@@ -19,7 +20,7 @@ function mission(overrides: Partial<ContractorMission> = {}): ContractorMission 
     visitDateConfirmed: '2026-04-01T10:00',
     signedAt: '2026-04-01T12:00:00.000Z',
     canRun: false,
-    invoice_status: 'none',
+    invoice_status: InvoiceStatusFront.NONE,
     ...overrides,
   };
 }
@@ -28,7 +29,16 @@ function buildResponse(missions: ContractorMission[]): MissionsResponse {
   return {
     success: true,
     data: missions,
-    meta: { total: missions.length, completed: missions.length, invoiceable: missions.length, invoiced: 0 },
+    meta: {
+      total: missions.length,
+      filtered_total: missions.length,
+      page: 1,
+      per_page: missions.length || 20,
+      last_page: 1,
+      realized: 0,
+      realized_to_invoice: 0,
+      invoice_status_counts: {},
+    },
   };
 }
 
@@ -61,11 +71,11 @@ describe('MissionPickerComponent', () => {
 
   it('filtre les missions sans signedAt, gratuites ou deja facturees', () => {
     const list = [
-      mission({ mid: '1', caseNumber: 'OK', signedAt: '2026-04-01', price: 100, invoice_status: 'none' }),
+      mission({ mid: '1', caseNumber: 'OK', signedAt: '2026-04-01', price: 100, invoice_status: InvoiceStatusFront.NONE }),
       mission({ mid: '2', caseNumber: 'NO_SIGN', signedAt: null }),
       mission({ mid: '3', caseNumber: 'FREE', price: 0 }),
-      mission({ mid: '4', caseNumber: 'PAID', invoice_status: 'paid' }),
-      mission({ mid: '5', caseNumber: 'PENDING', invoice_status: 'pending_validation' }),
+      mission({ mid: '4', caseNumber: 'PAID', invoice_status: InvoiceStatusFront.PAID }),
+      mission({ mid: '5', caseNumber: 'PENDING', invoice_status: InvoiceStatusFront.PENDING_VALIDATION }),
     ];
     const getMissions = vi.fn().mockReturnValue(of(buildResponse(list)));
     const fixture = createFixture({ getMissions } as any);

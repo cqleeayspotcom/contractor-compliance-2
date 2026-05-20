@@ -86,8 +86,10 @@ describe('AdminContractorService', () => {
     expect(req.request.params.get('compliance')).toBe('compliant');
     expect(req.request.params.get('city')).toBe('Paris');
     expect(req.request.params.get('department')).toBe('75');
-    expect(req.request.params.get('has_active_invoice')).toBe('1');
-    expect(req.request.params.get('has_stuck_invoice')).toBe('1');
+    // Le service coerce les filtres booléens tolérants (1 → true) car le SDK
+    // typé attend `boolean` ; le param part donc en `true`.
+    expect(req.request.params.get('has_active_invoice')).toBe('true');
+    expect(req.request.params.get('has_stuck_invoice')).toBe('true');
     expect(req.request.params.get('sort')).toBe('compliance_score');
     expect(req.request.params.get('direction')).toBe('desc');
     req.flush({ data: [], meta: { total: 0, current_page: 1, per_page: 50, last_page: 1, from: null, to: null }, facets: {} });

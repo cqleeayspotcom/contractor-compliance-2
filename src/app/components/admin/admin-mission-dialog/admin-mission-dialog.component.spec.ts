@@ -54,10 +54,14 @@ describe('AdminMissionDialogComponent', () => {
     sessionStorage.removeItem('tuita_admin_token');
   });
 
-  it('fetches /admin/missions/{ref} on init and renders mission_ref + KPIs + invoices', () => {
+  // Le composant charge le détail via `api.invoke` (Promise) → il faut
+  // `await fixture.whenStable()` après le flush pour laisser la microtask
+  // résoudre avant d'asserter le rendu.
+  it('fetches /admin/missions/{ref} on init and renders mission_ref + KPIs + invoices', async () => {
     fixture.detectChanges();
     const req = http.expectOne('/contractor-compliance/admin/missions/M-1');
     req.flush({ data: fakeDetail });
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     const html: string = fixture.nativeElement.outerHTML;
     expect(html).toContain('M-1');
@@ -66,17 +70,19 @@ describe('AdminMissionDialogComponent', () => {
     expect(html).toContain('Écart 8% vs attendu');
   });
 
-  it('shows 404 friendly state when mission unknown', () => {
+  it('shows 404 friendly state when mission unknown', async () => {
     fixture.detectChanges();
     const req = http.expectOne('/contractor-compliance/admin/missions/M-1');
     req.flush({ error: { code: 'mission.unknown' } }, { status: 404, statusText: 'Not Found' });
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     expect(fixture.nativeElement.textContent).toMatch(/inconnue|introuvable/i);
   });
 
-  it('clicking an invoice row emits openInvoice with uuid', () => {
+  it('clicking an invoice row emits openInvoice with uuid', async () => {
     fixture.detectChanges();
     http.expectOne('/contractor-compliance/admin/missions/M-1').flush({ data: fakeDetail });
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     let captured: string | null = null;
     fixture.componentInstance.openInvoice.subscribe((u: string) => (captured = u));

@@ -31,8 +31,6 @@ import { invoicesShow } from '../api/fn/invoices/invoices-show';
 import { invoicesTimeline } from '../api/fn/invoices/invoices-timeline';
 import { invoicesReupload } from '../api/fn/invoices/invoices-reupload';
 import { certificationQcmStart } from '../api/fn/certification/certification-qcm-start';
-import { certificationQcmHeartbeat } from '../api/fn/certification/certification-qcm-heartbeat';
-import { certificationQcmSubmit } from '../api/fn/certification/certification-qcm-submit';
 import { certificationStatus } from '../api/fn/certification/certification-status';
 import { certificationComplete } from '../api/fn/certification/certification-complete';
 import { certificationHeartbeat } from '../api/fn/certification/certification-heartbeat';
@@ -324,16 +322,15 @@ export class ContractorApiService {
 
   // --- Documents ---
 
-  getDocuments(params?: {
+  getDocuments(_params?: {
     status?: string;
     type?: string;
     page?: number;
   }): Observable<PaginatedResponse<ContractorDocument>> {
-    return documentsList(this.http, this.rootUrl, {
-      status: params?.status,
-      type: params?.type,
-      page: params?.page,
-    }).pipe(
+    // Le backend (ContractorDocumentController::listAction) ne pagine ni ne
+    // filtre la liste — volume < 20 docs/contractor, le filtrage se fait côté
+    // composant. La signature garde status/type/page pour compat appelants.
+    return documentsList(this.http, this.rootUrl, {}).pipe(
       unwrapDataMeta<ContractorDocument[], PaginatedResponse<ContractorDocument>['meta']>(),
       map(({ data, meta }) => ({
         success: true,
@@ -707,12 +704,12 @@ export class ContractorApiService {
 
   // --- Certification ---
   //
-  // Backend Tuita : routes sous `/certification/qcm/*` :
-  //   - POST /certification/qcm/start
-  //   - POST /certification/qcm/:attempt/heartbeat
-  //   - POST /certification/qcm/:attempt/submit
-  // Pas de route sï¿½parï¿½e "save answers" : le draft est persistï¿½ localement
-  // cï¿½tï¿½ composant, le submit final fait foi.
+  // Le backend identifie la tentative QCM par `attempt_uuid` dans le CORPS
+  // JSON, jamais par un segment d'URL (la PK QcmAttempt est un UUID) :
+  //   - POST  /certification/qcm/start  -> demarre / reprend une tentative
+  //   - POST  /certification/heartbeat  -> body { attempt_uuid }
+  //   - POST  /certification/complete   -> body { attempt_uuid, answers }
+  //   - PATCH /certification/answers    -> body { attempt_uuid, answers } (brouillon)
 
   startCertification(): Observable<{ attempt_uuid: string; attempt_number: number; started_at: string; partial_answers: Record<string, string> }> {
     return from(this.api.invoke(certificationQcmStart) as Promise<any>).pipe(
@@ -720,20 +717,16 @@ export class ContractorApiService {
     );
   }
 
-  // NOTE : le SDK type `attempt: number` mais l'identifiant cï¿½tï¿½ backend
-  // est un UUID (string). On passe via cast ï¿½ le request-builder sï¿½rialise
-  // la valeur telle quelle dans l'URL path.
   heartbeatCertification(attemptUuid: string): Observable<void> {
     return from(
-      this.api.invoke(certificationQcmHeartbeat, { attempt: attemptUuid as unknown as number }) as unknown as Promise<void>
+      this.api.invoke(certificationHeartbeat, { body: { attempt_uuid: attemptUuid } }) as unknown as Promise<void>
     );
   }
 
   completeCertification(attemptUuid: string, answers: Record<number, string>): Observable<{ score: number; passed: boolean; total?: number; wrong_questions?: number[] }> {
     return from(
-      this.api.invoke(certificationQcmSubmit, {
-        attempt: attemptUuid as unknown as number,
-        body: { answers } as any,
+      this.api.invoke(certificationComplete, {
+        body: { attempt_uuid: attemptUuid, answers: answers as Record<string, string> },
       }) as Promise<any>
     ).pipe(map((res) => res.data));
   }
@@ -751,33 +744,12 @@ export class ContractorApiService {
   }
 
   /**
-   * Sauvegarde delta des réponses du parcours certification (route dédiée
-   * `PATCH /certification/answers`) — distinct du submit final QCM. Permet
-   * au composant de persister le draft sans clôturer la session.
+   * Sauvegarde un brouillon partiel des réponses QCM (PATCH /certification/answers).
+   * Ne clôture pas la tentative ; le backend exige `attempt_uuid` dans le body.
    */
-  saveCertificationAnswers(answers: Record<string, string>): Observable<any> {
+  saveCertificationAnswers(attemptUuid: string, answers: Record<string, string>): Observable<any> {
     return from(
-      this.api.invoke(certificationAnswers, { body: { answers } as any }) as Promise<any>,
-    ).pipe(map((res) => res?.data ?? res));
-  }
-
-  /**
-   * Keep-alive du parcours certification (anti-déconnexion côté backend) —
-   * route dédiée `POST /certification/heartbeat`, indépendante du QCM
-   * `certification/qcm/:attempt/heartbeat` (attemp-scoped).
-   */
-  pingCertificationSession(): Observable<void> {
-    return from(this.api.invoke(certificationHeartbeat) as unknown as Promise<void>);
-  }
-
-  /**
-   * Clôture finale du parcours certification (post-QCM + post-réponses) :
-   * `POST /certification/complete`. Le backend marque le contractor
-   * certifié et déclenche les hooks aval (notification, score global).
-   */
-  completeCertificationFlow(payload: Record<string, unknown> = {}): Observable<any> {
-    return from(
-      this.api.invoke(certificationComplete, { body: payload as any }) as Promise<any>,
+      this.api.invoke(certificationAnswers, { body: { attempt_uuid: attemptUuid, answers } }) as Promise<any>,
     ).pipe(map((res) => res?.data ?? res));
   }
 

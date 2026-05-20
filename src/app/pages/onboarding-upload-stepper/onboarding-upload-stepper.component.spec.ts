@@ -103,6 +103,11 @@ function createHarness(dashboard: ContractorDashboard = buildDashboard()): Harne
   // affecterait les assertions sur les ouvertures auto.
   try {
     localStorage.removeItem('tuita.upload-stepper.videos-watched');
+    // Sans ce reset, le set des steps `skipped` (persisté en localStorage par
+    // `later()`) fuit d'un test à l'autre : un test qui skip `cni` fait
+    // démarrer le composant du test suivant sur `kbis`. Chaque test doit
+    // repartir sur le step CNI.
+    localStorage.removeItem('tuita.upload-stepper.skipped');
   } catch {
     // jsdom sans localStorage — no-op.
   }

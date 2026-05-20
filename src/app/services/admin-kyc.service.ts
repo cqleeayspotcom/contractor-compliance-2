@@ -3,7 +3,6 @@ import { Injectable, inject } from '@angular/core';
 import { Api } from '../api/api';
 import { adminKycSessions } from '../api/fn/admin-kyc/admin-kyc-sessions';
 import { adminKycRejections } from '../api/fn/admin-kyc/admin-kyc-rejections';
-import { adminKycArtifactsList } from '../api/fn/admin-kyc/admin-kyc-artifacts-list';
 import { adminKycArtifactsView } from '../api/fn/admin-kyc/admin-kyc-artifacts-view';
 import { adminKycShow } from '../api/fn/admin-kyc/admin-kyc-show';
 import { adminKycReplay } from '../api/fn/admin-kyc/admin-kyc-replay';
@@ -85,15 +84,22 @@ export class AdminKycService {
     return env as unknown as KycPaginatedResponse<KycSessionRow>;
   }
 
+  /**
+   * Artefacts visualisables d'une session KYC. Une session = une vidéo selfie :
+   * `artifacts/view` (route réelle backend) renvoie son URL signée (TTL 1h),
+   * directement utilisable comme `src`. Retourne `[]` si aucune vidéo stockée.
+   *
+   * NB : il n'existe pas de route "liste d'artefacts" côté backend — l'ancienne
+   * `/kyc/sessions/{uuid}/artifacts` était morte (404). Les frames extraites
+   * éventuelles sont décrites dans `biometric_result`, pas servies en fichiers.
+   */
   async getArtifacts(sessionUuid: string): Promise<KycArtifact[]> {
-    // Enveloppe `{ data: { session_uuid, artifacts } }` → on extrait artifacts.
-    const env = await this.api.invoke(adminKycArtifactsList, { uuid: sessionUuid });
-    return ((env as { data?: { artifacts?: KycArtifact[] } }).data?.artifacts) ?? [];
-  }
-
-  async fetchArtifactBlob(sessionUuid: string, path: string): Promise<string> {
-    const blob = await this.api.invoke(adminKycArtifactsView, { uuid: sessionUuid, path });
-    return URL.createObjectURL(blob as unknown as Blob);
+    const env = await this.api.invoke(adminKycArtifactsView, { uuid: sessionUuid });
+    const data = (env as { data?: { video_url?: string | null; available?: boolean } }).data ?? {};
+    if (!data.available || !data.video_url) {
+      return [];
+    }
+    return [{ type: 'video', path: data.video_url, label: 'Vidéo selfie KYC' }];
   }
 
   /** Détail complet d'une session KYC (scores, artefacts, historique retry). */

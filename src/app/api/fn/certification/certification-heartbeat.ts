@@ -7,14 +7,17 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
+import { CertificationHeartbeatRequest } from '../../models/certification-heartbeat-request';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface CertificationHeartbeat$Params {
+      body: CertificationHeartbeatRequest
 }
 
-export function certificationHeartbeat(http: HttpClient, rootUrl: string, params?: CertificationHeartbeat$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+export function certificationHeartbeat(http: HttpClient, rootUrl: string, params: CertificationHeartbeat$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, certificationHeartbeat.PATH, 'post');
   if (params) {
+    rb.body(params.body, 'application/json');
   }
 
   return http.request(

@@ -83,10 +83,6 @@ export type { CertificationStart$Params as CertificationStart$Params } from './f
 export { certificationStart as certificationStart } from './fn/certification/certification-start';
 export type { CertificationQcmStart$Params as CertificationQcmStart$Params } from './fn/certification/certification-qcm-start';
 export { certificationQcmStart as certificationQcmStart } from './fn/certification/certification-qcm-start';
-export type { CertificationQcmSubmit$Params as CertificationQcmSubmit$Params } from './fn/certification/certification-qcm-submit';
-export { certificationQcmSubmit as certificationQcmSubmit } from './fn/certification/certification-qcm-submit';
-export type { CertificationQcmHeartbeat$Params as CertificationQcmHeartbeat$Params } from './fn/certification/certification-qcm-heartbeat';
-export { certificationQcmHeartbeat as certificationQcmHeartbeat } from './fn/certification/certification-qcm-heartbeat';
 export type { CertificationComplete$Params as CertificationComplete$Params } from './fn/certification/certification-complete';
 export { certificationComplete as certificationComplete } from './fn/certification/certification-complete';
 export type { CertificationHeartbeat$Params as CertificationHeartbeat$Params } from './fn/certification/certification-heartbeat';
@@ -255,8 +251,6 @@ export type { AdminKycRejections$Params as AdminKycRejections$Params } from './f
 export { adminKycRejections as adminKycRejections } from './fn/admin-kyc/admin-kyc-rejections';
 export type { AdminKycShow$Params as AdminKycShow$Params } from './fn/admin-kyc/admin-kyc-show';
 export { adminKycShow as adminKycShow } from './fn/admin-kyc/admin-kyc-show';
-export type { AdminKycArtifactsList$Params as AdminKycArtifactsList$Params } from './fn/admin-kyc/admin-kyc-artifacts-list';
-export { adminKycArtifactsList as adminKycArtifactsList } from './fn/admin-kyc/admin-kyc-artifacts-list';
 export type { AdminKycArtifactsView$Params as AdminKycArtifactsView$Params } from './fn/admin-kyc/admin-kyc-artifacts-view';
 export { adminKycArtifactsView as adminKycArtifactsView } from './fn/admin-kyc/admin-kyc-artifacts-view';
 export type { AdminKycReplay$Params as AdminKycReplay$Params } from './fn/admin-kyc/admin-kyc-replay';

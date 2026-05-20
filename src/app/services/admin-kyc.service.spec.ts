@@ -72,38 +72,32 @@ describe('AdminKycService', () => {
     await promise2;
   });
 
-  it('GET /artifacts returns artifact list', async () => {
+  it('getArtifacts maps the signed video URL to a single artifact', async () => {
     const promise = service.getArtifacts('sess-1');
-    const req = http.expectOne('/contractor-compliance/admin/kyc/sessions/sess-1/artifacts');
+    const req = http.expectOne(
+      (r) => r.url === '/contractor-compliance/admin/kyc/sess-1/artifacts/view',
+    );
     expect(req.request.method).toBe('GET');
     req.flush({
       data: {
         session_uuid: 'sess-1',
-        artifacts: [
-          { type: 'best_frame', path: 'kyc/sessions/sess-1/best_frame.jpg', label: 'Best frame' },
-          { type: 'face_photo', path: 'documents/1/face_photo_x.jpg', label: 'Photo CNI' },
-        ],
+        video_url: 'https://signed.example/kyc/sess-1/video.webm',
+        available: true,
       },
     });
     const out = await promise;
-    expect(out.length).toBe(2);
-    expect(out[0].type).toBe('best_frame');
+    expect(out.length).toBe(1);
+    expect(out[0].type).toBe('video');
+    expect(out[0].path).toBe('https://signed.example/kyc/sess-1/video.webm');
   });
 
-  it('fetchArtifactBlob returns object URL from blob response', async () => {
-    const originalCreate = URL.createObjectURL;
-    URL.createObjectURL = () => 'blob:fake-url';
-    try {
-      const promise = service.fetchArtifactBlob('sess-1', 'kyc/sessions/sess-1/best_frame.jpg');
-      const req = http.expectOne((r) => r.url === '/contractor-compliance/admin/kyc/sess-1/artifacts/view');
-      expect(req.request.method).toBe('GET');
-      expect(req.request.params.get('path')).toBe('kyc/sessions/sess-1/best_frame.jpg');
-      expect(req.request.responseType).toBe('blob');
-      req.flush(new Blob(['fake-image-bytes'], { type: 'image/jpeg' }));
-      const url = await promise;
-      expect(url).toBe('blob:fake-url');
-    } finally {
-      URL.createObjectURL = originalCreate;
-    }
+  it('getArtifacts returns [] when no selfie video is stored', async () => {
+    const promise = service.getArtifacts('sess-2');
+    const req = http.expectOne(
+      (r) => r.url === '/contractor-compliance/admin/kyc/sess-2/artifacts/view',
+    );
+    req.flush({ data: { session_uuid: 'sess-2', video_url: null, available: false } });
+    const out = await promise;
+    expect(out.length).toBe(0);
   });
 });

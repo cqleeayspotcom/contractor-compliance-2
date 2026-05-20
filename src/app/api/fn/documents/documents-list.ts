@@ -10,17 +10,13 @@ import { RequestBuilder } from '../../request-builder';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface DocumentsList$Params {
-  status?: string;
-  type?: string;
-  page?: number;
+  include_archived?: boolean;
 }
 
 export function documentsList(http: HttpClient, rootUrl: string, params?: DocumentsList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, documentsList.PATH, 'get');
   if (params) {
-    rb.query('status', params.status, {});
-    rb.query('type', params.type, {});
-    rb.query('page', params.page, {});
+    rb.query('include_archived', params.include_archived, {});
   }
 
   return http.request(

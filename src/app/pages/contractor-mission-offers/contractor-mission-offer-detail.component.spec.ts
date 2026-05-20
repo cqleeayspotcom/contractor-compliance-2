@@ -24,19 +24,19 @@ describe('ContractorMissionOfferDetailComponent', () => {
     router = TestBed.inject(Router);
   });
 
+  // Le backend renvoie l'enveloppe canonique `{ data: MissionOffer[], meta }`
+  // — `can_accept` vit dans `meta` (cf. ContractorApiService.listMissionOffers).
   function flushOffer(extra: Partial<Record<string, unknown>> = {}) {
     httpMock.expectOne((r) => r.url.endsWith('/missions/offers')).flush({
-      data: {
-        data: [{
-          mission_ref: 'FIBRE-1', title: 'Raccordement', category: 'fibre',
-          expected_amount_ttc: 310, scheduled_at: '2026-06-01T10:00:00Z',
-          address: { street: 'x', city: 'Paris', postal_code: '75008', department: '75' },
-          description_short: 'Test desc', required_badges: ['decennale_verified'],
-          expires_at: '2026-05-15T18:00:00Z', offered_at: '2026-05-11T08:00:00Z',
-        }],
-        can_accept: false,
-        ...extra,
-      },
+      data: [{
+        mission_ref: 'FIBRE-1', title: 'Raccordement', category: 'fibre',
+        expected_amount_ttc: 310, scheduled_at: '2026-06-01T10:00:00Z',
+        address: { street: 'x', city: 'Paris', postal_code: '75008', department: '75' },
+        description_short: 'Test desc', required_badges: ['decennale_verified'],
+        expires_at: '2026-05-15T18:00:00Z', offered_at: '2026-05-11T08:00:00Z',
+      }],
+      meta: { can_accept: false },
+      ...extra,
     });
   }
 
@@ -45,7 +45,7 @@ describe('ContractorMissionOfferDetailComponent', () => {
     fixture.detectChanges();
     flushOffer();
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
 
     expect(fixture.nativeElement.textContent).toContain('Raccordement');
@@ -60,7 +60,7 @@ describe('ContractorMissionOfferDetailComponent', () => {
     fixture.detectChanges();
     flushOffer();
     fixture.detectChanges();
-    await fixture.whenStable();
+    await new Promise((r) => setTimeout(r));
 
     // Acceptation/refus passent désormais par le manager FOM — confirmAccept
     // affiche juste un snackbar, ne fait pas d'appel HTTP et ne navigue pas.

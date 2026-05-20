@@ -442,19 +442,19 @@ export class AdminContractorService {
     return adminContractorsList(this.http, this.apiConfig.rootUrl, {
       page: query.page,
       per_page: query.per_page,
-      q: query.q,
-      account_state: query.account_state,
-      plan: query.plan,
-      kyc_status: query.kyc_status,
-      compliance: query.compliance,
+      q: query.q || undefined,
+      account_state: query.account_state || undefined,
+      plan: query.plan || undefined,
+      kyc_status: query.kyc_status || undefined,
+      compliance: query.compliance || undefined,
       has_active_invoice: toBool(query.has_active_invoice),
       has_stuck_invoice: toBool(query.has_stuck_invoice),
-      city: query.city,
-      department: query.department,
-      created_after: query.created_after,
-      created_before: query.created_before,
-      sort: query.sort,
-      direction: query.direction,
+      city: query.city || undefined,
+      department: query.department || undefined,
+      created_after: query.created_after || undefined,
+      created_before: query.created_before || undefined,
+      sort: query.sort || undefined,
+      direction: query.direction || undefined,
     }).pipe(
       map((r) => {
         // L'enveloppe canonique du module est `{ data, meta }` ; les facets
@@ -507,13 +507,15 @@ export class AdminContractorService {
       phone,
       page: query.page,
       per_page: query.per_page,
-      search: query.search,
-      status: query.status,
-      type: query.type,
-      document_type: query.document_type,
+      // Chaînes vides → undefined : le RequestBuilder SDK n'émet pas les
+      // params absents, on évite donc un `?search=` parasite dans l'URL.
+      search: query.search || undefined,
+      status: query.status || undefined,
+      type: query.type || undefined,
+      document_type: query.document_type || undefined,
       without_invoice: toBool(query.without_invoice),
-      sort: query.sort,
-      dir: query.dir,
+      sort: query.sort || undefined,
+      dir: query.dir || undefined,
       include_old_versions: toBool(query.include_old_versions),
     };
   }
