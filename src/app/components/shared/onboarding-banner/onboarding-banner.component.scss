@@ -52,6 +52,15 @@
   50%      { transform: translateX(4px); }
 }
 
+// "Pop" du chiffre du compte à rebours : il surgit puis se stabilise.
+// Animation infinie cadencée sur 1 s → un pop à chaque changement de chiffre.
+@keyframes onboarding-countdown-pop {
+  0%   { transform: scale(0.6); opacity: 0; }
+  28%  { transform: scale(1.12); opacity: 1; }
+  52%  { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 .onboarding-banner {
   position: relative;
   display: grid;
@@ -169,6 +178,88 @@
     &:hover {
       background: rgba(#000, 0.85);
       transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 3px;
+    }
+
+    // Variante "Lancer la vidéo" — affichée après un Stop ou une pause.
+    // Vert Tuita pour rester une action engageante (vs. le replay neutre).
+    &--play {
+      background: linear-gradient(135deg, $t-base-green 0%, darken($t-base-green, 6%) 100%);
+
+      &:hover {
+        background: linear-gradient(135deg, lighten($t-base-green, 4%) 0%, $t-base-green 100%);
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Overlay compte à rebours — affiché par-dessus la 1re frame de la vidéo
+  // avant son lancement automatique. Le bouton « Stop » laisse le temps de
+  // couper le démarrage.
+  // ---------------------------------------------------------------------------
+  &__countdown {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: rgba(#000, 0.55);
+    backdrop-filter: blur(2px);
+  }
+
+  &__countdown-num {
+    font-size: 4.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #fff;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 12px rgba(#000, 0.45);
+    animation: onboarding-countdown-pop 1s ease-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+
+  &__countdown-label {
+    margin: 4px 0 14px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(#fff, 0.88);
+  }
+
+  &__countdown-stop {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 22px;
+    border: 0;
+    border-radius: 999px;
+    background: #fff;
+    color: $t-logo-blue;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      color: $t-logo-blue;
+    }
+
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(#000, 0.3);
     }
 
     &:focus-visible {

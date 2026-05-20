@@ -54,17 +54,17 @@ export class AdminFreeInvoiceService {
   }
 
   /**
-   * Fetch un attachment en Blob et renvoie un object URL côté composant.
+   * Fetch le PDF d'une demande en Blob (object URL construit côté composant).
    *
-   * SDK manquant : `adminFreeInvoicesAttachments` renvoie la liste des
-   * attachments (JsonObject) et n'expose pas l'endpoint indexé
-   * `/attachments/{index}` en blob — HttpClient direct sur `.PATH` du SDK
-   * pour rester aligné si la spec bouge. Le Bearer est injecté par
-   * l'interceptor (pas besoin de header explicite).
+   * Une demande de facture libre n'a qu'UN seul PDF (colonne `pdf_path`
+   * unique côté backend) — la route admin `/attachments` le sert directement,
+   * sans segment d'index. HttpClient direct sur `.PATH` du SDK car le endpoint
+   * renvoie un binaire (responseType blob), pas du JSON. Le Bearer est injecté
+   * par l'interceptor.
    */
-  fetchAttachmentBlob(uuid: string, index: number): Observable<Blob> {
-    const base = adminFreeInvoicesAttachments.PATH.replace('{uuid}', encodeURIComponent(uuid));
-    return this.http.get(`${base}/${index}`, {
+  fetchAttachmentBlob(uuid: string): Observable<Blob> {
+    const url = adminFreeInvoicesAttachments.PATH.replace('{uuid}', encodeURIComponent(uuid));
+    return this.http.get(url, {
       responseType: 'blob',
     });
   }

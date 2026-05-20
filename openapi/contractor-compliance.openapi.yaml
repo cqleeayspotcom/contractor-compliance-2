@@ -2418,33 +2418,6 @@ paths:
                   description: Motif du litige.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
-  /contractor-compliance/admin/invoices/{uuid}/force-resend-webhook:
-    post:
-      tags: [AdminInvoices]
-      operationId: adminInvoicesForceResendWebhook
-      summary: Reset le flag `webhook_<event>_sent_at` et redispatch l'event.
-      security: [{ bearerAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/Uuid' }]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [event]
-              properties:
-                event:
-                  type: string
-                  enum:
-                    - rejected
-                    - ready_to_pay
-                    - payment_in_progress
-                    - paid
-                    - reopened
-                    - cancelled
-                  description: Nom de l'event à re-émettre (une seule famille par appel).
-      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
-
   /contractor-compliance/admin/invoices/{uuid}/add-note:
     post:
       tags: [AdminInvoices]

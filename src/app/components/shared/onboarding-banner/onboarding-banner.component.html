@@ -9,34 +9,58 @@
     @if (s.video) {
       <!-- FIX-035 (mobile UX) : on retire `controls` pour ne pas afficher la
            barre native Chrome (play / 0:00 / volume / fullscreen / 3-dots)
-           qui pollue le rendu mobile. La vidéo joue en autoplay muet, en
-           loop, full-bleed, comme un visuel d'illustration. L'utilisateur
-           peut la mettre en pause / relancer via tap (handler ci-dessous).
-           Le bouton « Revoir la vidéo » dédié reste affiché en fin de
-           lecture pour l'option explicite. -->
+           qui pollue le rendu mobile. La vidéo est muette, full-bleed, comme
+           un visuel d'illustration. Elle ne joue PAS en autoplay : un compte
+           à rebours 3 → 2 → 1 s'affiche d'abord (bouton « Stop » pour couper),
+           puis la vidéo se lance seule. `loop` retiré pour que l'event
+           `ended` se déclenche et fasse apparaître le bouton « Revoir ».
+           L'utilisateur peut mettre en pause / relancer via tap. -->
       <div class="onboarding-banner__video-wrap">
         <video #bannerVideo
                class="onboarding-banner__video"
                [src]="s.video"
-               autoplay
                muted
                playsinline
-               loop
                disablePictureInPicture
                disableRemotePlayback
-               preload="metadata"
-               (play)="videoEnded.set(false)"
-               (ended)="videoEnded.set(true)"
+               preload="auto"
+               (play)="onVideoPlay()"
+               (pause)="onVideoPause()"
+               (ended)="onVideoEnded()"
                (click)="toggleVideoPlayback(bannerVideo)"
                aria-label="Présentation Tuita"></video>
 
-        @if (videoEnded()) {
+        @if (countdown() !== null) {
+          <!-- Overlay décompte : la vidéo se lance seule à 0. Le bouton
+               « Stop » laisse le temps de couper avant le démarrage. -->
+          <div class="onboarding-banner__countdown" role="status" aria-live="assertive">
+            <span class="onboarding-banner__countdown-num">{{ countdown() }}</span>
+            <p class="onboarding-banner__countdown-label">La vidéo démarre...</p>
+            <button type="button"
+                    class="onboarding-banner__countdown-stop"
+                    aria-label="Stop - ne pas lancer la vidéo"
+                    (click)="cancelCountdown()">
+              <mat-icon aria-hidden="true">stop</mat-icon>
+              <span>Stop</span>
+            </button>
+          </div>
+        } @else if (videoEnded()) {
           <button type="button"
                   class="onboarding-banner__video-replay"
                   aria-label="Revoir la vidéo"
                   (click)="replayVideo(bannerVideo)">
             <mat-icon aria-hidden="true">replay</mat-icon>
             <span>Revoir la vidéo</span>
+          </button>
+        } @else if (!playing()) {
+          <!-- Décompte coupé (Stop) ou vidéo en pause : bouton de lancement
+               manuel pour que l'artisan garde la main. -->
+          <button type="button"
+                  class="onboarding-banner__video-replay onboarding-banner__video-replay--play"
+                  aria-label="Lancer la vidéo"
+                  (click)="playVideo(bannerVideo)">
+            <mat-icon aria-hidden="true">play_arrow</mat-icon>
+            <span>Lancer la vidéo</span>
           </button>
         }
       </div>

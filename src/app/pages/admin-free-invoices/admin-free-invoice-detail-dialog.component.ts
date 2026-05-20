@@ -208,9 +208,10 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
     this.attachments.set(items);
 
     const currentUuid = this.uuid();
-    // Fetch each attachment blob sequentially (they are typically few, ≤5)
+    // Une demande n'a qu'un seul PDF — la boucle tourne 0 ou 1 fois. La route
+    // admin `/attachments` sert ce PDF unique sans segment d'index.
     rawAttachments.forEach((_att: any, idx: number) => {
-      this.svc.fetchAttachmentBlob(currentUuid, idx).subscribe({
+      this.svc.fetchAttachmentBlob(currentUuid).subscribe({
         next: (blob) => {
           const url = URL.createObjectURL(blob);
           this.blobUrls.push(url);

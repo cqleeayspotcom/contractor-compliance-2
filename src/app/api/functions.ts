@@ -191,8 +191,6 @@ export type { AdminInvoicesReopen$Params as AdminInvoicesReopen$Params } from '.
 export { adminInvoicesReopen as adminInvoicesReopen } from './fn/admin-invoices/admin-invoices-reopen';
 export type { AdminInvoicesResolveDispute$Params as AdminInvoicesResolveDispute$Params } from './fn/admin-invoices/admin-invoices-resolve-dispute';
 export { adminInvoicesResolveDispute as adminInvoicesResolveDispute } from './fn/admin-invoices/admin-invoices-resolve-dispute';
-export type { AdminInvoicesForceResendWebhook$Params as AdminInvoicesForceResendWebhook$Params } from './fn/admin-invoices/admin-invoices-force-resend-webhook';
-export { adminInvoicesForceResendWebhook as adminInvoicesForceResendWebhook } from './fn/admin-invoices/admin-invoices-force-resend-webhook';
 export type { AdminInvoicesAddNote$Params as AdminInvoicesAddNote$Params } from './fn/admin-invoices/admin-invoices-add-note';
 export { adminInvoicesAddNote as adminInvoicesAddNote } from './fn/admin-invoices/admin-invoices-add-note';
 export type { AdminInvoicesValidate$Params as AdminInvoicesValidate$Params } from './fn/admin-invoices/admin-invoices-validate';
