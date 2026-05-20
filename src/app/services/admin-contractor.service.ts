@@ -423,12 +423,20 @@ export class AdminContractorService {
   private readonly apiConfig = inject(ApiConfiguration);
 
   /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) Ã  partir d'une rÃ©ponse SDK enveloppÃ©e. */
+  // ATTENTION : les sous-listes contractor (documents, kyc-sessions, invoices,
+  // purchases, missions) renvoient le payload sous `data.items` — et NON `data`
+  // comme tableau brut (contrairement a la liste principale `indexAction`).
+  // On extrait donc `.items` ici ; sinon `state.rows` recoit un objet sans
+  // `.length` et la table n'affiche aucune ligne.
   private toPaginated<T>(
     source$: Observable<import('../api/strict-http-response').StrictHttpResponse<unknown>>,
   ): Observable<Paginated<T>> {
     return source$.pipe(
-      unwrapDataMeta<T[], PaginatedMeta>(),
-      map(({ data, meta }) => ({ data, meta: meta as PaginatedMeta })),
+      unwrapDataMeta<{ items?: T[] }, PaginatedMeta>(),
+      map(({ data, meta }) => ({
+        data: data?.items ?? [],
+        meta: meta as PaginatedMeta,
+      })),
     );
   }
 

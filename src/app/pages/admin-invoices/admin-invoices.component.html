@@ -221,6 +221,32 @@
 
               <mat-divider></mat-divider>
 
+              <!-- FIX 2026-05-20 (audit Claude) — actions Approuver/Rejeter
+                   directement dans le row menu pour le tab "À valider", ce qui
+                   était la friction principale : l'admin devait ouvrir le
+                   dialog détail pour valider chaque facture. Avec ces 2 entrées
+                   menu, le workflow "valider en batch" est possible : ouvrir le
+                   menu de chaque ligne → Approuver/Rejeter → next.
+                   Les méthodes approveFromBackOffice/rejectFromBackOffice
+                   existent déjà côté composant (cf. submitLocalValidation). -->
+              <button
+                *ngIf="mode === 'pending'"
+                mat-menu-item
+                (click)="approveFromBackOffice(inv)"
+              >
+                <mat-icon color="primary">check_circle</mat-icon>
+                <span>Approuver</span>
+              </button>
+
+              <button
+                *ngIf="mode === 'pending'"
+                mat-menu-item
+                (click)="rejectFromBackOffice(inv)"
+              >
+                <mat-icon color="warn">cancel</mat-icon>
+                <span>Rejeter</span>
+              </button>
+
               <button
                 *ngIf="mode === 'ready'"
                 mat-menu-item

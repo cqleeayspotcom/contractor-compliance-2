@@ -49,6 +49,26 @@ describe('AdminContractorService', () => {
     req.flush({ data: [], meta: {} });
   });
 
+  it('listDocuments unwraps data.items into the row array', () => {
+    let result: { data: { uuid: string }[]; meta: { total: number } } | undefined;
+    service.listDocuments('P33756874218', {}).subscribe((res) => {
+      result = res as typeof result;
+    });
+    const req = http.expectOne(
+      (r) => r.url === '/contractor-compliance/admin/contractors/P33756874218/documents',
+    );
+    // Forme réelle renvoyée par le backend : `data` est un OBJET
+    // { phone, user_id, items } — les lignes sont sous `data.items`.
+    req.flush({
+      data: { phone: 'P33756874218', user_id: 'u-1', items: [{ uuid: 'doc-1' }] },
+      meta: { total: 1 },
+    });
+    // `flush` est synchrone : le subscribe a déjà reçu la valeur.
+    expect(result?.data.length).toBe(1);
+    expect(result?.data[0].uuid).toBe('doc-1');
+    expect(result?.meta.total).toBe(1);
+  });
+
   it('list endpoints skip empty params (no &search= in URL)', () => {
     service.listInvoices('P33756874218', { page: 1, per_page: 25, search: '', status: undefined }).subscribe();
     const req = http.expectOne((r) =>

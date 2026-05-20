@@ -109,7 +109,6 @@ describe('Validation manuelle — Admin Tuita', () => {
     });
 
     it('admin APPROUVE le document via API (force override)', () => {
-      cy.mockAdminApi();
       cy.intercept('PUT', '/api/admin/validations/verif-uuid-001/review', (req) => {
         expect(req.body.decision).to.eq('approved');
         expect(req.body.force_override).to.be.true;
@@ -149,7 +148,6 @@ describe('Validation manuelle — Admin Tuita', () => {
     });
 
     it('admin REJETE un document illisible avec motif', () => {
-      cy.mockAdminApi();
       cy.intercept('PUT', '/api/admin/validations/verif-uuid-003/review', (req) => {
         expect(req.body.decision).to.eq('rejected');
         expect(req.body.notes).to.contain('illisible');
@@ -176,7 +174,6 @@ describe('Validation manuelle — Admin Tuita', () => {
     });
 
     it('admin demande re-upload pour SIREN mismatch', () => {
-      cy.mockAdminApi();
       cy.intercept('PUT', '/api/admin/validations/verif-uuid-002/review', (req) => {
         expect(req.body.decision).to.eq('request_reupload');
 
@@ -232,7 +229,6 @@ describe('Validation manuelle — Admin Tuita', () => {
     });
 
     it('admin approuve KYC avec liveness OK + verification visuelle', () => {
-      cy.mockAdminApi();
       cy.intercept('PUT', '/api/admin/validations/kyc-review-002/review', (req) => {
         expect(req.body.decision).to.eq('approved');
         req.reply({ statusCode: 200, body: { success: true, data: { uuid: 'kyc-review-002', status: 'approved' } } });
@@ -258,7 +254,6 @@ describe('Validation manuelle — Admin Tuita', () => {
     });
 
     it('admin rejete KYC sans aucun score biometrique', () => {
-      cy.mockAdminApi();
       cy.intercept('PUT', '/api/admin/validations/kyc-review-001/review', (req) => {
         expect(req.body.decision).to.eq('rejected');
         req.reply({ statusCode: 200, body: { success: true, data: { uuid: 'kyc-review-001', status: 'rejected' } } });
