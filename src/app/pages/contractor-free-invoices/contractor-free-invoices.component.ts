@@ -88,58 +88,14 @@ export class ContractorFreeInvoicesComponent implements OnInit {
 
   statusLabel(s: string): string {
     return ({
-      pending_admin_approval: 'En attente d\'approbation',
-      authorized: 'En attente de votre facture',
+      pending_approval: 'En attente d\'approbation',
+      approved: 'En attente de votre facture',
       rejected: 'Rejetée',
       expired: 'Expirée',
       consumed: 'Facture envoyée',
       cancelled: 'Annulée',
-    } as Record<string, string>)[s] ?? s;
-  }
-
-  /**
-   * Le contractor peut uploader une nouvelle facture si :
-   *  - aucune facture rattachée (1ʳᵉ tentative)
-   *  - OU la dernière facture est REJECTED (correction après rejet OCR)
-   *
-   * On masque le bouton si l'invoice est dans un statut "actif" (validating /
-   * pending_payment_validation / ready_to_pay / payment_in_progress / paid)
-   * pour éviter qu'un re-clic mène à un 409 ALREADY_HAS_ACTIVE_INVOICE backend.
-   */
-  canUpload(r: FreeInvoiceRequestSummary): boolean {
-    if (!r.invoice_status) return true;
-    return r.invoice_status === 'rejected' || r.invoice_status === 'cancelled';
-  }
-
-  invoiceStateLabel(status: string): string {
-    // Libellés en français concret pour artisans BTP — pas de mot technique
-    // (OCR, validation, ...). On parle au statut, pas au pipeline interne.
-    return ({
-      validating: 'On vérifie ta facture...',
-      pending_payment_validation: 'Tuita la vérifie',
-      ready_to_pay: 'Bon pour paiement',
-      payment_in_progress: 'Virement en cours',
+      awaiting_payment: 'En attente de paiement',
       paid: 'Payée',
-      rejected: 'Refusée - corrige et renvoie',
-      cancelled: 'Annulée',
-    } as Record<string, string>)[status] ?? status;
-  }
-
-  invoiceStateBadge(status: string): 'ok' | 'pending' | 'ko' {
-    if (status === 'paid' || status === 'ready_to_pay' || status === 'payment_in_progress') return 'ok';
-    if (status === 'rejected') return 'ko';
-    return 'pending';
-  }
-
-  invoiceStateIcon(status: string): string {
-    return ({
-      validating: 'autorenew',
-      pending_payment_validation: 'pending_actions',
-      ready_to_pay: 'task_alt',
-      payment_in_progress: 'sync_alt',
-      paid: 'check_circle',
-      rejected: 'error',
-      cancelled: 'block',
-    } as Record<string, string>)[status] ?? 'help';
+    } as Record<string, string>)[s] ?? s;
   }
 }

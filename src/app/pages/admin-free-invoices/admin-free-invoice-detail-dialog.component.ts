@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, HostListener, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -108,9 +108,11 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
   readonly rejectReason = signal('');
   private readonly blobUrls: string[] = [];
 
+  // F4 : le montant autorisé n'est plus saisi côté admin — le backend le fige
+  // sur le montant demandé (FreeInvoiceService::approve). Le formulaire ne
+  // porte plus qu'une note interne facultative.
   readonly approveForm = this.fb.group({
-    amount_authorized_ttc: [null as number | null, [Validators.required, Validators.min(0.01)]],
-    comment: [''],
+    note: [''],
   });
 
   ngOnInit(): void {
@@ -124,13 +126,12 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
     this.detail.set(null);
     this.attachments.set([]);
     this.rejectReason.set('');
-    this.approveForm.reset({ amount_authorized_ttc: null, comment: '' });
+    this.approveForm.reset({ note: '' });
 
     this.svc.detail(uuid).subscribe({
       next: (r) => {
         this.detail.set(r.data);
         this.loadingDetail.set(false);
-        this.approveForm.patchValue({ amount_authorized_ttc: r.data.requested_amount_ttc });
         this.loadAttachments(r.data.attachments ?? []);
       },
       error: (err) => {
@@ -255,15 +256,18 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
   }
 
   approve(): void {
-    const v = this.approveForm.value;
-    if (this.approveForm.invalid) return;
+    const d = this.detail();
+    if (!d) return;
 
-    const amount = Number(v.amount_authorized_ttc).toFixed(2).replace('.', ',');
-    const subject = this.detail()?.subject ?? '';
+    // Montant figé = montant demandé (le backend ne lit plus de montant
+    // autorisé envoyé par le front — cf. F4). On l'affiche pour confirmation.
+    const amount = ((d.amount_ttc_cents ?? 0) / 100).toFixed(2).replace('.', ',');
+    const clientName = d.client_name ?? '';
+    const note = this.approveForm.value.note?.trim() || undefined;
 
     ConfirmationDialogComponent.open(this.dialog, {
       title: 'Approuver cette demande ?',
-      message: `Tuita autorisera l'émission d'une facture libre de ${amount} € TTC pour : « ${subject} ».\n\nLe contractor recevra un email et pourra uploader son PDF.`,
+      message: `Tuita autorisera l'émission d'une facture libre de ${amount} € TTC pour le client « ${clientName} ».\n\nLe contractor recevra un email et pourra uploader son PDF.`,
       confirmText: 'Approuver',
       cancelText: 'Annuler',
       type: 'success',
@@ -272,10 +276,7 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
       if (!ok) return;
 
       this.svc
-        .approve(this.uuid(), {
-          amount_authorized_ttc: v.amount_authorized_ttc!,
-          comment: v.comment ?? undefined,
-        })
+        .approve(this.uuid(), { note })
         .subscribe({
           next: () => {
             const advancing = this.hasNext();
@@ -336,12 +337,14 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
-      pending_admin_approval: 'En attente d\'approbation',
-      authorized: 'Approuvée',
+      pending_approval: 'En attente d\'approbation',
+      approved: 'Approuvée',
       rejected: 'Rejetée',
       expired: 'Expirée',
       consumed: 'Facture envoyée',
       cancelled: 'Annulée',
+      awaiting_payment: 'En attente de paiement',
+      paid: 'Payée',
     };
     return map[status] ?? status;
   }

@@ -84,12 +84,14 @@ export class AdminFreeInvoicesComponent implements OnInit {
 
   statusLabel(status: string): string {
     const map: Record<string, string> = {
-      pending_admin_approval: 'En attente',
-      authorized: 'En attente facture',
+      pending_approval: 'En attente',
+      approved: 'En attente facture',
       rejected: 'Rejetée',
       expired: 'Expirée',
       consumed: 'Facture envoyée',
       cancelled: 'Annulée',
+      awaiting_payment: 'En attente paiement',
+      paid: 'Payée',
     };
     return map[status] ?? status;
   }

@@ -15,34 +15,74 @@ import { invoicesFreeStatus } from '../api/fn/invoices-free/invoices-free-status
 // Routes backend Tuita : `/contractor-compliance/invoices/free*`. On passe
 // par le proxy Angular (pas d'environment.apiUrl ici, le SDK pose la base).
 
+// Statuts renvoyés par le backend (FreeInvoiceRequest::STATUS_*). On colle aux
+// valeurs réelles : le couple historique `pending_admin_approval`/`authorized`
+// n'a jamais existé côté serveur (c'était `pending_approval`/`approved`).
 export type FreeInvoiceStatus =
-  | 'pending_admin_approval'
-  | 'authorized'
+  | 'pending_approval'
+  | 'approved'
   | 'rejected'
   | 'expired'
   | 'consumed'
-  | 'cancelled';
+  | 'cancelled'
+  | 'awaiting_payment'
+  | 'paid';
 
+/**
+ * Demande de facture libre — reflète EXACTEMENT le payload backend
+ * `FreeInvoiceService::serialize()` (liste + détail, contractor comme admin).
+ *
+ * Invariant montants : tous les montants sont exprimés en CENTIMES entiers
+ * (`*_cents`) — le backend ne manipule jamais d'euros décimaux. La conversion
+ * en euros pour l'affichage se fait côté template (`/ 100`).
+ */
 export interface FreeInvoiceRequestSummary {
   uuid: string;
-  subject: string;
-  requested_amount_ttc: number;
-  amount_authorized_ttc: number | null;
   status: FreeInvoiceStatus;
+  user_id: string;
+  client_name: string;
+  client_email: string | null;
+  amount_ttc_cents: number;
+  amount_authorized_ttc_cents: number | null;
+  description: string;
+  mission_refs: string[];
+  approved_at: string | null;
+  approved_by_admin_email: string | null;
+  approve_note: string | null;
+  rejected_at: string | null;
   rejected_reason: string | null;
-  authorized_at: string | null;
+  rejected_by_admin_email: string | null;
+  cancelled_at: string | null;
   expires_at: string | null;
+  attachments_count: number;
+  pdf_path: string | null;
   created_at: string;
+}
+
+/**
+ * Réponse de création (`POST /invoices/free/request`) : le backend
+ * `requestAction()` ne renvoie qu'un sous-ensemble, pas le summary complet.
+ */
+export interface FreeInvoiceCreateResult {
+  uuid: string;
+  status: FreeInvoiceStatus;
+  expires_at: string | null;
+}
+
+/**
+ * Payload de l'endpoint de polling `GET /invoices/free/{uuid}/status`
+ * (`FreeInvoiceService::getStatusForContractor`). Forme distincte du summary :
+ * il enrichit avec le verdict OCR de la facture fille.
+ */
+export interface FreeInvoiceStatusPayload {
+  free_invoice_uuid: string;
+  free_invoice_status: FreeInvoiceStatus;
   invoice_uuid: string | null;
   invoice_status: string | null;
-  /**
-   * Si la dernière facture uploadée a été rejetée par le pipeline OCR
-   * (montant non exact, destinataire ≠ Tuita, etc.), la raison est exposée ici
-   * pour aider le contractor à corriger avant de re-uploader.
-   * `null` si aucune facture précédente OU si la dernière n'est pas rejetée.
-   */
-  last_invoice_rejection_reason: string | null;
-  last_invoice_rejection_details: string[] | null;
+  invoice_status_internal: string | null;
+  rejection: unknown | null;
+  ocr_confidence: number | null;
+  updated_at: string;
 }
 
 export interface EligibleMission {
@@ -80,8 +120,8 @@ export class FreeInvoiceService {
     description: string;
     amount_ttc_cents: number;
     mission_refs?: string[];
-  }): Observable<{ data: FreeInvoiceRequestSummary }> {
-    return from(this.api.invoke(invoicesFreeRequest, { body }) as Promise<{ data: FreeInvoiceRequestSummary }>);
+  }): Observable<{ data: FreeInvoiceCreateResult }> {
+    return from(this.api.invoke(invoicesFreeRequest, { body }) as Promise<{ data: FreeInvoiceCreateResult }>);
   }
 
   getEligibleMissions(): Observable<EligibleMission[]> {
@@ -100,9 +140,9 @@ export class FreeInvoiceService {
    * `FreeInvoiceRequestSummary` actualisé pour rafraîchir l'UI sans
    * recharger la liste.
    */
-  status(uuid: string): Observable<FreeInvoiceRequestSummary> {
+  status(uuid: string): Observable<FreeInvoiceStatusPayload> {
     return from(
-      this.api.invoke(invoicesFreeStatus, { uuid }) as Promise<{ data: FreeInvoiceRequestSummary }>,
+      this.api.invoke(invoicesFreeStatus, { uuid }) as Promise<{ data: FreeInvoiceStatusPayload }>,
     ).pipe(map((res) => res.data));
   }
 

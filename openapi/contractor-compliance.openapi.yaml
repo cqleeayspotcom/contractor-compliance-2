@@ -408,6 +408,21 @@ components:
           type: array
           items: { type: string }
           description: Références de missions Tuita associées (optionnel).
+    AdminFreeInvoiceApproveRequest:
+      type: object
+      # Approbation admin d'une demande de facture libre. Le montant autorisé
+      # n'est PAS fourni par le front : le backend fige amount_authorized =
+      # montant demandé (FreeInvoiceService::approve). L'admin ne transmet
+      # qu'une note interne optionnelle et, optionnellement, une durée de
+      # validité de l'autorisation.
+      properties:
+        note:
+          type: string
+          description: Note interne admin (facultative), tracée dans l'audit.
+        ttl_hours:
+          type: integer
+          minimum: 1
+          description: Durée de validité de l'autorisation en heures (défaut 24).
   parameters:
     Uuid:
       name: uuid
@@ -2143,7 +2158,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/JsonObject' }
+            schema: { $ref: '#/components/schemas/AdminFreeInvoiceApproveRequest' }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/free-invoices/{uuid}/reject:

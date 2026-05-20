@@ -50,29 +50,24 @@
     <section class="section">
       <h3>Demande</h3>
       <div class="info-grid">
-        <span class="label">Sujet</span>
-        <span class="subject">{{ d.subject }}</span>
+        <span class="label">Client facturé</span>
+        <span class="subject">{{ d.client_name }}</span>
+
+        @if (d.client_email) {
+          <span class="label">Email client</span>
+          <span>{{ d.client_email }}</span>
+        }
 
         <span class="label">Montant demandé</span>
-        <span class="amount-highlight">{{ d.requested_amount_ttc | number:'1.2-2' }} € TTC</span>
-
-        @if (d.requested_amount_ht) {
-          <span class="label">Montant HT</span>
-          <span>{{ d.requested_amount_ht | number:'1.2-2' }} € HT</span>
-        }
-
-        @if (d.vat_amount) {
-          <span class="label">TVA</span>
-          <span>{{ d.vat_amount | number:'1.2-2' }} €</span>
-        }
+        <span class="amount-highlight">{{ d.amount_ttc_cents / 100 | number:'1.2-2' }} € TTC</span>
 
         <span class="label">Créée le</span>
         <span>{{ formatDate(d.created_at) }}</span>
       </div>
 
       <div class="justification-block">
-        <span class="label">Justification</span>
-        <pre class="just">{{ d.justification }}</pre>
+        <span class="label">Description de la prestation</span>
+        <pre class="just">{{ d.description }}</pre>
       </div>
     </section>
 
@@ -173,36 +168,28 @@
     }
 
     <!-- Actions : approve / reject (only when pending) -->
-    @if (d.status === 'pending_admin_approval') {
+    @if (d.status === 'pending_approval') {
       <mat-divider></mat-divider>
 
       <section class="section actions-section">
         <div class="action-block approve-block">
           <h3>Approuver</h3>
+          <!-- F4 : pas de champ « montant autorisé ». Le backend fige le montant
+               autorisé sur le montant demandé ({{ d.amount_ttc_cents / 100 | number:'1.2-2' }} € TTC). -->
+          <p class="approve-amount-note">
+            Montant autorisé : <strong>{{ d.amount_ttc_cents / 100 | number:'1.2-2' }} € TTC</strong>
+            (figé sur le montant demandé).
+          </p>
           <form [formGroup]="approveForm" (ngSubmit)="approve()">
             <mat-form-field appearance="outline">
-              <mat-label>Montant à autoriser (€ TTC)</mat-label>
-              <input
-                matInput
-                type="number"
-                min="0.01"
-                step="0.01"
-                formControlName="amount_authorized_ttc"
-              />
-              <span matSuffix>€</span>
-              <mat-hint>Pré-rempli avec le montant demandé, modifiable.</mat-hint>
-            </mat-form-field>
-
-            <mat-form-field appearance="outline">
-              <mat-label>Commentaire interne (facultatif)</mat-label>
-              <textarea matInput formControlName="comment" rows="2"></textarea>
+              <mat-label>Note interne (facultative)</mat-label>
+              <textarea matInput formControlName="note" rows="2"></textarea>
             </mat-form-field>
 
             <button
               mat-flat-button
               color="primary"
               type="submit"
-              [disabled]="approveForm.invalid"
             >
               <mat-icon>check_circle</mat-icon>
               Approuver la demande
@@ -239,13 +226,17 @@
       <mat-divider></mat-divider>
       <section class="section">
         <h3>Résultat</h3>
-        @if (d.status === 'authorized') {
+        @if (d.status === 'approved') {
           <div class="result-block result-ok">
             <mat-icon>check_circle</mat-icon>
             <div>
-              <strong>Approuvée</strong> le {{ formatDate(d.authorized_at) }}<br />
-              Montant autorisé : <strong>{{ d.amount_authorized_ttc | number:'1.2-2' }} € TTC</strong><br />
+              <strong>Approuvée</strong> le {{ formatDate(d.approved_at) }}<br />
+              Montant autorisé :
+              <strong>{{ (d.amount_authorized_ttc_cents ?? d.amount_ttc_cents) / 100 | number:'1.2-2' }} € TTC</strong><br />
               Expire le : {{ formatDate(d.expires_at) }}
+              @if (d.approve_note) {
+                <br />Note : {{ d.approve_note }}
+              }
             </div>
           </div>
         } @else if (d.status === 'rejected') {
@@ -261,7 +252,8 @@
             <mat-icon>receipt_long</mat-icon>
             <div>
               <strong>Facture uploadée et consommée</strong><br />
-              Montant autorisé : {{ d.amount_authorized_ttc | number:'1.2-2' }} € TTC
+              Montant autorisé :
+              {{ (d.amount_authorized_ttc_cents ?? d.amount_ttc_cents) / 100 | number:'1.2-2' }} € TTC
             </div>
           </div>
         } @else if (d.status === 'expired') {

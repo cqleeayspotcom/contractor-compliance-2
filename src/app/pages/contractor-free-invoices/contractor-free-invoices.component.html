@@ -40,15 +40,16 @@
         <article class="card status-{{ r.status }}">
           <header>
             <span class="badge">{{ statusLabel(r.status) }}</span>
-            <h3>{{ r.subject }}</h3>
+            <h3>{{ r.client_name }}</h3>
           </header>
           <dl>
-            <dt>Montant demandé</dt><dd>{{ r.requested_amount_ttc | number:'1.2-2' }} € TTC</dd>
-            @if (r.amount_authorized_ttc !== null) {
-              <dt>Montant autorisé</dt><dd>{{ r.amount_authorized_ttc | number:'1.2-2' }} € TTC</dd>
+            <dt>Prestation</dt><dd>{{ r.description }}</dd>
+            <dt>Montant demandé</dt><dd>{{ r.amount_ttc_cents / 100 | number:'1.2-2' }} € TTC</dd>
+            @if (r.amount_authorized_ttc_cents !== null) {
+              <dt>Montant autorisé</dt><dd>{{ r.amount_authorized_ttc_cents / 100 | number:'1.2-2' }} € TTC</dd>
             }
             <dt>Créée le</dt><dd>{{ r.created_at | date:'dd/MM/yyyy' }}</dd>
-            @if (r.status === 'authorized' && r.expires_at) {
+            @if (r.status === 'approved' && r.expires_at) {
               <dt>À uploader avant le</dt><dd>{{ r.expires_at | date:'dd/MM/yyyy' }}</dd>
             } @else if (r.expires_at) {
               <dt>Expire le</dt><dd>{{ r.expires_at | date:'dd/MM/yyyy' }}</dd>
@@ -58,48 +59,26 @@
             }
           </dl>
 
-          @if (r.status === 'authorized' && !r.invoice_status) {
+          @if (r.status === 'approved') {
             <p class="next-step">
               Émettez maintenant votre facture officielle de
-              <strong>{{ (r.amount_authorized_ttc ?? r.requested_amount_ttc) | number:'1.2-2' }} € TTC</strong>
+              <strong>{{ (r.amount_authorized_ttc_cents ?? r.amount_ttc_cents) / 100 | number:'1.2-2' }} € TTC</strong>
               adressée à <strong>Tuita SAS</strong>, puis téléversez-la ici avant le
               <strong>{{ r.expires_at | date:'dd/MM/yyyy' }}</strong>.
             </p>
           }
 
-          <!-- Statut de la dernière facture uploadée (si une existe) -->
-          @if (r.invoice_status) {
-            <div class="invoice-state invoice-state--{{ invoiceStateBadge(r.invoice_status) }}">
-              <mat-icon>{{ invoiceStateIcon(r.invoice_status) }}</mat-icon>
-              <div class="invoice-state__text">
-                <strong>{{ invoiceStateLabel(r.invoice_status) }}</strong>
-                @if (r.last_invoice_rejection_details && r.last_invoice_rejection_details.length > 0) {
-                  <p class="invoice-state__detail">{{ r.last_invoice_rejection_details[0] }}</p>
-                } @else if (r.last_invoice_rejection_reason) {
-                  <p class="invoice-state__detail">{{ r.last_invoice_rejection_reason }}</p>
-                }
-              </div>
-            </div>
-          }
-
           <footer>
-            @if (r.status === 'pending_admin_approval') {
+            @if (r.status === 'pending_approval') {
               <button mat-button (click)="cancel(r.uuid)">Annuler ma demande</button>
             }
-            <!--
-              Le bouton "Uploader" n'apparaît que :
-                - status request = authorized
-                - aucune facture active rattachée (le backend filtre déjà via activeInvoice mais on
-                  re-vérifie côté UI pour éviter d'afficher un bouton qui mènera à un 409)
-                - OU la dernière facture a été rejetée → label "Re-uploader" + raison visible plus haut
-            -->
-            @if (r.status === 'authorized' && canUpload(r)) {
+            <!-- Upload du PDF : possible uniquement une fois la demande approuvée
+                 (status = approved). Après upload le backend bascule la demande
+                 en `consumed` → le bouton disparaît de lui-même. -->
+            @if (r.status === 'approved') {
               <button mat-flat-button color="primary" (click)="openUpload(r)">
-                {{ r.invoice_status === 'rejected' ? 'Re-uploader la facture corrigée' : 'Uploader la facture' }}
+                Uploader la facture
               </button>
-            }
-            @if (r.invoice_uuid && r.invoice_status !== 'rejected') {
-              <a mat-button [routerLink]="['/invoices', r.invoice_uuid]">Voir la facture</a>
             }
           </footer>
         </article>

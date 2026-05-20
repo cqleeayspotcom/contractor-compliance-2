@@ -33,7 +33,7 @@
               <tr>
                 <th>Date</th>
                 <th>Contractor</th>
-                <th>Sujet</th>
+                <th>Client facturé</th>
                 <th>Montant demandé</th>
                 <th></th>
               </tr>
@@ -48,8 +48,8 @@
                       <span class="contractor-meta">{{ r.contractor.siren }}</span>
                     }
                   </td>
-                  <td>{{ r.subject }}</td>
-                  <td class="amount">{{ r.requested_amount_ttc | number:'1.2-2' }} €</td>
+                  <td>{{ r.client_name }}</td>
+                  <td class="amount">{{ r.amount_ttc_cents / 100 | number:'1.2-2' }} €</td>
                   <td class="actions-cell">
                     <button mat-stroked-button color="primary" (click)="$event.stopPropagation(); openDetail(r.uuid, 'pending')">
                       Examiner
@@ -75,7 +75,7 @@
               <tr>
                 <th>Date</th>
                 <th>Contractor</th>
-                <th>Sujet</th>
+                <th>Client facturé</th>
                 <th>Montant</th>
                 <th>Statut demande</th>
                 <th>Facture</th>
@@ -87,9 +87,9 @@
                 <tr (click)="openDetail(r.uuid, 'all')" class="clickable">
                   <td>{{ formatDate(r.created_at) }}</td>
                   <td>{{ r.contractor?.name ?? '—' }}</td>
-                  <td>{{ r.subject }}</td>
+                  <td>{{ r.client_name }}</td>
                   <td class="amount">
-                    {{ (r.amount_authorized_ttc ?? r.requested_amount_ttc) | number:'1.2-2' }} €
+                    {{ (r.amount_authorized_ttc_cents ?? r.amount_ttc_cents) / 100 | number:'1.2-2' }} €
                   </td>
                   <td>
                     <span class="status-chip status-{{ r.status }}">{{ statusLabel(r.status) }}</span>

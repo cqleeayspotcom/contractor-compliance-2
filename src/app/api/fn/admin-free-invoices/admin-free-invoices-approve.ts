@@ -7,12 +7,12 @@ import { filter, map } from 'rxjs/operators';
 import { StrictHttpResponse } from '../../strict-http-response';
 import { RequestBuilder } from '../../request-builder';
 
-import { JsonObject } from '../../models/json-object';
+import { AdminFreeInvoiceApproveRequest } from '../../models/admin-free-invoice-approve-request';
 import { SuccessEnvelope } from '../../models/success-envelope';
 
 export interface AdminFreeInvoicesApprove$Params {
   uuid: string;
-      body: JsonObject
+      body: AdminFreeInvoiceApproveRequest
 }
 
 export function adminFreeInvoicesApprove(http: HttpClient, rootUrl: string, params: AdminFreeInvoicesApprove$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {

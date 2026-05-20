@@ -39,7 +39,13 @@ export class AdminFreeInvoiceService {
     return from(this.api.invoke(adminFreeInvoicesGet, { uuid }) as Promise<{ data: any }>);
   }
 
-  approve(uuid: string, body: { amount_authorized_ttc: number; comment?: string }): Observable<unknown> {
+  /**
+   * Approuve une demande de facture libre. F4 : le front n'envoie PAS de
+   * montant autorisé — le backend `FreeInvoiceService::approve` fige le montant
+   * autorisé sur le montant demandé. Seuls une note interne et une durée de
+   * validité (`ttl_hours`) optionnelles sont transmises.
+   */
+  approve(uuid: string, body: { note?: string; ttl_hours?: number }): Observable<unknown> {
     return from(this.api.invoke(adminFreeInvoicesApprove, { uuid, body: body as any }));
   }
 
