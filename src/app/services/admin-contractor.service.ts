@@ -129,23 +129,29 @@ export interface Paginated<T> {
   meta: PaginatedMeta;
 }
 
+/**
+ * Ligne de la table « Documents » du back-office contractor.
+ *
+ * Les noms de clés suivent STRICTEMENT le payload de
+ * `AdminContractorsController::documentsAction` (backend Laminas). Toute
+ * divergence de nom casse silencieusement l'affichage : la colonne reste vide
+ * ou affiche « vundefined ».
+ */
 export interface ContractorDocumentRow {
   uuid: string;
   type: string;
   status: string;
-  expires_at: string | null;
-  verified_at: string | null;
-  rejection_reason: string | null;
-  rejection_details: string | null;
-  original_filename: string | null;
-  document_version: number;
+  failure_reason: string | null;
+  failure_detail: string | null;
+  version: number;
   is_current_version: boolean;
+  superseded_by_id: number | null;
   mime_type: string | null;
   file_size_bytes: number | null;
-  created_at: string | null;
-  preview_url: string;
-  download_url: string;
-  detail_url: string;
+  original_filename: string | null;
+  issued_at: string | null;
+  expires_at: string | null;
+  uploaded_at: string | null;
 }
 
 export interface ContractorKycRow {

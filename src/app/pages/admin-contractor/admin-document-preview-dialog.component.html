@@ -7,7 +7,7 @@
         <p class="doc-preview__meta">
           <code>{{ row.type }}</code>
           · <span class="status-pill" [class]="'status-' + row.status">{{ row.status }}</span>
-          <span *ngIf="row.document_version > 1"> · v{{ row.document_version }}</span>
+          <span *ngIf="row.version > 1"> · v{{ row.version }}</span>
         </p>
       </div>
     </div>

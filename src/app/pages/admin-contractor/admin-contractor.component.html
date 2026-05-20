@@ -295,7 +295,9 @@
                 </th>
                 <td mat-cell *matCellDef="let row">
                   <span class="status-pill" [class]="'status-' + row.status">{{ row.status }}</span>
-                  <small *ngIf="row.rejection_reason" class="muted block">{{ row.rejection_reason }}</small>
+                  <small *ngIf="row.failure_detail || row.failure_reason" class="muted block">
+                    {{ row.failure_detail || row.failure_reason }}
+                  </small>
                 </td>
               </ng-container>
 
@@ -310,14 +312,14 @@
                 </td>
               </ng-container>
 
-              <ng-container matColumnDef="verified_at">
-                <th mat-header-cell *matHeaderCellDef>Vérifié le</th>
-                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.verified_at) }}</td>
+              <ng-container matColumnDef="uploaded_at">
+                <th mat-header-cell *matHeaderCellDef>Uploadé le</th>
+                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.uploaded_at) }}</td>
               </ng-container>
 
               <ng-container matColumnDef="version">
                 <th mat-header-cell *matHeaderCellDef>Version</th>
-                <td mat-cell *matCellDef="let row">v{{ row.document_version }}</td>
+                <td mat-cell *matCellDef="let row">v{{ row.version }}</td>
               </ng-container>
 
               <ng-container matColumnDef="actions">

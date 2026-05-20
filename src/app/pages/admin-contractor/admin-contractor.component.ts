@@ -178,7 +178,7 @@ export class AdminContractorComponent implements OnInit {
   });
 
   // Display columns
-  readonly documentColumns = ['type', 'status', 'expires_at', 'verified_at', 'version', 'actions'];
+  readonly documentColumns = ['type', 'status', 'expires_at', 'uploaded_at', 'version', 'actions'];
   readonly kycColumns = ['status', 'biometric_provider', 'face_match_score', 'failure_reason', 'completed_at'];
   readonly invoiceColumns = ['number', 'status', 'amount', 'mission', 'issued_at', 'created_at'];
   readonly purchaseColumns = ['document_type', 'siren', 'source', 'status', 'price', 'created_at'];
