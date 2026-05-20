@@ -1123,6 +1123,26 @@
   }
 }
 
+// Compteur d'essais regroupés — tableau "Inscriptions récentes"
+.signup-attempts {
+  display: inline-block;
+  min-width: 22px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  background: #e5e7eb;
+  color: #374151;
+
+  // Plusieurs tentatives pour le même numéro : mis en évidence pour
+  // attirer l'œil (numéro de test E2E, ou contractor qui a réessayé).
+  &--multi {
+    background: #dbeafe;
+    color: #1e40af;
+  }
+}
+
 // --- Widgets « À contacter » ---------------------------------------------
 
 .cadmin__widget-title {

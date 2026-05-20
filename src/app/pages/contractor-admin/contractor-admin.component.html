@@ -203,32 +203,69 @@
       Inscriptions récentes
     </h2>
 
-    @if (signupAttempts().length > 0) {
+    @if (signupGroups().length > 0) {
       <div class="cadmin__card">
-        <table mat-table [dataSource]="signupAttempts()" [trackBy]="trackBySignup" class="signup-table">
+        <!-- Lignes regroupées par téléphone : une ligne = un numéro, avec
+             sa DERNIÈRE tentative + le nombre total d'essais. Évite la
+             répétition d'un même numéro de test (cf. signupGroups). -->
+        <table mat-table [dataSource]="signupGroups()" [trackBy]="trackBySignupGroup" class="signup-table">
           <ng-container matColumnDef="created_at">
-            <th mat-header-cell *matHeaderCellDef>Date</th>
-            <td mat-cell *matCellDef="let row">{{ row.created_at | date:'short' }}</td>
+            <th mat-header-cell *matHeaderCellDef>Dernier essai</th>
+            <td mat-cell *matCellDef="let row">{{ row.lastCreatedAt | date:'short' }}</td>
           </ng-container>
           <ng-container matColumnDef="phone">
             <th mat-header-cell *matHeaderCellDef>Téléphone</th>
-            <td mat-cell *matCellDef="let row">{{ row.phone_input || '—' }}</td>
+            <td mat-cell *matCellDef="let row">{{ row.phone }}</td>
           </ng-container>
           <ng-container matColumnDef="name">
             <th mat-header-cell *matHeaderCellDef>Nom</th>
-            <td mat-cell *matCellDef="let row">{{ signupName(row) }}</td>
+            <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+          </ng-container>
+          <ng-container matColumnDef="code">
+            <th mat-header-cell *matHeaderCellDef>Code</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.lastCode || '—' }}
+              <!-- +N : nombre de codes d'invitation DISTINCTS en plus de
+                   celui affiché — signal anti-fraude (un numéro qui teste
+                   plusieurs codes). -->
+              @if (row.distinctCodes > 1) {
+                <span class="signup-multi-hint" title="Codes d'invitation distincts utilisés">
+                  +{{ row.distinctCodes - 1 }}
+                </span>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="ip">
+            <th mat-header-cell *matHeaderCellDef>IP</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.lastIp || '—' }}
+              <!-- +N : nombre d'IP DISTINCTES en plus de celle affichée. -->
+              @if (row.distinctIps > 1) {
+                <span class="signup-multi-hint" title="Adresses IP distinctes">
+                  +{{ row.distinctIps - 1 }}
+                </span>
+              }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="attempts">
+            <th mat-header-cell *matHeaderCellDef>Essais</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="signup-attempts" [class.signup-attempts--multi]="row.attempts > 1">
+                {{ row.attempts }}
+              </span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Statut</th>
             <td mat-cell *matCellDef="let row">
-              <span class="signup-status" [class]="'signup-status--' + signupStatusTone(row.status)">
-                {{ signupStatusLabel(row.status) }}
+              <span class="signup-status" [class]="'signup-status--' + signupStatusTone(row.lastStatus)">
+                {{ signupStatusLabel(row.lastStatus) }}
               </span>
             </td>
           </ng-container>
           <ng-container matColumnDef="reason">
             <th mat-header-cell *matHeaderCellDef>Raison</th>
-            <td mat-cell *matCellDef="let row">{{ row.failure_detail || '—' }}</td>
+            <td mat-cell *matCellDef="let row">{{ row.lastFailureDetail || '—' }}</td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="signupAttemptColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: signupAttemptColumns;"></tr>

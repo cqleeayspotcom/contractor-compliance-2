@@ -104,12 +104,50 @@ interface SignupAttemptRow {
   code_input?: string | null;
   phone_input?: string | null;
   status?: string | null;
+  // IP cliente loggée par AdminSignupAttemptsController (clé `ip`) —
+  // seul élément d'identification quand la tentative n'a ni téléphone
+  // ni nom (échec précoce avant validation).
+  ip?: string | null;
   first_name?: string | null;
   last_name?: string | null;
   company_name?: string | null;
   siren?: string | null;
   failure_detail?: string | null;
   created_at: string;
+}
+
+/**
+ * Tentatives d'inscription regroupées par téléphone — modèle d'affichage
+ * du widget « Inscriptions récentes ».
+ *
+ * POURQUOI : la table backend `cc_signup_attempts` est un journal
+ * append-only (cf. entité SignupAttempt « forensic log »). Un même numéro
+ * — numéro de test E2E vidé/recréé entre chaque run, ou contractor qui
+ * réessaie — y génère N lignes. Afficher chaque ligne brute noie le
+ * dashboard de doublons. On agrège donc côté client : une ligne par
+ * numéro, portant la DERNIÈRE tentative + le nombre total d'essais.
+ */
+interface SignupAttemptGroup {
+  /** phone_input du numéro, ou '—' si la tentative n'avait pas de téléphone. */
+  phone: string;
+  /** Nom complet issu de la tentative la plus récente. */
+  name: string;
+  /** Nombre de tentatives regroupées (sur la fenêtre renvoyée par le backend). */
+  attempts: number;
+  /** created_at de la tentative la plus récente. */
+  lastCreatedAt: string;
+  /** Statut de la tentative la plus récente. */
+  lastStatus: string | null;
+  /** Détail d'échec de la tentative la plus récente. */
+  lastFailureDetail: string | null;
+  /** Code d'invitation de la tentative la plus récente. */
+  lastCode: string | null;
+  /** IP cliente de la tentative la plus récente. */
+  lastIp: string | null;
+  /** Nombre d'IP distinctes parmi les tentatives regroupées (signal anti-fraude). */
+  distinctIps: number;
+  /** Nombre de codes d'invitation distincts parmi les tentatives regroupées. */
+  distinctCodes: number;
 }
 
 // Champs exposés par AdminOutreachController::outreachAction (PHP) —
@@ -226,7 +264,16 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     return this.accountStateEntries().reduce((sum, e) => sum + e.value, 0);
   });
 
-  readonly signupAttemptColumns = ['created_at', 'phone', 'name', 'status', 'reason'];
+  /**
+   * Tentatives d'inscription regroupées par téléphone, limitées aux 20
+   * numéros les plus récents. Recalculé automatiquement à chaque mise à
+   * jour du signal `signupAttempts`.
+   */
+  readonly signupGroups = computed<SignupAttemptGroup[]>(
+    () => this.groupSignupAttempts(this.signupAttempts()).slice(0, 20),
+  );
+
+  readonly signupAttemptColumns = ['created_at', 'phone', 'name', 'code', 'ip', 'attempts', 'status', 'reason'];
   readonly topCodeColumns = ['code', 'generated_by', 'uses', 'status'];
   readonly qcmBlockedColumns = ['name', 'phone', 'attempts', 'last_score', 'actions'];
   readonly qcmCertifiedColumns = ['name', 'phone', 'attempts_to_pass', 'certified_at', 'actions'];
@@ -385,9 +432,11 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     try {
       const res = await this.api.invoke(adminSignupAttemptsList);
       const rows = (res as { data?: SignupAttemptRow[] })?.data ?? [];
-      // Limité aux 20 plus récents — le backend renvoie déjà trié desc, on
-      // tronque côté client pour éviter de surcharger l'UI dashboard.
-      this.signupAttempts.set(rows.slice(0, 20));
+      // On conserve TOUTES les lignes renvoyées par le backend (≈50, fenêtre
+      // 7 jours) : le regroupement par téléphone (cf. signupGroups) compte
+      // les essais sur cet ensemble. Tronquer ici fausserait le compteur.
+      // La limite à 20 s'applique aux GROUPES, pas aux lignes brutes.
+      this.signupAttempts.set(rows);
     } catch (err) {
       this.signupAttempts.set([]);
       this.handleError(err, 'signup-attempts');
@@ -549,8 +598,72 @@ export class ContractorAdminComponent implements OnInit, OnDestroy {
     return item.key;
   }
 
-  trackBySignup(_index: number, item: SignupAttemptRow): string {
-    return item.uuid;
+  /** trackBy du tableau « Inscriptions récentes » regroupé par téléphone.
+   *  Clé = numéro + date du dernier essai (reste unique même pour plusieurs
+   *  groupes « — » sans téléphone). */
+  trackBySignupGroup(_index: number, item: SignupAttemptGroup): string {
+    return item.phone + '|' + item.lastCreatedAt;
+  }
+
+  /**
+   * Regroupe les tentatives d'inscription par numéro de téléphone.
+   *
+   * Les lignes arrivent triées desc (plus récent d'abord — `ORDER BY a.id
+   * DESC` côté backend) : la PREMIÈRE ligne rencontrée pour un numéro est
+   * donc la plus récente. La Map conserve l'ordre d'insertion, les groupes
+   * ressortent donc déjà triés par récence du dernier essai.
+   *
+   * Une tentative sans téléphone (échec précoce avant validation) est
+   * gardée comme groupe distinct (clé = uuid) pour ne pas fusionner des
+   * échecs anonymes sans rapport entre eux.
+   */
+  private groupSignupAttempts(rows: SignupAttemptRow[]): SignupAttemptGroup[] {
+    const groups = new Map<string, SignupAttemptGroup>();
+    // Sets de suivi des valeurs distinctes (IP / codes), indexés par la
+    // même clé que `groups` — sert à calculer distinctIps / distinctCodes.
+    const ipSets = new Map<string, Set<string>>();
+    const codeSets = new Map<string, Set<string>>();
+
+    for (const row of rows) {
+      const phone = (row.phone_input ?? '').trim();
+      const key = phone !== '' ? phone : `uuid:${row.uuid}`;
+      const ip = (row.ip ?? '').trim();
+      const code = (row.code_input ?? '').trim();
+
+      let group = groups.get(key);
+      if (!group) {
+        // 1re ligne rencontrée = la plus récente (tri desc) : ses code/IP
+        // servent donc de valeur « dernier essai » du groupe.
+        group = {
+          phone: phone !== '' ? phone : '—',
+          name: this.signupName(row),
+          attempts: 0,
+          lastCreatedAt: row.created_at,
+          lastStatus: row.status ?? null,
+          lastFailureDetail: row.failure_detail ?? null,
+          lastCode: code !== '' ? code : null,
+          lastIp: ip !== '' ? ip : null,
+          distinctIps: 0,
+          distinctCodes: 0,
+        };
+        groups.set(key, group);
+        ipSets.set(key, new Set<string>());
+        codeSets.set(key, new Set<string>());
+      }
+      group.attempts += 1;
+      if (ip !== '') {
+        ipSets.get(key)!.add(ip);
+      }
+      if (code !== '') {
+        codeSets.get(key)!.add(code);
+      }
+    }
+
+    for (const [key, group] of groups) {
+      group.distinctIps = ipSets.get(key)!.size;
+      group.distinctCodes = codeSets.get(key)!.size;
+    }
+    return Array.from(groups.values());
   }
 
   /** Nom complet de la tentative, ou '—' si non renseigné (échec précoce). */
