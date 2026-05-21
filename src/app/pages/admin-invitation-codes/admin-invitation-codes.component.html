@@ -128,7 +128,7 @@
           <td mat-cell *matCellDef="let row">
             <button mat-icon-button type="button"
                     matTooltip="Détail + édition note"
-                    (click)="openDetail(row)">
+                    (click)="openDetail(row, $event)">
               <mat-icon>visibility</mat-icon>
             </button>
             @if (!row.revoked_at) {

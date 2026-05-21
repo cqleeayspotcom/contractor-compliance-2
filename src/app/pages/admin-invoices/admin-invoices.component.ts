@@ -49,6 +49,7 @@ import {
   InvoiceDetail,
   PaginatedInvoices,
   InvoiceSearchFilters,
+  DisputeResolution,
 } from '../../services/admin-invoice.service';
 import { adminInvoicesValidate } from '../../api/fn/admin-invoices/admin-invoices-validate';
 import { AdminDialogService } from '../../services/admin-dialog.service';
@@ -699,18 +700,39 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.openActionDialog(
       {
         title: 'Résoudre le litige',
-        body: `Cette action efface le flag paid_disputed_at sur la facture.`,
+        body: `Clôture le litige : enregistre une décision comptable dans l'audit trail.`,
         confirmLabel: 'Résoudre',
         cancelLabel: 'Annuler',
         danger: false,
         fields: [
-          { key: 'resolution', label: 'Résolution (description)', type: 'textarea', required: true, value: '' },
+          {
+            key: 'resolution',
+            label: 'Décision comptable',
+            type: 'select',
+            required: true,
+            value: '',
+            options: [
+              { value: 'credit_note_issued', label: 'Avoir émis' },
+              { value: 'amicable_refund', label: 'Remboursement à l\'amiable' },
+              { value: 'no_action', label: 'Aucune action nécessaire' },
+            ],
+          },
+          {
+            key: 'notes',
+            label: 'Justification (20 caractères min.)',
+            type: 'textarea',
+            required: true,
+            minLength: 20,
+            value: '',
+            hint: 'Consignée dans l\'audit trail — l\'URSSAF peut en demander le détail.',
+          },
         ],
         invoice: inv,
       },
       ctx => {
-        const resolution = this.fieldValue(ctx, 'resolution').trim();
-        this.api.resolveDispute(inv.uuid, { resolution }, inv.updated_at ?? undefined).subscribe({
+        const resolution = this.fieldValue(ctx, 'resolution').trim() as DisputeResolution;
+        const notes = this.fieldValue(ctx, 'notes').trim();
+        this.api.resolveDispute(inv.uuid, { resolution, notes }, inv.updated_at ?? undefined).subscribe({
           next: () => this.afterAction('Litige résolu'),
           error: err => this.handleConflictOrFallback(err, 'resolve-dispute'),
         });

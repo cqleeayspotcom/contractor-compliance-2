@@ -492,7 +492,7 @@ components:
       required: true
       schema:
         type: string
-        pattern: '^[A-Za-z0-9]{4}$'
+        pattern: '^[A-Za-z0-9]{4,32}$'
     ServiceParam:
       name: service
       in: path
@@ -2439,7 +2439,7 @@ paths:
     post:
       tags: [AdminInvoices]
       operationId: adminInvoicesResolveDispute
-      summary: Alias historique de `dispute` (J5 stub) — déclenche `transitionToDispute`.
+      summary: Clôture un litige ouvert sur une facture payée (enregistre une décision comptable).
       security: [{ bearerAuth: [] }]
       parameters: [{ $ref: '#/components/parameters/Uuid' }]
       requestBody:
@@ -2448,11 +2448,18 @@ paths:
           application/json:
             schema:
               type: object
-              required: [reason]
+              required: [resolution, notes]
               properties:
-                reason:
+                resolution:
                   type: string
-                  description: Motif du litige.
+                  description: Décision comptable retenue pour clôturer le litige.
+                  enum: [credit_note_issued, amicable_refund, no_action]
+                notes:
+                  type: string
+                  minLength: 20
+                  description: >-
+                    Justification comptable du règlement (20 caractères minimum).
+                    Consignée dans l'audit trail — l'URSSAF peut en demander le détail.
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
   /contractor-compliance/admin/invoices/{uuid}/add-note:

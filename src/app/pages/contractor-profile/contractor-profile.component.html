@@ -30,6 +30,13 @@
           </div>
         </div>
         <div class="profile-row">
+          <mat-icon class="profile-row__icon">mail</mat-icon>
+          <div class="profile-row__body">
+            <span class="profile-row__label">Email</span>
+            <span class="profile-row__value">{{ p.identity.email || '-' }}</span>
+          </div>
+        </div>
+        <div class="profile-row">
           <mat-icon class="profile-row__icon">business</mat-icon>
           <div class="profile-row__body">
             <span class="profile-row__label">Entreprise</span>
@@ -47,20 +54,9 @@
           Notifications par email
         </h3>
         <p class="profile-section__hint">
-          Renseignez votre adresse email puis activez les types d'alertes que vous souhaitez recevoir.
-          Sans email renseigné, vous ne recevrez rien - il n'y a pas de cloche dans le portail.
+          Vos alertes sont envoyées à l'email de votre compte (ci-dessus).
+          Activez les types d'alertes que vous souhaitez recevoir.
         </p>
-
-        <mat-form-field appearance="outline" class="profile-section__field">
-          <mat-label>Adresse email</mat-label>
-          <input
-            matInput
-            type="email"
-            [ngModel]="draft()?.email_address"
-            (ngModelChange)="updateDraft('email_address', $event || null)"
-            placeholder="vous@exemple.fr"
-          />
-        </mat-form-field>
 
         <div class="toggle-row">
           <mat-icon class="toggle-row__icon">payments</mat-icon>

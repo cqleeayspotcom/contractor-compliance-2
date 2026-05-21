@@ -140,6 +140,55 @@
 }
 
 // Datepicker / calendrier
+//
+// ── Panneau du calendrier (popup) — fix transparence ────────────────────────
+// Même bug que le tooltip : le thème Material n'étant jamais appliqué, le
+// conteneur `.mat-datepicker-content` lit son fond / son ombre / son arrondi
+// via des variables de design non définies :
+//   background-color: var(--mat-datepicker-calendar-container-background-color,
+//                         var(--mat-sys-surface-container-high)) → transparent
+//   box-shadow:       var(--mat-datepicker-calendar-container-elevation-shadow,
+//                         0 0 0 0 …) → aucune ombre
+//   border-radius:    var(--mat-datepicker-calendar-container-shape,
+//                         var(--mat-sys-corner-large)) → 0
+// Résultat : en cliquant sur un champ date, le calendrier s'affiche « à nu »
+// par-dessus la page (on voit le contenu derrière, cf. capture).
+//
+// Fix : on définit les variables `--mat-datepicker-*` aux valeurs Tuita
+// directement sur le conteneur (la CSS de structure de Material les relit sur
+// ce même élément). On pose aussi les propriétés en dur en filet de sécurité.
+// `.mat-datepicker-content-touch` = variante plein écran (mobile / touchUi).
+.mat-datepicker-content,
+.mat-datepicker-content-touch {
+  --mat-datepicker-calendar-container-background-color: #ffffff;
+  --mat-datepicker-calendar-container-text-color: #{tuita.$t-color};
+  --mat-datepicker-calendar-container-shape: #{tuita.$t-card-border-radius};
+  --mat-datepicker-calendar-container-touch-shape: #{tuita.$tools-radius};
+  --mat-datepicker-calendar-container-elevation-shadow:
+    0 8px 24px rgba(tuita.$t-text-black, 0.18),
+    0 2px 6px rgba(tuita.$t-text-black, 0.10);
+  --mat-datepicker-calendar-container-touch-elevation-shadow:
+    0 12px 40px rgba(tuita.$t-text-black, 0.24),
+    0 4px 12px rgba(tuita.$t-text-black, 0.12);
+
+  background-color: #ffffff;
+  color: tuita.$t-color;
+}
+
+.mat-datepicker-content {
+  border-radius: tuita.$t-card-border-radius;
+  box-shadow:
+    0 8px 24px rgba(tuita.$t-text-black, 0.18),
+    0 2px 6px rgba(tuita.$t-text-black, 0.10);
+}
+
+.mat-datepicker-content-touch {
+  border-radius: tuita.$tools-radius;
+  box-shadow:
+    0 12px 40px rgba(tuita.$t-text-black, 0.24),
+    0 4px 12px rgba(tuita.$t-text-black, 0.12);
+}
+
 .mat-calendar {
   font-family: tuita.$t-default-font;
 

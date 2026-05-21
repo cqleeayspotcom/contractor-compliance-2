@@ -112,7 +112,12 @@ export class AdminInvitationCodesComponent implements OnInit {
   }
 
   setStatus(s: StatusFilter): void {
+    if (s === this.statusFilter()) return;
     this.statusFilter.set(s);
+    // Vide la table pour que le skeleton de chargement s'affiche pendant la
+    // requête du nouvel onglet (sinon l'ancienne liste reste figée 3-5 s,
+    // sans aucun signe de chargement).
+    this.rows.set([]);
     this.refresh();
   }
 
@@ -129,9 +134,13 @@ export class AdminInvitationCodesComponent implements OnInit {
     });
   }
 
-  openDetail(row: InvitationCodeRow): void {
+  openDetail(row: InvitationCodeRow, ev?: Event): void {
+    // stopPropagation : le bouton « œil » est dans la <tr> qui porte aussi
+    // (click)="openDetail". Sans ça, un clic sur l'icône déclenche openDetail
+    // DEUX fois → deux dialogs empilés + deux requêtes détail.
+    ev?.stopPropagation();
     this.dialog.open(CodeDetailDialogComponent, {
-      data: { uuid: row.uuid },
+      data: { code: row.code },
       width: '880px',
       maxWidth: '96vw',
       maxHeight: '90vh',
@@ -152,7 +161,7 @@ export class AdminInvitationCodesComponent implements OnInit {
       type: 'warning',
     }).subscribe((ok) => {
       if (!ok) return;
-      this.api.revoke(row.uuid).subscribe({
+      this.api.revoke(row.code).subscribe({
         next: () => {
           this.snack.open('Code révoqué.', 'OK', { duration: 3000 });
           this.refresh();

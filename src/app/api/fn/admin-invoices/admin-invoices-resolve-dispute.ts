@@ -14,9 +14,14 @@ export interface AdminInvoicesResolveDispute$Params {
       body: {
 
 /**
- * Motif du litige.
+ * Décision comptable retenue pour clôturer le litige.
  */
-'reason': string;
+'resolution': 'credit_note_issued' | 'amicable_refund' | 'no_action';
+
+/**
+ * Justification comptable du règlement (20 caractères minimum). Consignée dans l'audit trail — l'URSSAF peut en demander le détail.
+ */
+'notes': string;
 }
 }
 

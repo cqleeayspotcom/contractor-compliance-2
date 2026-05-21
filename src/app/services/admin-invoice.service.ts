@@ -342,8 +342,13 @@ export interface ReopenBody {
   reason: string;
 }
 
+/** Les 3 décisions comptables possibles pour clôturer un litige (parité backend). */
+export type DisputeResolution = 'credit_note_issued' | 'amicable_refund' | 'no_action';
+
 export interface ResolveDisputeBody {
-  resolution: string;
+  resolution: DisputeResolution;
+  /** Justification comptable — 20 caractères minimum, exigé par le backend. */
+  notes: string;
 }
 
 export interface AddNoteBody {
@@ -524,14 +529,14 @@ export class AdminInvoiceService {
   }
 
   /**
-   * Backend `resolveDisputeAction` (alias de `disputeAction`) lit
-   * `body.reason` — on remappe le champ historique `resolution` du frontend
-   * vers la clé attendue côté serveur.
+   * Clôture un litige. Le backend `resolveDisputeAction` exige `resolution`
+   * (énumération comptable fermée) + `notes` (≥ 20 caractères) — les deux
+   * sont enregistrés dans l'audit trail.
    */
   resolveDispute(uuid: string, body: ResolveDisputeBody, _ifUnchangedSince?: string): Observable<unknown> {
     return from(this.api.invoke(adminInvoicesResolveDispute, {
       uuid,
-      body: { reason: body.resolution },
+      body,
     }) as Promise<unknown>);
   }
 

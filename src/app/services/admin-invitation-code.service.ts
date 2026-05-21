@@ -91,27 +91,29 @@ export class AdminInvitationCodeService {
     );
   }
 
-  detail(uuid: string): Observable<{ data: InvitationCodeDetail }> {
-    // POURQUOI : le paramètre OpenAPI s'appelle `code`, mais le backend
-    // accepte aussi l'uuid. Les composants passent historiquement `row.uuid`.
+  detail(code: string): Observable<{ data: InvitationCodeDetail }> {
+    // Le segment de route backend `{code}` est la valeur courte du code
+    // (cf. AdminInvitationCodesController::showAction → findByCode), PAS
+    // l'UUID. La contrainte de route rejette tout ce qui n'est pas un code,
+    // donc on doit toujours passer `row.code` ici.
     return from(
-      this.api.invoke(adminInvitationCodesShow, { code: uuid }).then((env) => ({
+      this.api.invoke(adminInvitationCodesShow, { code }).then((env) => ({
         data: (env as { data: InvitationCodeDetail }).data,
       })),
     );
   }
 
-  revoke(uuid: string): Observable<{ data: InvitationCodeRow }> {
+  revoke(code: string): Observable<{ data: InvitationCodeRow }> {
     return from(
-      this.api.invoke(adminInvitationCodesRevoke, { code: uuid }).then((env) => ({
+      this.api.invoke(adminInvitationCodesRevoke, { code }).then((env) => ({
         data: (env as { data: InvitationCodeRow }).data,
       })),
     );
   }
 
-  updateNote(uuid: string, note: string): Observable<{ data: InvitationCodeRow }> {
+  updateNote(code: string, note: string): Observable<{ data: InvitationCodeRow }> {
     return from(
-      this.api.invoke(adminInvitationCodesUpdateNote, { code: uuid, body: { note } }).then((env) => ({
+      this.api.invoke(adminInvitationCodesUpdateNote, { code, body: { note } }).then((env) => ({
         data: (env as { data: InvitationCodeRow }).data,
       })),
     );

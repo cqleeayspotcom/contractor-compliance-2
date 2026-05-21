@@ -23,12 +23,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Observable } from 'rxjs';
 
-import { AdminInvoiceService, InvoiceDetail } from '../../../services/admin-invoice.service';
+import { AdminInvoiceService, DisputeResolution, InvoiceDetail } from '../../../services/admin-invoice.service';
 import { AdminDialogShellComponent } from '../admin-dialog-shell/admin-dialog-shell.component';
 import { InvoiceStatusChipComponent } from '../invoice-status-chip/invoice-status-chip.component';
 
@@ -41,9 +42,13 @@ export interface AdminInvoiceDialogData {
 interface ConfirmField {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'date';
+  type: 'text' | 'textarea' | 'date' | 'select';
   value: string;
   required: boolean;
+  /** Longueur minimale exigée (champs texte uniquement). */
+  minLength?: number;
+  /** Choix proposés pour un champ `select`. */
+  options?: { value: string; label: string }[];
   hint?: string;
 }
 
@@ -81,6 +86,7 @@ interface ConfirmContext {
     MatMenuModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
     AdminDialogShellComponent,
@@ -378,11 +384,34 @@ export class AdminInvoiceDialogComponent implements OnInit, OnDestroy {
         confirmLabel: 'Résoudre',
         danger: false,
         fields: [
-          { key: 'resolution', label: 'Description de la résolution', type: 'textarea', value: '', required: true },
+          {
+            key: 'resolution',
+            label: 'Décision comptable',
+            type: 'select',
+            value: '',
+            required: true,
+            options: [
+              { value: 'credit_note_issued', label: 'Avoir émis' },
+              { value: 'amicable_refund', label: 'Remboursement à l\'amiable' },
+              { value: 'no_action', label: 'Aucune action nécessaire' },
+            ],
+          },
+          {
+            key: 'notes',
+            label: 'Justification (20 caractères min.)',
+            type: 'textarea',
+            value: '',
+            required: true,
+            minLength: 20,
+            hint: 'Consignée dans l\'audit trail — l\'URSSAF peut en demander le détail.',
+          },
         ],
       },
       () => this.run(
-        this.api.resolveDispute(this.data.invoiceUuid, { resolution: this.field('resolution') }),
+        this.api.resolveDispute(this.data.invoiceUuid, {
+          resolution: this.field('resolution') as DisputeResolution,
+          notes: this.field('notes'),
+        }),
         'Litige résolu.',
       ),
     );
@@ -420,9 +449,14 @@ export class AdminInvoiceDialogComponent implements OnInit, OnDestroy {
   }
 
   confirmOk(): void {
-    const missing = this.confirmCtx.fields.some((f) => f.required && !f.value.trim());
-    if (missing) {
-      this.snack.open('Complétez les champs requis.', 'OK', { duration: 2500 });
+    const invalid = this.confirmCtx.fields.some((f) => {
+      const v = f.value.trim();
+      if (f.required && !v) return true;
+      if (f.minLength && v.length < f.minLength) return true;
+      return false;
+    });
+    if (invalid) {
+      this.snack.open('Complétez correctement les champs requis.', 'OK', { duration: 2500 });
       return;
     }
     const run = this.confirmRun;

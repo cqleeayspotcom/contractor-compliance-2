@@ -68,6 +68,11 @@ export class NewFreeInvoiceRequestDialogComponent {
 
   form = this.fb.group({
     client_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(200)]],
+    // Email du client — facultatif. S'il est renseigné, le backend envoie la
+    // facture validée au client (SendFreeInvoicePdfOnApproveListener) et lance
+    // les relances de paiement (RemindFreeInvoiceClientJob). Vide = comportement
+    // inchangé (pas d'envoi auto). Validators.email tolère la chaîne vide.
+    client_email: ['', [Validators.email, Validators.maxLength(255)]],
     amount_ttc: [null as number | null, [Validators.required, Validators.min(0.01)]],
     description: ['', [
       Validators.required,
@@ -242,6 +247,7 @@ export class NewFreeInvoiceRequestDialogComponent {
     const v = this.form.getRawValue();
     this.svc.create({
       client_name: (v.client_name ?? '').trim(),
+      client_email: (v.client_email ?? '').trim() || null,
       description: (v.description ?? '').trim(),
       // Montant saisi en euros → centimes entiers attendus par le backend.
       amount_ttc_cents: Math.round((v.amount_ttc ?? 0) * 100),

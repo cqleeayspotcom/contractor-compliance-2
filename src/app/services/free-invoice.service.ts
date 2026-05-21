@@ -130,6 +130,7 @@ export class FreeInvoiceService {
    */
   create(body: {
     client_name: string;
+    client_email?: string | null;
     description: string;
     amount_ttc_cents: number;
     mission_refs?: string[];
@@ -137,6 +138,11 @@ export class FreeInvoiceService {
   }): Observable<{ data: FreeInvoiceCreateResult }> {
     const fd = new FormData();
     fd.append('client_name', body.client_name);
+    // Email client : facultatif. On ne l'ajoute au multipart que s'il est
+    // renseigné — le backend traite l'absence comme « pas d'email » (null).
+    if (body.client_email) {
+      fd.append('client_email', body.client_email);
+    }
     fd.append('description', body.description);
     fd.append('amount_ttc_cents', String(body.amount_ttc_cents));
     (body.mission_refs ?? []).forEach((ref) => fd.append('mission_refs[]', ref));

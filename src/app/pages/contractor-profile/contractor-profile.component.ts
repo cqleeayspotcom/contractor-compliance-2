@@ -6,14 +6,11 @@ import {
   signal,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog } from '@angular/material/dialog';
-import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import {
@@ -29,11 +26,8 @@ import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     MatButtonModule,
-    MatFormFieldModule,
     MatIconModule,
-    MatInputModule,
     MatSlideToggleModule,
     PhoneDisplayPipe,
   ],
@@ -85,10 +79,10 @@ export class ContractorProfileComponent implements OnInit {
     return fallback.slice(0, 2).toUpperCase();
   }
 
-  updateDraft(field: keyof NotificationPreferences, value: string | boolean | null): void {
+  updateDraft(field: keyof NotificationPreferences, value: boolean): void {
     const current = this.draft();
     if (!current) return;
-    this.draft.set({ ...current, [field]: value } as NotificationPreferences);
+    this.draft.set({ ...current, [field]: value });
   }
 
   async save(): Promise<void> {
@@ -97,7 +91,6 @@ export class ContractorProfileComponent implements OnInit {
     this.saving.set(true);
 
     const payload: NotificationPreferences = {
-      email_address: draft.email_address?.trim() ? draft.email_address.trim() : null,
       email_invoice_payment: !!draft.email_invoice_payment,
       email_document_expiry: !!draft.email_document_expiry,
       email_invoice_rejected: !!draft.email_invoice_rejected,

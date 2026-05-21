@@ -217,6 +217,12 @@
         <mat-label>{{ f.label }}</mat-label>
         @if (f.type === 'textarea') {
           <textarea matInput [(ngModel)]="f.value" rows="3"></textarea>
+        } @else if (f.type === 'select') {
+          <mat-select [(ngModel)]="f.value">
+            @for (o of f.options; track o.value) {
+              <mat-option [value]="o.value">{{ o.label }}</mat-option>
+            }
+          </mat-select>
         } @else {
           <input matInput [type]="f.type" [(ngModel)]="f.value" />
         }

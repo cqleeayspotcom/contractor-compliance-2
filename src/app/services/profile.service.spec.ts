@@ -33,13 +33,13 @@ describe('ProfileService', () => {
       data: {
         identity: {
           phone: '+33',
+          email: 'a@b.fr',
           first_name: 'A',
           last_name: 'B',
           company_name: 'C',
           siren: '1',
         },
         notifications: {
-          email_address: null,
           email_invoice_payment: false,
           email_document_expiry: false,
           email_invoice_rejected: false,
@@ -52,17 +52,22 @@ describe('ProfileService', () => {
     expect(out.identity.company_name).toBe('C');
   });
 
-  it('GET /profile expose l\'email de notification déjà enregistré', async () => {
-    // Régression : l'écran profil lisait les notifications depuis le dashboard,
-    // qui ne renvoie PAS de bloc `notifications` — l'email enregistré ne se
-    // réaffichait jamais après un rechargement de page.
+  it('GET /profile expose l\'email du compte contractor', async () => {
+    // Un seul email contractor : celui du compte (cc_users.email), renvoyé
+    // dans le bloc identity. L'écran profil l'affiche en lecture seule.
     const promise = service.getProfile();
     const req = http.expectOne('/contractor-compliance/profile');
     req.flush({
       data: {
-        identity: { phone: null, first_name: null, last_name: null, company_name: null, siren: null },
+        identity: {
+          phone: null,
+          email: 'moussa@tuita.fr',
+          first_name: null,
+          last_name: null,
+          company_name: null,
+          siren: null,
+        },
         notifications: {
-          email_address: 'moussa@tuita.fr',
           email_invoice_payment: true,
           email_document_expiry: false,
           email_invoice_rejected: false,
@@ -70,28 +75,34 @@ describe('ProfileService', () => {
       },
     });
     const out = await promise;
-    expect(out.notifications.email_address).toBe('moussa@tuita.fr');
+    expect(out.identity.email).toBe('moussa@tuita.fr');
     expect(out.notifications.email_invoice_payment).toBe(true);
   });
 
-  it('PATCH /profile/notifications lit la réponse à plat (valeur serveur, pas le payload envoyé)', async () => {
-    // La réponse backend est { data: { email_address, email_* } } — pas
-    // { data: { notifications: {...} } }. Le service doit lire `data` direct.
-    // On envoie un email avec espaces : le backend le normalise (trim), donc
-    // la valeur retournée DOIT être celle du serveur, pas le payload envoyé.
-    const promise = service.updateNotifications({ email_address: '  moussa@tuita.fr  ' });
+  it('GET /profile — email absent du payload → null', async () => {
+    const promise = service.getProfile();
+    const req = http.expectOne('/contractor-compliance/profile');
+    req.flush({ data: { identity: {}, notifications: {} } });
+    const out = await promise;
+    expect(out.identity.email).toBeNull();
+  });
+
+  it('PATCH /profile/notifications lit la réponse à plat (valeur serveur)', async () => {
+    // La réponse backend est l'objet préférences à plat sous `data` —
+    // { email_* } — pas { data: { notifications: {...} } }. Le service doit
+    // lire `data` directement.
+    const promise = service.updateNotifications({ email_invoice_payment: true });
     const req = http.expectOne('/contractor-compliance/profile/notifications');
     expect(req.request.method).toBe('PATCH');
     req.flush({
       data: {
-        email_address: 'moussa@tuita.fr',
-        email_invoice_payment: false,
+        email_invoice_payment: true,
         email_document_expiry: false,
         email_invoice_rejected: false,
       },
     });
     const out = await promise;
-    expect(out.email_address).toBe('moussa@tuita.fr');
+    expect(out.email_invoice_payment).toBe(true);
   });
 
   it('POST /profile/logout returns void', async () => {

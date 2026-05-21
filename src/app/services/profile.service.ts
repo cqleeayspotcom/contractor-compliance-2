@@ -6,6 +6,8 @@ import { profileNotificationsUpdate } from '../api/fn/profile/profile-notificati
 
 export interface ProfileIdentity {
   phone: string | null;
+  /** Email du compte contractor (cc_users.email) — unique email, lecture seule. */
+  email: string | null;
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;
@@ -13,14 +15,16 @@ export interface ProfileIdentity {
 }
 
 /**
- * Préférences email opt-in du contractor.
+ * Préférences de notification du contractor — 3 interrupteurs opt-in.
  *
  * Note 2026-04-30 : seul le canal email est conservé. Les notifications
  * portail (page /notifications, cloche header, persistance BDD) ont été
  * supprimées — l'utilisateur reçoit ses alertes uniquement par email.
+ *
+ * Note 2026-05-21 : plus de champ `email_address`. Un contractor a un seul
+ * email — celui de son compte (`identity.email`). Les alertes y partent.
  */
 export interface NotificationPreferences {
-  email_address: string | null;
   email_invoice_payment: boolean;
   email_document_expiry: boolean;
   email_invoice_rejected: boolean;
@@ -63,13 +67,13 @@ export class ProfileService {
     return {
       identity: {
         phone: i.phone ?? null,
+        email: i.email ?? null,
         first_name: i.first_name ?? null,
         last_name: i.last_name ?? null,
         company_name: i.company_name ?? null,
         siren: i.siren ?? null,
       },
       notifications: {
-        email_address: n.email_address ?? null,
         email_invoice_payment: n.email_invoice_payment ?? false,
         email_document_expiry: n.email_document_expiry ?? false,
         email_invoice_rejected: n.email_invoice_rejected ?? false,
@@ -82,10 +86,9 @@ export class ProfileService {
   // contrat OpenAPI, donc le SDK le couvre — plus besoin du HttpClient direct).
   async updateNotifications(prefs: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
     // La réponse backend (notificationsPreferencesAction::serializePreference)
-    // est l'objet préférences À PLAT sous `data` — { email_address, email_* } —
-    // et NON { data: { notifications: {...} } }. On lit donc `data` directement,
-    // sinon on retombait toujours sur le fallback `prefs` (le payload envoyé) et
-    // toute normalisation serveur (trim de l'email) était perdue.
+    // est l'objet préférences À PLAT sous `data` — { email_* } — et NON
+    // { data: { notifications: {...} } }. On lit donc `data` directement,
+    // sinon on retombait toujours sur le fallback `prefs` (le payload envoyé).
     const r = await this.api.invoke(profileNotificationsUpdate, { body: prefs as any }) as {
       data?: NotificationPreferences;
     };

@@ -144,11 +144,17 @@ describe('AdminInvoiceService', () => {
     req.flush({});
   });
 
-  it('POST /{uuid}/resolve-dispute remaps resolution → reason', () => {
-    service.resolveDispute('uuid-1', { resolution: 'litige clos par compta' }).subscribe();
+  it('POST /{uuid}/resolve-dispute sends resolution + notes', () => {
+    service.resolveDispute('uuid-1', {
+      resolution: 'credit_note_issued',
+      notes: 'Avoir émis, litige clos par la compta.',
+    }).subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/resolve-dispute');
-    // Le service remappe `resolution` → `reason` (clé lue par le backend).
-    expect(req.request.body).toEqual({ reason: 'litige clos par compta' });
+    // Le backend `resolveDisputeAction` exige les deux champs.
+    expect(req.request.body).toEqual({
+      resolution: 'credit_note_issued',
+      notes: 'Avoir émis, litige clos par la compta.',
+    });
     req.flush({});
   });
 

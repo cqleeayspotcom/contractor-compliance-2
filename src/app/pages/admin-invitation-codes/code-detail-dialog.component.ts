@@ -25,7 +25,9 @@ import { ConfirmationDialogComponent } from '../../components/shared/confirmatio
 import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface DetailDialogData {
-  uuid: string;
+  // Code court (ex: « TEST ») — c'est lui que la route backend attend dans
+  // le segment {code}, pas l'UUID.
+  code: string;
 }
 
 /**
@@ -74,7 +76,7 @@ export class CodeDetailDialogComponent implements OnInit {
 
   private load(): void {
     this.isLoading.set(true);
-    this.api.detail(this.data.uuid).subscribe({
+    this.api.detail(this.data.code).subscribe({
       next: (res) => {
         this.detail.set(res.data);
         this.noteDraft.set(res.data.note ?? '');
@@ -90,7 +92,7 @@ export class CodeDetailDialogComponent implements OnInit {
   saveNote(): void {
     if (this.isSavingNote()) return;
     this.isSavingNote.set(true);
-    this.api.updateNote(this.data.uuid, this.noteDraft()).subscribe({
+    this.api.updateNote(this.data.code, this.noteDraft()).subscribe({
       next: (res) => {
         this.isSavingNote.set(false);
         this.snack.open('Note mise à jour.', '', { duration: 2000 });
@@ -117,7 +119,7 @@ export class CodeDetailDialogComponent implements OnInit {
       type: 'warning',
     }).subscribe((ok) => {
       if (!ok) return;
-      this.api.revoke(this.data.uuid).subscribe({
+      this.api.revoke(this.data.code).subscribe({
         next: () => {
           this.snack.open('Code révoqué.', '', { duration: 2000 });
           this.ref.close(true);
