@@ -107,6 +107,13 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
     ),
   );
 
+  /** Vrai dès qu'il y a quelque chose à montrer dans la colonne droite :
+   *  les pièces jointes (PDF) et/ou le statut compliance du contractor.
+   *  Sinon le layout repasse en une seule colonne (pas de blanc à droite). */
+  readonly hasSidePanel = computed<boolean>(
+    () => this.attachments().length > 0 || !!this.detail()?.contractor?.phone,
+  );
+
   readonly rejectReason = signal('');
   private readonly blobUrls: string[] = [];
 
@@ -377,9 +384,5 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
   formatSize(bytes: number): string {
     if (bytes < 1024) return `${bytes} o`;
     return `${Math.round(bytes / 1024)} Ko`;
-  }
-
-  trackByIndex(_idx: number, item: AttachmentBlob): number {
-    return item.index;
   }
 }
