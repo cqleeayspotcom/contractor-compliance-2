@@ -361,7 +361,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     const forced = tabStatusMap[tab];
     if (forced !== null && forced.length > 0) filters.status = forced;
     if (tab === 'disputed') filters.paid_disputed = true;
-    if (tab === 'pending') filters.exclude_self_validated = true;
+    if (this.shouldExcludeSelfValidated(tab, filters)) filters.exclude_self_validated = true;
     if (this.stuckFilter()) filters.stuck = true;
 
     this.api.searchInvoices(filters).subscribe({
@@ -441,6 +441,26 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     this.loadTab(this.activeTab());
   }
 
+  /**
+   * Onglet « À valider » : par défaut c'est la file PERSO de l'admin — on
+   * exclut les factures qu'il a déjà votées (exclude_self_validated).
+   *
+   * EXCEPTION : si un filtre « Approbations manquantes » (chips 0/3, 1/3,
+   * 2/3) est actif, l'admin demande EXPLICITEMENT à voir les factures à un
+   * stade d'avancement précis. Une action de filtrage explicite prime sur
+   * le masquage implicite de la file perso : sinon les chips renvoient une
+   * liste vide pour toutes les factures que l'admin a lui-même votées (cas
+   * courant — un admin qui a posé la 1ʳᵉ approbation ne reverrait jamais
+   * « 1/3 »). Cf. bug remonté 2026-05-21.
+   */
+  private shouldExcludeSelfValidated(tab: TabKey, filters: InvoiceSearchFilters): boolean {
+    if (tab !== 'pending') return false;
+    const approvalChipActive =
+      (filters as { missing_approvals?: number }).missing_approvals != null
+      || filters.missing_validations != null;
+    return !approvalChipActive;
+  }
+
   // ------------------------------------------------------------------
   // Loading
   // ------------------------------------------------------------------
@@ -474,7 +494,9 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     // que CET admin n'a pas encore votées (exclusion résolue côté backend
     // via le Bearer OAuth2). Une fois sa décision posée, la ligne sort de
     // sa liste — elle reste visible dans l'onglet « Toutes ».
-    if (tab === 'pending') {
+    // Exception : un chip « Approbations manquantes » actif désactive cette
+    // exclusion (cf. shouldExcludeSelfValidated).
+    if (this.shouldExcludeSelfValidated(tab, filters)) {
       filters.exclude_self_validated = true;
     }
     if (this.stuckFilter()) {
