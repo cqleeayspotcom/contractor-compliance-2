@@ -4,6 +4,7 @@
       <app-admin-back-button [to]="['/admin']" label="Retour au dashboard admin" />
       <h1>Prestataires</h1>
       <span class="counter" *ngIf="!loading()">{{ total() }} résultat{{ total() > 1 ? 's' : '' }}</span>
+      <span class="counter counter--refreshing" *ngIf="loading() && rows().length > 0">Actualisation…</span>
     </div>
   </header>
 
@@ -14,7 +15,7 @@
       <div class="row search-row">
         <mat-form-field appearance="outline" class="grow">
           <mat-label>Recherche (téléphone, nom, email, société, SIREN)</mat-label>
-          <mat-icon matPrefix>search</mat-icon>
+          <mat-icon matIconPrefix>search</mat-icon>
           <input
             matInput
             type="search"
@@ -143,7 +144,8 @@
         (matSortChange)="onSortChange($event)"
         [matSortActive]="sort()"
         [matSortDirection]="direction()"
-        *ngIf="!loading() && rows().length > 0"
+        *ngIf="rows().length > 0"
+        [class.is-reloading]="loading()"
         class="contractors-table"
       >
         <ng-container matColumnDef="phone">
@@ -230,7 +232,7 @@
       </table>
 
       <mat-paginator
-        *ngIf="!loading() && total() > 0"
+        *ngIf="total() > 0"
         [length]="total()"
         [pageSize]="pageSize()"
         [pageIndex]="page()"

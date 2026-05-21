@@ -92,7 +92,7 @@ export class AdminFreeInvoicesComponent implements OnInit {
     };
     this.dialog
       .open(AdminFreeInvoiceDetailDialogComponent, {
-        width: '1200px',
+        width: '1440px',
         maxWidth: '95vw',
         maxHeight: '90vh',
         data,

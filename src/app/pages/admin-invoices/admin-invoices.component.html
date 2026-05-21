@@ -443,10 +443,13 @@
     <button
       mat-flat-button
       [color]="dialogCtx.danger ? 'warn' : 'primary'"
-      [disabled]="!dialogValid()"
+      [disabled]="!dialogValid() || actionInFlight()"
       (click)="onDialogConfirm()"
     >
-      {{ dialogCtx.confirmLabel }}
+      @if (actionInFlight()) {
+        <mat-spinner class="dialog-btn-spinner" diameter="18"></mat-spinner>
+      }
+      {{ actionInFlight() ? 'Traitement en cours…' : dialogCtx.confirmLabel }}
     </button>
   </mat-dialog-actions>
 </ng-template>

@@ -30,6 +30,19 @@
     padding: 0.25rem 0.6rem;
     border-radius: 999px;
   }
+
+  // Pendant un rechargement silencieux : on garde le tableau visible,
+  // ce badge clignote juste pour signaler que les données se mettent à jour.
+  .counter--refreshing {
+    color: #4338ca;
+    background: #eef2ff;
+    animation: counter-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes counter-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 .filters {
@@ -79,6 +92,14 @@
 
 .contractors-table {
   width: 100%;
+
+  // Rechargement silencieux : le tableau reste affiché (anciennes lignes)
+  // mais légèrement atténué le temps que la nouvelle réponse arrive.
+  &.is-reloading {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
 
   tr.clickable {
     cursor: pointer;

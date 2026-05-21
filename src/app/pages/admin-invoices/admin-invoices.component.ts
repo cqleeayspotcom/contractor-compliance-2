@@ -281,6 +281,12 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   // « detail ouvert ? » casse.
   private detailDialogRef: MatDialogRef<unknown> | null = null;
   private pendingAction: ((ctx: DialogContext) => void) | null = null;
+  // Action de confirmation en cours d'envoi. Garde le dialogue d'action
+  // ouvert avec un bouton « spinner » et bloque le double-clic pendant la
+  // requête. Remis à false par le afterClosed() du dialogue (couvre aussi la
+  // fermeture par ESC / clic sur le fond) et par handleHttpError() en cas
+  // d'échec (le dialogue reste alors ouvert pour un nouvel essai).
+  readonly actionInFlight = signal<boolean>(false);
 
   readonly currentTabState = computed(() => this.tabs[this.activeTab()]());
 
@@ -556,6 +562,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       this.router.navigate(['/admin/login']);
       return;
     }
+    // Une action a échoué : on réactive le bouton de confirmation. Le
+    // dialogue reste ouvert pour permettre un nouvel essai ou une correction.
+    // No-op si l'erreur vient d'un simple chargement de liste.
+    this.actionInFlight.set(false);
     console.error(`[admin-invoices] ${context}`, err);
 
     const apiError = httpErr.error?.error;
@@ -1012,7 +1022,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       width: '560px',
       disableClose: false,
     });
-    this.dialogRef.afterClosed().subscribe(() => { this.dialogRef = null; });
+    this.dialogRef.afterClosed().subscribe(() => {
+      this.dialogRef = null;
+      this.actionInFlight.set(false);
+    });
   }
 
   onDialogConfirm(): void {
@@ -1021,9 +1034,18 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       this.snack.open('Veuillez compléter les champs requis', 'OK', { duration: 2500 });
       return;
     }
+    if (this.actionInFlight()) return; // envoi déjà en cours — ignore le double-clic
     const action = this.pendingAction;
-    if (action) action(this.dialogCtx);
-    this.dialogRef?.close();
+    if (!action) {
+      this.dialogRef?.close();
+      return;
+    }
+    // On garde le dialogue OUVERT pendant la requête : le bouton de
+    // confirmation passe en spinner (cf. actionInFlight). Les handlers
+    // terminaux ferment le dialogue (afterAction, succès) ou réactivent le
+    // bouton pour permettre un nouvel essai (handleHttpError, erreur).
+    this.actionInFlight.set(true);
+    action(this.dialogCtx);
   }
 
   onDialogCancel(): void {
@@ -1043,6 +1065,9 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   }
 
   private afterAction(msg: string): void {
+    // Action réussie : on ferme le dialogue de confirmation resté ouvert
+    // pendant la requête (son afterClosed remet actionInFlight à false).
+    this.dialogRef?.close();
     this.snack.open(msg, 'OK', { duration: 3500 });
     this.pendingAction = null;
     // Refresh current tab to reflect new state
@@ -1365,6 +1390,34 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     document.body.removeChild(a);
   }
 
+  /**
+   * Exécute une action de transition déclenchée au clavier (V = marquer
+   * payée, I = lancer le virement) UNIQUEMENT si la facture sélectionnée est
+   * dans le statut requis. Sinon, affiche un message explicite et n'ouvre
+   * aucun dialogue.
+   *
+   * POURQUOI : sans cette garde, le raccourci ouvrait le dialogue quel que
+   * soit le statut de la facture, puis le backend rejetait la transition par
+   * un 422 (Strict D1) — un échec opaque survenant après plusieurs secondes,
+   * sans que l'admin comprenne pourquoi.
+   */
+  private runShortcutTransition(
+    requiredStatus: string,
+    run: (inv: AdminInvoice) => void,
+    blockedMsg: string,
+  ): void {
+    const inv = this.selectedInvoice();
+    if (!inv) {
+      this.snack.open('Sélectionne d\'abord une facture.', 'OK', { duration: 2500 });
+      return;
+    }
+    if (inv.status !== requiredStatus) {
+      this.snack.open(blockedMsg, 'OK', { duration: 5000 });
+      return;
+    }
+    run(inv);
+  }
+
   @HostListener('document:keydown', ['$event'])
   onKeydown(ev: KeyboardEvent): void {
     const target = ev.target as HTMLElement;
@@ -1400,10 +1453,18 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       case '4': this.switchTabByIndex(3); ev.preventDefault(); break;
       case '5': this.switchTabByIndex(4); ev.preventDefault(); break;
       case 'v': case 'V':
-        if (this.selectedInvoice()) this.openMarkPaid(this.selectedInvoice()!);
+        this.runShortcutTransition(
+          'payment_in_progress',
+          inv => this.openMarkPaid(inv),
+          'Raccourci « V » indisponible : la facture doit être au stade « virement en cours » pour être marquée payée.',
+        );
         ev.preventDefault(); break;
       case 'i': case 'I':
-        if (this.selectedInvoice()) this.openMarkPaymentInProgress(this.selectedInvoice()!);
+        this.runShortcutTransition(
+          'ready_to_pay',
+          inv => this.openMarkPaymentInProgress(inv),
+          'Raccourci « I » indisponible : la facture doit être « bon pour paiement » pour lancer le virement.',
+        );
         ev.preventDefault(); break;
       case 'd': case 'D':
         this.downloadPaneInvoicePdf();

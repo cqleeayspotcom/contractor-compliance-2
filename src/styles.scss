@@ -272,6 +272,21 @@ html {
   }
 }
 
+// Quand le champ a une icône en préfixe/suffixe (`matIconPrefix` / `matIconSuffix`),
+// Material gère lui-même l'espacement : conteneur dédié pour l'icône + décalage
+// du label (`--mat-mdc-form-field-label-offset-x`). Notre `padding` forcé plus
+// haut écrasait ce calcul → le label venait se coller / chevaucher l'icône.
+// On rend donc la main à Material de ce côté-là.
+.mat-mdc-form-field.mat-mdc-form-field-appearance-outline.mat-mdc-form-field-has-icon-prefix
+  .mat-mdc-text-field-wrapper {
+  padding-left: 0 !important;
+}
+
+.mat-mdc-form-field.mat-mdc-form-field-appearance-outline.mat-mdc-form-field-has-icon-suffix
+  .mat-mdc-text-field-wrapper {
+  padding-right: 0 !important;
+}
+
 // Focus styles for accessibility
 *:focus-visible {
   outline: 2px solid #073148;

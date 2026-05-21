@@ -47,8 +47,8 @@
   </mat-dialog-content>
 } @else if (detail(); as d) {
   <mat-dialog-content>
-    <div class="layout">
-      <!-- Colonne principale : demande + pièces jointes + actions -->
+    <div class="layout" [class.layout--single]="!hasSidePanel()">
+      <!-- Colonne principale : demande + chantiers + actions -->
       <main class="layout__main">
 
     <!-- Claim Details -->
@@ -108,69 +108,6 @@
         </ul>
       }
     </section>
-
-    <!-- Attachments -->
-    @if (attachments().length > 0) {
-      <mat-divider></mat-divider>
-      <section class="section">
-        <h3>Pièces jointes ({{ attachments().length }})</h3>
-        <ul class="attachments">
-          @for (att of attachments(); track att.index) {
-            <li class="attachment-item">
-              <div class="att-header">
-                <div class="att-info">
-                  <mat-icon class="att-icon">
-                    {{ att.mime === 'application/pdf' ? 'picture_as_pdf' : 'image' }}
-                  </mat-icon>
-                  <div>
-                    <span class="att-name">{{ att.original_name }}</span>
-                    <span class="att-meta">{{ att.mime }} — {{ formatSize(att.size) }}</span>
-                  </div>
-                </div>
-
-                <div class="att-actions">
-                  @if (att.loading) {
-                    <mat-spinner diameter="20"></mat-spinner>
-                  } @else if (att.error) {
-                    <span class="att-error">
-                      <mat-icon>warning</mat-icon> Échec du chargement
-                    </span>
-                  } @else {
-                    <button mat-icon-button (click)="openAttachment(att)" title="Ouvrir dans un nouvel onglet">
-                      <mat-icon>open_in_new</mat-icon>
-                    </button>
-                    <button mat-icon-button (click)="downloadAttachment(att)" title="Télécharger">
-                      <mat-icon>download</mat-icon>
-                    </button>
-                  }
-                </div>
-              </div>
-
-              @if (att.blobUrl && !att.loading && !att.error) {
-                <div class="att-preview" [class.att-preview--pdf]="att.mime === 'application/pdf'">
-                  @if (att.mime === 'application/pdf') {
-                    <iframe
-                      [src]="sanitizeBlobUrl(att.blobUrl)"
-                      [title]="att.original_name"
-                      class="att-preview__pdf"
-                      loading="lazy"
-                    ></iframe>
-                  } @else {
-                    <img
-                      [src]="att.blobUrl"
-                      [alt]="att.original_name"
-                      class="att-preview__img"
-                      loading="lazy"
-                      (click)="openAttachment(att)"
-                    />
-                  }
-                </div>
-              }
-            </li>
-          }
-        </ul>
-      </section>
-    }
 
     <!-- Actions : approve / reject (only when pending) -->
     @if (d.status === 'pending_approval') {
@@ -287,10 +224,75 @@
     }
       </main>
 
-      <!-- Colonne droite : snapshot compliance contractor (sticky desktop) -->
-      @if (d.contractor?.phone) {
-        <aside class="layout__contractor">
-          <app-contractor-compliance-summary [phone]="d.contractor.phone" />
+      <!-- Colonne droite (sticky desktop) : pièces jointes (PDF) en haut pour
+           les avoir sous les yeux en lisant la demande, puis le snapshot
+           compliance du contractor. -->
+      @if (hasSidePanel()) {
+        <aside class="layout__side">
+          @if (attachments().length > 0) {
+            <section class="section section--attachments">
+              <h3>Pièces jointes ({{ attachments().length }})</h3>
+              <ul class="attachments">
+                @for (att of attachments(); track att.index) {
+                  <li class="attachment-item">
+                    <div class="att-header">
+                      <div class="att-info">
+                        <mat-icon class="att-icon">
+                          {{ att.mime === 'application/pdf' ? 'picture_as_pdf' : 'image' }}
+                        </mat-icon>
+                        <div>
+                          <span class="att-name">{{ att.original_name }}</span>
+                          <span class="att-meta">{{ att.mime }} — {{ formatSize(att.size) }}</span>
+                        </div>
+                      </div>
+
+                      <div class="att-actions">
+                        @if (att.loading) {
+                          <mat-spinner diameter="20"></mat-spinner>
+                        } @else if (att.error) {
+                          <span class="att-error">
+                            <mat-icon>warning</mat-icon> Échec du chargement
+                          </span>
+                        } @else {
+                          <button mat-icon-button (click)="openAttachment(att)" title="Ouvrir dans un nouvel onglet">
+                            <mat-icon>open_in_new</mat-icon>
+                          </button>
+                          <button mat-icon-button (click)="downloadAttachment(att)" title="Télécharger">
+                            <mat-icon>download</mat-icon>
+                          </button>
+                        }
+                      </div>
+                    </div>
+
+                    @if (att.blobUrl && !att.loading && !att.error) {
+                      <div class="att-preview" [class.att-preview--pdf]="att.mime === 'application/pdf'">
+                        @if (att.mime === 'application/pdf') {
+                          <iframe
+                            [src]="sanitizeBlobUrl(att.blobUrl)"
+                            [title]="att.original_name"
+                            class="att-preview__pdf"
+                            loading="lazy"
+                          ></iframe>
+                        } @else {
+                          <img
+                            [src]="att.blobUrl"
+                            [alt]="att.original_name"
+                            class="att-preview__img"
+                            loading="lazy"
+                            (click)="openAttachment(att)"
+                          />
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            </section>
+          }
+
+          @if (d.contractor?.phone) {
+            <app-contractor-compliance-summary [phone]="d.contractor.phone" />
+          }
         </aside>
       }
     </div>

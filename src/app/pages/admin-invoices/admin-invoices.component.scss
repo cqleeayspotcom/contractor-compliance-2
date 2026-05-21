@@ -276,6 +276,17 @@
   }
 }
 
+// Spinner inline dans le bouton « Confirmer » du dialogue d'action, affiché
+// pendant l'envoi de la requête (cf. actionInFlight). Le token M3 force la
+// couleur du tracé sur celle du texte du bouton → contraste correct sur fond
+// plein (primary / warn).
+.dialog-btn-spinner {
+  display: inline-block;
+  margin-right: 8px;
+  vertical-align: middle;
+  --mdc-circular-progress-active-indicator-color: currentColor;
+}
+
 // ── Modal Détail facture (2 colonnes : infos + viewer PDF) ──────────────────
 .invoice-detail {
   display: flex;

@@ -147,7 +147,7 @@ export class AdminContractorComponent implements OnInit {
 
   // Ordre des onglets tel qu'affiché — sert au mapping index <-> clé d'URL.
   private readonly tabOrder: ('documents' | 'kyc' | 'invoices' | 'purchases' | 'missions')[] =
-    ['kyc', 'documents', 'invoices', 'missions', 'purchases'];
+    ['invoices', 'missions', 'purchases', 'kyc', 'documents'];
   // Onglet initial : on le reflète dans l'URL (?tab=...) UNIQUEMENT en mode
   // page. En mode dialog (ouvert par-dessus une autre page admin), toucher
   // l'URL changerait la route de la page de fond — interdit.

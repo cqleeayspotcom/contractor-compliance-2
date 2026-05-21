@@ -2,7 +2,7 @@
   <!-- Ligne 1 : recherche, dates, montants, tri -->
   <div class="filter-row">
     <mat-form-field appearance="outline" class="search-field">
-      <mat-icon matPrefix>search</mat-icon>
+      <mat-icon matIconPrefix>search</mat-icon>
       <mat-label>Rechercher (n° facture, mission, contractor, SIREN, phone)</mat-label>
       <input matInput [ngModel]="q()" (ngModelChange)="q.set($event)" placeholder="Tape / pour focus" />
       @if (q()) {

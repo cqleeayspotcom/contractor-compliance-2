@@ -70,35 +70,44 @@
 
 /**
  * Layout 2 colonnes (desktop) :
- *   - main : demande, pièces jointes, actions approve/reject (colonne large)
- *   - aside : statut contractor (colonne droite, sticky → reste visible au scroll)
+ *   - main : demande, chantiers, actions approve/reject
+ *   - side : pièces jointes (PDF) + statut contractor (colonne droite, sticky
+ *            → reste visible au scroll, tout est en vue d'un coup d'œil)
  *
- * Sur mobile/narrow (≤960px) : empile en colonne unique, le statut contractor
- * passe en haut pour rester la 1ʳᵉ info vue avant de descendre lire la demande.
+ * Sur mobile/narrow (≤960px) : empile en colonne unique, la demande d'abord
+ * puis les pièces jointes et le statut contractor en dessous.
  */
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
+  // Colonne droite (PDF) plus large que la colonne demande : on lit la facture
+  // confortablement sans avoir à l'ouvrir dans un onglet.
+  grid-template-columns: minmax(0, 0.85fr) minmax(440px, 1.25fr);
   gap: 1.5rem;
   align-items: flex-start;
 
+  // Ni pièce jointe ni statut contractor → une seule colonne (pas de blanc
+  // inutile à droite).
+  &--single {
+    grid-template-columns: 1fr;
+  }
+
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
-
-    // Sur mobile, le statut contractor remonte en haut (ordre visuel inversé).
-    .layout__contractor { order: -1; }
   }
 
   &__main {
     min-width: 0; // évite les débordements de grid avec le pre.just
   }
 
-  &__contractor {
+  &__side {
     position: sticky;
     top: 0;
     align-self: flex-start;
     max-height: calc(90vh - 180px); // header dialog + actions ≈ 180px
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 
     @media (max-width: 960px) {
       position: static;
@@ -248,6 +257,20 @@
   height: 400px;
   border: 0;
   background: #f3f4f6;
+}
+
+/* Pièces jointes dans la colonne droite : on colle la section en haut et on
+   donne au PDF toute la hauteur utile pour le lire sans scroller. */
+.layout__side {
+  .section--attachments {
+    padding-top: 0;
+    margin-bottom: 0;
+  }
+
+  .att-preview__pdf {
+    height: 60vh;
+    min-height: 360px;
+  }
 }
 
 .att-name {
