@@ -102,6 +102,12 @@ export interface InvoiceSearchFilters {
   paid_disputed?: boolean;
   stuck?: boolean;
   /**
+   * Onglet « À valider » en file par admin : exclut les factures déjà votées
+   * par l'admin courant. L'identité est résolue côté backend via le Bearer
+   * OAuth2 — rien n'est transmis dans la query à part le booléen.
+   */
+  exclude_self_validated?: boolean;
+  /**
    * Tri server-side. Deux conventions supportées par le backend
    * (cf. WithAdminInvoiceFilters::applySort) :
    *  - Legacy : 'oldest' | 'newest' | 'amount_desc' | 'amount_asc'
@@ -226,24 +232,6 @@ export interface InvoiceDetail {
     author_email?: string | null;
     created_at?: string | null;
   }>;
-  webhooks_sent?: {
-    rejected?: string | null;
-    ready_to_pay?: string | null;
-    payment_in_progress?: string | null;
-    paid?: string | null;
-    reopened?: string | null;
-  };
-  webhook_logs?: Array<{
-    uuid: string;
-    event_type: string;
-    status: string;
-    attempts: number;
-    response_status?: number | null;
-    response_ms?: number | null;
-    last_error?: string | null;
-    created_at?: string | null;
-    sent_at?: string | null;
-  }>;
   mission_snapshot?: {
     mission_ref: string;
     expected_amount_ttc: number;
@@ -300,14 +288,6 @@ export interface AuditTrailValidation {
   comment?: string | null;
 }
 
-export interface AuditTrailWebhooksSent {
-  rejected?: string | null;
-  ready_to_pay?: string | null;
-  payment_in_progress?: string | null;
-  paid?: string | null;
-  reopened?: string | null;
-}
-
 export interface AuditTrailDetail {
   invoice: {
     uuid: string;
@@ -330,7 +310,6 @@ export interface AuditTrailDetail {
   } | null;
   reopen_count?: number | null;
   payment_validations: AuditTrailValidation[];
-  webhooks_sent: AuditTrailWebhooksSent;
   dispute?: {
     disputed_at: string;
     reason?: string | null;
@@ -443,7 +422,7 @@ export class AdminInvoiceService {
     return from(this.api.invoke(adminInvoicesShow, { uuid }) as Promise<{ data: AdminInvoice }>);
   }
 
-  /** Vue super-admin : invoice + relations + validations + items + webhooks + mission_snapshot + dispute. */
+  /** Vue super-admin : invoice + relations + validations + items + mission_snapshot + dispute. */
   getInvoiceDetail(uuid: string): Observable<{ data: InvoiceDetail }> {
     return from(this.api.invoke(adminInvoicesShow, { uuid }) as Promise<{ data: InvoiceDetail }>);
   }
@@ -508,6 +487,7 @@ export class AdminInvoiceService {
       plan: filters.plan,
       paid_disputed: filters.paid_disputed,
       stuck: filters.stuck,
+      exclude_self_validated: filters.exclude_self_validated || undefined,
       blocked: (filters as any).blocked,
       sort: filters.sort || undefined,
       direction: filters.direction,

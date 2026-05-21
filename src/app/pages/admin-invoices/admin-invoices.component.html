@@ -64,16 +64,27 @@
 
     <div class="list-only">
       <div class="list-only__inner">
+        <!-- Barre de progression fine : signale tout chargement (1er fetch ou
+             rafraîchissement) sans décaler la mise en page. -->
+        <div *ngIf="state.loading" class="loading-bar" aria-hidden="true"></div>
+
         <div class="table-toolbar">
-          <span class="total-label">{{ state.total }} facture(s)</span>
-          <span *ngIf="stuckFilter()" class="stuck-chip">
-            <mat-icon>warning</mat-icon>&nbsp;Filtre « bloquées » actif
+          <div class="table-toolbar__left">
+            <span *ngIf="!(state.loading && (state.rows?.length ?? 0) === 0)" class="total-label">
+              {{ state.total }} facture(s)
+            </span>
+            <span
+              *ngIf="state.loading && (state.rows?.length ?? 0) === 0"
+              class="skeleton total-label-skeleton"
+              aria-hidden="true"
+            ></span>
+            <span *ngIf="stuckFilter()" class="stuck-chip">
+              <mat-icon>warning</mat-icon>&nbsp;Filtre « bloquées » actif
+            </span>
+          </div>
+          <span *ngIf="state.loading && (state.rows?.length ?? 0) > 0" class="refreshing-hint">
+            <span class="refreshing-dot"></span> Actualisation…
           </span>
-          <mat-progress-spinner
-            *ngIf="state.loading"
-            mode="indeterminate"
-            diameter="22"
-          ></mat-progress-spinner>
         </div>
 
         <table mat-table [dataSource]="state.rows || []" [trackBy]="trackByUuid" matSort
@@ -214,10 +225,6 @@
                 <mat-icon>info</mat-icon>
                 <span>Voir détail</span>
               </button>
-              <button mat-menu-item (click)="openAuditTrail(inv)">
-                <mat-icon>history</mat-icon>
-                <span>Voir audit trail</span>
-              </button>
 
               <mat-divider></mat-divider>
 
@@ -232,19 +239,21 @@
               <button
                 *ngIf="mode === 'pending'"
                 mat-menu-item
+                [disabled]="isValidating(inv)"
                 (click)="approveFromBackOffice(inv)"
               >
                 <mat-icon color="primary">check_circle</mat-icon>
-                <span>Approuver</span>
+                <span>{{ isValidating(inv) ? 'En cours...' : 'Approuver' }}</span>
               </button>
 
               <button
                 *ngIf="mode === 'pending'"
                 mat-menu-item
+                [disabled]="isValidating(inv)"
                 (click)="rejectFromBackOffice(inv)"
               >
                 <mat-icon color="warn">cancel</mat-icon>
-                <span>Rejeter</span>
+                <span>{{ isValidating(inv) ? 'En cours...' : 'Rejeter' }}</span>
               </button>
 
               <button
@@ -305,11 +314,51 @@
               (click)="openDetail(row)"></tr>
         </table>
 
+        <!-- Skeleton table : affiché pendant le tout premier chargement (aucune
+             ligne encore en cache). Donne immédiatement la structure visuelle
+             plutôt qu'un écran vide ou un spinner isolé. -->
+        <div
+          *ngIf="state.loading && (state.rows?.length ?? 0) === 0"
+          class="table-skeleton"
+          aria-hidden="true"
+        >
+          <div
+            class="table-skeleton__row"
+            *ngFor="let r of skeletonRows; let i = index"
+            [style.--row-index]="i"
+          >
+            <div class="table-skeleton__cell table-skeleton__cell--number">
+              <span class="skeleton skeleton--text" style="width: 64%"></span>
+              <span class="skeleton skeleton--chip"></span>
+            </div>
+            <div class="table-skeleton__cell">
+              <span class="skeleton skeleton--text" style="width: 58%"></span>
+            </div>
+            <div class="table-skeleton__cell">
+              <span class="skeleton skeleton--text" style="width: 82%"></span>
+            </div>
+            <div class="table-skeleton__cell">
+              <span class="skeleton skeleton--text" style="width: 52%"></span>
+            </div>
+            <div class="table-skeleton__cell">
+              <span class="skeleton skeleton--pill"></span>
+            </div>
+            <div class="table-skeleton__cell">
+              <span class="skeleton skeleton--text" style="width: 76%"></span>
+            </div>
+            <div class="table-skeleton__cell table-skeleton__cell--actions">
+              <span class="skeleton skeleton--icon"></span>
+            </div>
+          </div>
+          <span class="sr-only" role="status">Chargement des factures…</span>
+        </div>
+
         <div *ngIf="!state.loading && (state.rows?.length ?? 0) === 0" class="empty-state">
           Aucune facture dans cette catégorie.
         </div>
 
         <mat-paginator
+          *ngIf="!(state.loading && (state.rows?.length ?? 0) === 0)"
           [length]="state.total"
           [pageSize]="state.perPage"
           [pageIndex]="state.page - 1"
@@ -410,12 +459,14 @@
   <div class="invoice-detail">
     <header class="invoice-detail__head">
       <div class="invoice-detail__head-main">
-        <h2>{{ detailData()?.invoice?.number || dialogCtx.invoice?.uuid }}</h2>
+        <h2>{{ detailData()?.invoice?.number || dialogCtx.invoice?.number || dialogCtx.invoice?.uuid }}</h2>
         <span class="status-pill" [ngClass]="statusClass(detailData()?.invoice?.status || dialogCtx.invoice?.status || '')">
           {{ statusLabel(detailData()?.invoice?.status || dialogCtx.invoice?.status || '') }}
         </span>
         <span class="invoice-detail__amount">
-          {{ detailData()?.invoice?.amount_ttc != null ? (detailData()!.invoice.amount_ttc | number:'1.2-2') + ' €' : '—' }}
+          {{ detailData()?.invoice?.amount_ttc != null
+              ? (detailData()!.invoice.amount_ttc | number:'1.2-2') + ' €'
+              : (dialogCtx.invoice ? amountLabel(dialogCtx.invoice) : '—') }}
         </span>
       </div>
       <div class="invoice-detail__head-actions">
@@ -479,8 +530,35 @@
       </div>
     </header>
 
-    <div *ngIf="detailLoading()" class="invoice-detail__loading">
-      <mat-spinner diameter="32"></mat-spinner><span>Chargement du détail…</span>
+    <!-- Skeleton détail : reproduit la grille 2 colonnes (cartes infos + viewer
+         PDF) le temps du fetch. En dev le détail est lent : le skeleton évite
+         le « trou blanc » et donne un repère visuel immédiat. -->
+    <div
+      *ngIf="detailLoading()"
+      class="invoice-detail__body invoice-detail__body--skeleton"
+      aria-hidden="true"
+    >
+      <div class="invoice-detail__info">
+        <div
+          class="skel-card"
+          *ngFor="let c of skeletonCards; let i = index"
+          [style.--row-index]="i"
+        >
+          <span class="skeleton skeleton--heading"></span>
+          <div class="skel-grid">
+            <div class="skel-field" *ngFor="let f of skeletonCardFields">
+              <span class="skeleton skeleton--label"></span>
+              <span class="skeleton skeleton--text" [style.width.%]="f"></span>
+            </div>
+          </div>
+        </div>
+        <span class="sr-only" role="status">Chargement du détail de la facture…</span>
+      </div>
+      <aside class="invoice-detail__pdf">
+        <div class="invoice-detail__pdf-frame">
+          <ng-container *ngTemplateOutlet="docSkeleton"></ng-container>
+        </div>
+      </aside>
     </div>
 
     <div *ngIf="!detailLoading() && detailData() as data" class="invoice-detail__body">
@@ -571,7 +649,6 @@
             <div>
               <label>Montant convenu (TTC)</label>
               <strong>{{ mission.expected_amount_ttc | number:'1.2-2' }} €</strong>
-              <span class="muted">source : tuita.fr</span>
             </div>
             <div>
               <label>Terminée le</label>
@@ -613,9 +690,9 @@
         <section class="info-card">
           <h3><mat-icon>euro</mat-icon> Montants</h3>
           <div class="info-grid">
-            <div><label>HT</label><strong>{{ (data.invoice.amount_ht || 0) | number:'1.2-2' }} €</strong></div>
-            <div><label>TVA</label><strong>{{ (data.invoice.amount_tva || 0) | number:'1.2-2' }} €</strong></div>
-            <div><label>TTC</label><strong class="amount-ttc">{{ (data.invoice.amount_ttc || 0) | number:'1.2-2' }} €</strong></div>
+            <div><label>HT</label><strong>{{ data.invoice.amount_ht != null ? ((data.invoice.amount_ht | number:'1.2-2') + ' €') : '—' }}</strong></div>
+            <div><label>TVA</label><strong>{{ data.invoice.amount_tva != null ? ((data.invoice.amount_tva | number:'1.2-2') + ' €') : '—' }}</strong></div>
+            <div><label>TTC</label><strong class="amount-ttc">{{ data.invoice.amount_ttc != null ? ((data.invoice.amount_ttc | number:'1.2-2') + ' €') : '—' }}</strong></div>
             <div *ngIf="data.invoice.currency"><label>Devise</label><strong>{{ data.invoice.currency }}</strong></div>
             <div *ngIf="data.invoice.payment_ref_masked"><label>Ref virement</label><strong><code>{{ data.invoice.payment_ref_masked }}</code></strong></div>
           </div>
@@ -657,7 +734,6 @@
                 <span class="validator-row__status">
                   {{ v.status === 'approved' ? 'Approuvée' : 'Rejetée' }}
                 </span>
-                <span class="muted">· source : {{ v.source }}</span>
               </div>
               <div class="validator-row__meta">
                 <span>{{ v.validator.name || v.validator.email }}</span>
@@ -669,12 +745,20 @@
           </div>
           <div class="actions" *ngIf="detailData()?.invoice?.status === 'pending_payment_validation'">
             <button mat-flat-button color="primary"
+                    [disabled]="isValidating(detailData()?.invoice)"
                     (click)="approveFromBackOffice(detailData()?.invoice!)">
-              <mat-icon>check</mat-icon> Approuver
+              <mat-spinner *ngIf="isValidating(detailData()?.invoice); else approveIcon"
+                           diameter="18"></mat-spinner>
+              <ng-template #approveIcon><mat-icon>check</mat-icon></ng-template>
+              {{ isValidating(detailData()?.invoice) ? 'En cours...' : 'Approuver' }}
             </button>
             <button mat-stroked-button color="warn"
+                    [disabled]="isValidating(detailData()?.invoice)"
                     (click)="rejectFromBackOffice(detailData()?.invoice!)">
-              <mat-icon>close</mat-icon> Rejeter
+              <mat-spinner *ngIf="isValidating(detailData()?.invoice); else rejectIcon"
+                           diameter="18"></mat-spinner>
+              <ng-template #rejectIcon><mat-icon>close</mat-icon></ng-template>
+              {{ isValidating(detailData()?.invoice) ? 'En cours...' : 'Rejeter' }}
             </button>
           </div>
         </section>
@@ -739,12 +823,12 @@
           <h3><mat-icon>history</mat-icon> Audit trail</h3>
 
           <div class="audit-block">
-            <strong>Validations métier ({{ audit.payment_validations.length }}/3)</strong>
-            <ul class="audit-list" *ngIf="audit.payment_validations.length > 0; else noValidations">
-              <li *ngFor="let v of audit.payment_validations; trackBy: trackByValidator">
+            <strong>Validations métier ({{ (audit.payment_validations?.length ?? 0) }}/3)</strong>
+            <ul class="audit-list" *ngIf="(audit.payment_validations?.length ?? 0) > 0; else noValidations">
+              <li *ngFor="let v of audit.payment_validations ?? []; trackBy: trackByValidator">
                 <div class="audit-line">
                   <span class="audit-transition">
-                    <code>{{ v.source || 'webhook' }}</code> → <code>{{ v.status }}</code>
+                    <code>{{ v.validator_type || 'validation' }}</code> → <code>{{ v.status }}</code>
                   </span>
                   <span class="audit-date">{{ formatDate(v.validated_at) }}</span>
                   <span class="audit-actor" *ngIf="v.validated_by_email || v.validated_by_name">
@@ -757,19 +841,6 @@
             <ng-template #noValidations>
               <p class="muted">Aucune validation métier reçue.</p>
             </ng-template>
-          </div>
-
-          <div class="audit-block">
-            <strong>Webhooks sortants</strong>
-            <ul class="audit-list">
-              <li *ngFor="let w of webhookEvents(audit.webhooks_sent)">
-                <div class="audit-line">
-                  <span class="audit-transition"><code>{{ w.event }}</code></span>
-                  <span class="audit-date" *ngIf="w.sent_at">{{ formatDate(w.sent_at) }}</span>
-                  <span class="muted" *ngIf="!w.sent_at">non envoyé</span>
-                </div>
-              </li>
-            </ul>
           </div>
 
           <div class="audit-block" *ngIf="audit.reopened_from">
@@ -797,10 +868,9 @@
 
       <aside class="invoice-detail__pdf">
         <div class="invoice-detail__pdf-frame">
-          <div *ngIf="detailPdfLoading()" class="invoice-detail__pdf-state">
-            <mat-spinner diameter="36"></mat-spinner>
-            <span>Chargement du PDF…</span>
-          </div>
+          <ng-container *ngIf="detailPdfLoading()">
+            <ng-container *ngTemplateOutlet="docSkeleton"></ng-container>
+          </ng-container>
           <div *ngIf="detailPdfError()" class="invoice-detail__pdf-state invoice-detail__pdf-state--error">
             <mat-icon>error_outline</mat-icon>
             <span>{{ detailPdfError() }}</span>
@@ -819,92 +889,25 @@
 </ng-template>
 
 <!-- ========================================================================== -->
-<!-- Audit trail (standalone) dialog                                            -->
+<!-- Document skeleton — placeholder du viewer PDF pendant le chargement         -->
 <!-- ========================================================================== -->
 
-<ng-template #auditDialogTpl>
-  <h2 mat-dialog-title>{{ dialogCtx.title }}</h2>
-  <mat-dialog-content class="detail-dialog-content">
-    <ng-container *ngIf="auditDialogData() as audit; else noAudit2">
-      <section class="info-card">
-        <h3>Facture</h3>
-        <p><strong>Statut :</strong> <code>{{ audit.invoice.status }}</code></p>
-        <p *ngIf="audit.invoice.mission_ref"><strong>Mission :</strong> <code>{{ audit.invoice.mission_ref }}</code></p>
-        <p *ngIf="audit.invoice.amount_ttc != null">
-          <strong>Montant TTC :</strong> {{ audit.invoice.amount_ttc | number:'1.2-2' }} €
-        </p>
-        <p *ngIf="audit.invoice.from_company">
-          <strong>Émetteur :</strong> {{ audit.invoice.from_company }}
-          → {{ audit.invoice.to_company }}
-        </p>
-        <p *ngIf="audit.invoice.created_at"><strong>Créée :</strong> {{ formatDate(audit.invoice.created_at) }}</p>
-        <p *ngIf="audit.invoice.validated_at"><strong>Validée :</strong> {{ formatDate(audit.invoice.validated_at) }}</p>
-        <p *ngIf="audit.invoice.paid_at">
-          <strong>Payée :</strong> {{ formatDate(audit.invoice.paid_at) }}
-          <ng-container *ngIf="audit.invoice.payment_ref_masked"> · ref {{ audit.invoice.payment_ref_masked }}</ng-container>
-        </p>
-      </section>
-
-      <section class="info-card">
-        <h3>Validations métier ({{ audit.payment_validations.length }}/3)</h3>
-        <ul class="audit-list" *ngIf="audit.payment_validations.length > 0; else noValid3">
-          <li *ngFor="let v of audit.payment_validations; trackBy: trackByValidator">
-            <div class="audit-line">
-              <span class="audit-transition">
-                <code>{{ v.validator_type }}</code> → <code>{{ v.status }}</code>
-              </span>
-              <span class="audit-date">{{ formatDate(v.validated_at) }}</span>
-              <span class="audit-actor" *ngIf="v.validated_by_email || v.validated_by_name">
-                {{ v.validated_by_name || v.validated_by_email }}
-              </span>
-            </div>
-            <pre class="audit-meta" *ngIf="v.comment">{{ v.comment }}</pre>
-          </li>
-        </ul>
-        <ng-template #noValid3>
-          <p class="muted">Aucune validation métier reçue.</p>
-        </ng-template>
-      </section>
-
-      <section class="info-card">
-        <h3>Webhooks sortants</h3>
-        <ul class="audit-list">
-          <li *ngFor="let w of webhookEvents(audit.webhooks_sent)">
-            <div class="audit-line">
-              <span class="audit-transition"><code>{{ w.event }}</code></span>
-              <span class="audit-date" *ngIf="w.sent_at">{{ formatDate(w.sent_at) }}</span>
-              <span class="muted" *ngIf="!w.sent_at">non envoyé</span>
-            </div>
-          </li>
-        </ul>
-      </section>
-
-      <section class="info-card" *ngIf="audit.reopened_from">
-        <h3>Reopen</h3>
-        <p>
-          Cloné depuis facture <code>{{ audit.reopened_from.number || audit.reopened_from.uuid }}</code>
-          <span *ngIf="audit.reopened_from.rejection_reason">
-            (rejet : <code>{{ audit.reopened_from.rejection_reason }}</code>)
-          </span>
-        </p>
-        <p *ngIf="audit.reopen_count != null"><strong>Reopens :</strong> {{ audit.reopen_count }} / 2</p>
-      </section>
-
-      <section class="info-card info-card--alert" *ngIf="audit.dispute">
-        <h3>Litige</h3>
-        <p><strong>Ouvert :</strong> {{ formatDate(audit.dispute.disputed_at) }}</p>
-        <p *ngIf="audit.dispute.reason"><strong>Motif :</strong> {{ audit.dispute.reason }}</p>
-        <p *ngIf="audit.dispute.resolved_at">
-          <strong>Résolu :</strong> {{ formatDate(audit.dispute.resolved_at) }}
-          <span *ngIf="audit.dispute.resolution"> — {{ audit.dispute.resolution }}</span>
-        </p>
-      </section>
-    </ng-container>
-    <ng-template #noAudit2>
-      <p class="muted">Chargement en cours…</p>
-    </ng-template>
-  </mat-dialog-content>
-  <mat-dialog-actions align="end">
-    <button mat-flat-button color="primary" (click)="onDialogCancel()">Fermer</button>
-  </mat-dialog-actions>
+<ng-template #docSkeleton>
+  <div class="skel-doc" aria-hidden="true">
+    <div class="skel-doc__head">
+      <span class="skeleton skel-doc__logo"></span>
+      <div class="skel-doc__head-lines">
+        <span class="skeleton skel-doc__line" style="width: 70%"></span>
+        <span class="skeleton skel-doc__line" style="width: 45%"></span>
+      </div>
+    </div>
+    <div class="skel-doc__body">
+      <span
+        class="skeleton skel-doc__line"
+        *ngFor="let l of skeletonDocLines; let i = index"
+        [style.width.%]="l"
+        [style.animation-delay]="i * -0.08 + 's'"
+      ></span>
+    </div>
+  </div>
 </ng-template>

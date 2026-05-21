@@ -22,6 +22,7 @@ import {
 } from '../../services/admin-invitation-code.service';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
 import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface DetailDialogData {
   uuid: string;
@@ -48,6 +49,7 @@ interface DetailDialogData {
     MatSnackBarModule,
     MatTabsModule,
     PhoneDisplayPipe,
+    SkeletonComponent,
   ],
   templateUrl: './code-detail-dialog.component.html',
   styleUrl: './code-detail-dialog.component.scss',

@@ -16,6 +16,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ContractorApiService } from '../../services/contractor-api.service';
 import { MissionPickerComponent, MissionPickerSelection } from '../../components/shared/mission-picker.component';
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { RealtimeService } from '../../services/realtime.service';
 import { RefreshService } from '../../services/refresh.service';
@@ -96,6 +97,7 @@ type FilterKey =
     MatPaginatorModule,
     MissionPickerComponent,
     BackButtonComponent,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-invoices.component.html',
   styleUrl: './contractor-invoices.component.scss',

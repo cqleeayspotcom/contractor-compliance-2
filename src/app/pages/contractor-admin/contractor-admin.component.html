@@ -15,8 +15,8 @@
       </div>
     </div>
     <div class="cadmin__header-actions">
-      <button mat-stroked-button (click)="refreshAll()">
-        <mat-icon>refresh</mat-icon>
+      <button mat-stroked-button (click)="refreshAll()" [disabled]="isLoading()">
+        <mat-icon [class.cadmin__refresh-icon--spin]="isLoading()">refresh</mat-icon>
         Actualiser
       </button>
       <button mat-stroked-button color="warn" (click)="logout()">
@@ -115,6 +115,21 @@
             {{ ov.pipeline.rejected_today.count }} rejetées · {{ formatEur(ov.pipeline.rejected_today.total_amount) }}
           </div>
         </button>
+      </div>
+    </section>
+  } @else if (isLoading()) {
+    <!-- Squelette du 1er chargement : 4 cartes fantômes alignées comme les
+         vraies tuiles KPI (cf. .prod-grid), pour ne pas laisser un trou vide. -->
+    <section class="cadmin__section">
+      <h2 class="cadmin__section-title">
+        <mat-icon>today</mat-icon>
+        Aujourd'hui
+      </h2>
+      <div class="prod-grid">
+        @for (i of [1, 2, 3, 4]; track i) {
+          <app-skeleton variant="cards" [rows]="1"
+                        [label]="$first ? 'Chargement des indicateurs du jour…' : ''" />
+        }
       </div>
     </section>
   }
@@ -271,7 +286,13 @@
           <tr mat-row *matRowDef="let row; columns: signupAttemptColumns;"></tr>
         </table>
       </div>
-    } @else if (!isLoading()) {
+    } @else if (isLoading()) {
+      <!-- Skeleton « table » au 1er chargement (8 colonnes du tableau
+           inscriptions) tant qu'aucune donnée n'est arrivée. -->
+      <div class="cadmin__card">
+        <app-skeleton variant="table" [rows]="6" [columns]="8" label="Chargement des inscriptions…" />
+      </div>
+    } @else {
       <div class="cadmin__empty cadmin__empty--inline">
         <mat-icon>inbox</mat-icon>
         <span>Aucune tentative d'inscription récente</span>
@@ -322,7 +343,11 @@
           <tr mat-header-row *matHeaderRowDef="topCodeColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: topCodeColumns;"></tr>
         </table>
-      } @else if (!isLoading()) {
+      } @else if (isLoading()) {
+        <!-- Skeleton « table » au 1er chargement (4 colonnes du tableau
+             top codes) tant qu'aucune donnée n'est arrivée. -->
+        <app-skeleton variant="table" [rows]="5" [columns]="4" label="Chargement des codes…" />
+      } @else {
         <div class="cadmin__empty cadmin__empty--inline">
           <mat-icon>inbox</mat-icon>
           <span>Aucun code d'invitation utilisé</span>
@@ -371,7 +396,11 @@
             <tr mat-header-row *matHeaderRowDef="qcmBlockedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: qcmBlockedColumns;"></tr>
           </table>
-        } @else if (!isLoading()) {
+        } @else if (isLoading()) {
+          <!-- Skeleton « table » au 1er chargement (5 colonnes du tableau
+               QCM bloqués) tant qu'aucune donnée n'est arrivée. -->
+          <app-skeleton variant="table" [rows]="4" [columns]="5" label="Chargement des QCM bloqués…" />
+        } @else {
           <div class="cadmin__empty cadmin__empty--inline">
             <mat-icon>check_circle</mat-icon>
             <span>Aucun contractor bloqué</span>
@@ -418,7 +447,11 @@
             <tr mat-header-row *matHeaderRowDef="qcmCertifiedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: qcmCertifiedColumns;"></tr>
           </table>
-        } @else if (!isLoading()) {
+        } @else if (isLoading()) {
+          <!-- Skeleton « table » au 1er chargement (5 colonnes du tableau
+               QCM certifiés) tant qu'aucune donnée n'est arrivée. -->
+          <app-skeleton variant="table" [rows]="4" [columns]="5" label="Chargement des QCM certifiés…" />
+        } @else {
           <div class="cadmin__empty cadmin__empty--inline">
             <mat-icon>inbox</mat-icon>
             <span>Aucun contractor certifié</span>
@@ -557,7 +590,19 @@
             }
           </div>
         </div>
-      } @else if (!isLoading()) {
+      } @else if (isLoading()) {
+        <!-- Squelette : 4 cartes KPI fantômes + bloc « Répartition par état ». -->
+        <div class="cadmin__kpi-grid">
+          @for (i of [1, 2, 3, 4]; track i) {
+            <app-skeleton variant="cards" [rows]="1"
+                          [label]="$first ? 'Chargement des statistiques compliance…' : ''" />
+          }
+        </div>
+        <div class="cadmin__card cadmin__card--mt">
+          <h3 class="cadmin__card-title">Répartition par état</h3>
+          <app-skeleton variant="text" [rows]="4" />
+        </div>
+      } @else {
         <div class="cadmin__empty">
           <mat-icon>bar_chart</mat-icon>
           <span>Aucune statistique disponible</span>

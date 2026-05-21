@@ -29,7 +29,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatDialog, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -39,6 +38,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 
@@ -107,7 +107,6 @@ interface DialogField {
     MatMenuModule,
     MatDialogModule,
     MatSnackBarModule,
-    MatProgressSpinnerModule,
     MatDividerModule,
     MatBadgeModule,
     MatFormFieldModule,
@@ -117,6 +116,7 @@ interface DialogField {
     MatNativeDateModule,
     MatDatepickerModule,
     MatTooltipModule,
+    MatProgressSpinnerModule,
     AdminInvoiceFilterBarComponent,
     AdminBackButtonComponent,
     KeyboardShortcutsOverlayComponent,
@@ -158,8 +158,11 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
   // ── État du modal Détail ────────────────────────────────────────────────
   // Signaux dédiés pour ne pas polluer dialogCtx (et permettre OnPush refresh).
   readonly detailData = signal<InvoiceDetail | null>(null);
+  // UUID de la facture dont la validation (approuver/rejeter) est en cours
+  // d'envoi. Sert à afficher un spinner et désactiver les boutons pendant la
+  // requête, pour empêcher les double-clics → double validation.
+  readonly validatingUuid = signal<string | null>(null);
   readonly detailAudit = signal<AuditTrailDetail | null>(null);
-  readonly auditDialogData = signal<AuditTrailDetail | null>(null);
   readonly detailLoading = signal<boolean>(false);
   readonly detailPdfUrl = signal<SafeResourceUrl | null>(null);
   readonly detailPdfLoading = signal<boolean>(false);
@@ -169,7 +172,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   @ViewChild('actionDialogTpl', { static: true }) actionDialogTpl!: TemplateRef<unknown>;
   @ViewChild('detailDialogTpl', { static: true }) detailDialogTpl!: TemplateRef<unknown>;
-  @ViewChild('auditDialogTpl', { static: true }) auditDialogTpl!: TemplateRef<unknown>;
 
   // Active tab
   readonly activeTab = signal<TabKey>('pending');
@@ -281,6 +283,18 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   readonly currentTabState = computed(() => this.tabs[this.activeTab()]());
 
+  // ── Skeletons (placeholders pendant le chargement) ──────────────────────
+  // Itérables figés consommés par les *ngFor des skeletons. Aucune logique :
+  // juste de quoi répéter N lignes/cartes fantômes.
+  /** Lignes fantômes de la table (1er chargement, cache vide). */
+  readonly skeletonRows = Array.from({ length: 6 });
+  /** Cartes fantômes du modal détail facture. */
+  readonly skeletonCards = Array.from({ length: 3 });
+  /** Largeurs (%) des champs fantômes dans une carte détail. */
+  readonly skeletonCardFields = [70, 52, 84, 60];
+  /** Largeurs (%) des lignes fantômes du viewer PDF. */
+  readonly skeletonDocLines = [94, 78, 88, 52, 96, 70, 82, 60, 90, 74, 86, 48];
+
   ngOnInit(): void {
     // Auth garantie par AdminAuthGuard sur /admin/* ; le Bearer OAuth2
     // mysession est injecté par admin-key.interceptor.
@@ -346,6 +360,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     const forced = tabStatusMap[tab];
     if (forced !== null && forced.length > 0) filters.status = forced;
     if (tab === 'disputed') filters.paid_disputed = true;
+    if (tab === 'pending') filters.exclude_self_validated = true;
     if (this.stuckFilter()) filters.stuck = true;
 
     this.api.searchInvoices(filters).subscribe({
@@ -378,7 +393,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       error: () => {},
     });
     this.api.getAuditTrail(inv.uuid).subscribe({
-      next: res => this.detailAudit.set(res.data ?? null),
+      next: res => this.detailAudit.set(this.normalizeAudit(res.data)),
       error: () => {},
     });
   }
@@ -399,14 +414,18 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     const order: TabKey[] = ['pending', 'ready', 'inprogress', 'disputed', 'all'];
     const next = order[idx] ?? 'pending';
     this.activeTab.set(next);
+    this.syncTabToUrl(next);
     this.selectedInvoice.set(null);
     this.resetPanePdf();
     if (this.tabs[next]().rows.length === 0) {
       this.loadTab(next);
     } else {
-      // Auto-sélectionne la 1ère ligne déjà chargée
+      // Onglet déjà visité : on réaffiche le cache instantanément (pas de
+      // spinner) ET on relance une requête silencieuse en arrière-plan pour
+      // que les données ne soient jamais périmées au retour sur l'onglet.
       const firstRow = this.tabs[next]().rows[0];
       if (firstRow) this.selectInvoice(firstRow);
+      this.silentReloadList(next);
     }
   }
 
@@ -449,6 +468,13 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     }
     if (tab === 'disputed') {
       filters.paid_disputed = true;
+    }
+    // Onglet « À valider » = file par admin : on ne montre que les factures
+    // que CET admin n'a pas encore votées (exclusion résolue côté backend
+    // via le Bearer OAuth2). Une fois sa décision posée, la ligne sort de
+    // sa liste — elle reste visible dans l'onglet « Toutes ».
+    if (tab === 'pending') {
+      filters.exclude_self_validated = true;
     }
     if (this.stuckFilter()) {
       filters.stuck = true;
@@ -536,9 +562,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       {
         title: 'Marquer le virement comme lancé',
         body:
-          `Cette action passe la facture en PAYMENT_IN_PROGRESS et émet le webhook ` +
-          `contractor.invoice.payment_in_progress vers tuita.fr. Le contractor verra ` +
-          `« virement en cours » dans son portail.`,
+          `Cette action passe la facture en PAYMENT_IN_PROGRESS et notifie tuita.fr. ` +
+          `Le contractor verra « virement en cours » dans son portail.`,
         confirmLabel: 'Lancer le virement',
         cancelLabel: 'Annuler',
         danger: false,
@@ -562,9 +587,8 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       {
         title: 'Confirmer le paiement',
         body:
-          `Cette action passe la facture en PAID et émet le webhook ` +
-          `contractor.invoice.paid. Strict D1 : la facture doit être en ` +
-          `PAYMENT_IN_PROGRESS.`,
+          `Cette action passe la facture en PAID et notifie tuita.fr. ` +
+          `Strict D1 : la facture doit être en PAYMENT_IN_PROGRESS.`,
         confirmLabel: 'Marquer payée',
         cancelLabel: 'Annuler',
         danger: false,
@@ -590,10 +614,10 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
       {
         title: 'Marquer payée — fast path (saute PAYMENT_IN_PROGRESS)',
         body:
-          `⚠ ATTENTION : ce fast path saute l'étape PAYMENT_IN_PROGRESS et émet ` +
-          `2 webhooks en cascade (payment_in_progress puis paid). À utiliser ` +
-          `uniquement pour un virement instantané déjà confirmé côté banque. ` +
-          `La raison sera consignée dans l'audit trail.`,
+          `⚠ ATTENTION : ce fast path saute l'étape PAYMENT_IN_PROGRESS et passe ` +
+          `directement la facture en PAID. À utiliser uniquement pour un virement ` +
+          `instantané déjà confirmé côté banque. La raison sera consignée dans ` +
+          `l'audit trail.`,
         confirmLabel: 'Confirmer le fast path',
         cancelLabel: 'Annuler',
         danger: true,
@@ -717,26 +741,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     );
   }
 
-  openAuditTrail(inv: AdminInvoice): void {
-    this.dialogCtx = {
-      ...this.emptyDialogCtx(),
-      title: `Audit trail — ${inv.number ?? inv.uuid}`,
-      body: '',
-      confirmLabel: 'Fermer',
-      cancelLabel: '',
-      danger: false,
-      invoice: inv,
-    };
-    this.auditDialogData.set(null);
-    const dlg = this.dialog.open(this.auditDialogTpl, { width: '880px', maxHeight: '85vh' });
-    this.dialogRef = dlg;
-    dlg.afterClosed().subscribe(() => { this.dialogRef = null; });
-    this.api.getAuditTrail(inv.uuid).subscribe({
-      next: res => this.auditDialogData.set(res.data ?? null),
-      error: err => this.handleHttpError(err, 'audit-trail'),
-    });
-  }
-
   openMissionDialog(missionRef: string): void {
     const ref = this.adminDialog.openMission(missionRef);
     ref.componentInstance.openInvoice.subscribe((invoiceUuid: string) => {
@@ -810,7 +814,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
     // 2. Audit trail (best-effort, n'empêche pas l'affichage)
     this.api.getAuditTrail(inv.uuid).subscribe({
-      next: res => this.detailAudit.set(res.data ?? null),
+      next: res => this.detailAudit.set(this.normalizeAudit(res.data)),
       error: () => {},
     });
 
@@ -925,7 +929,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     index: number;
     label: string;
     status: 'approved' | 'rejected';
-    source: string;
     validator: { email: string; name: string; at?: string | null; comment?: string | null };
   }> {
     const data = this.detailData();
@@ -937,7 +940,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         index: i + 1,
         label: `Validation ${i + 1}/${data?.approvals_required ?? 3}`,
         status: v.status as 'approved' | 'rejected',
-        source: v.source ?? 'webhook',
         validator: {
           email: v.validated_by_email,
           name: v.validated_by_name,
@@ -953,17 +955,6 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
 
   detailApprovalsRequired(): number {
     return this.detailData()?.approvals_required ?? 3;
-  }
-
-  webhookEntries(): Array<{ key: string; label: string; sent_at: string | null | undefined }> {
-    const w = this.detailData()?.webhooks_sent ?? {};
-    return [
-      { key: 'rejected', label: 'Rejet', sent_at: w.rejected },
-      { key: 'ready_to_pay', label: 'Bon pour paiement', sent_at: w.ready_to_pay },
-      { key: 'payment_in_progress', label: 'Virement lancé', sent_at: w.payment_in_progress },
-      { key: 'paid', label: 'Payée', sent_at: w.paid },
-      { key: 'reopened', label: 'Reopened', sent_at: w.reopened },
-    ];
   }
 
   // ------------------------------------------------------------------
@@ -1023,7 +1014,7 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
           error: () => {},
         });
         this.api.getAuditTrail(inv.uuid).subscribe({
-          next: res => this.detailAudit.set(res.data ?? null),
+          next: res => this.detailAudit.set(this.normalizeAudit(res.data)),
           error: () => {},
         });
       }
@@ -1174,7 +1165,19 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     void this.submitLocalValidation(inv, 'rejected');
   }
 
+  /** True si la facture est en cours de validation (requête en vol). */
+  isValidating(inv: AdminInvoice | null | undefined): boolean {
+    return !!inv && this.validatingUuid() === inv.uuid;
+  }
+
   private async submitLocalValidation(inv: AdminInvoice, status: 'approved' | 'rejected'): Promise<void> {
+    // Garde anti double-clic : si une validation est déjà en cours pour cette
+    // facture, on ignore le clic. Sans ça, l'admin pouvait cliquer 3 fois et
+    // enregistrer 3 approbations d'affilée.
+    if (this.validatingUuid() === inv.uuid) {
+      return;
+    }
+    this.validatingUuid.set(inv.uuid);
     // L'identité de l'admin est résolue côté backend via le Bearer OAuth2 :
     // rien à transmettre dans le body. Pour un rejet, on envoie une raison
     // technique générique en attendant un dialog Material dédié.
@@ -1193,15 +1196,31 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
           decision: status,
           reason: comment ?? undefined,
         },
-      }) as { data?: { approvals_count?: number; approvals_required?: number; invoice_status?: string } };
-      const count = body?.data?.approvals_count ?? 0;
-      const required = body?.data?.approvals_required ?? 3;
-      const newStatus = body?.data?.invoice_status;
+      }) as {
+        data?: {
+          count_approvals?: number;
+          count_rejections?: number;
+          transitioned_to?: string | null;
+          missing_approvals?: number;
+        };
+      };
+      // Le backend (InvoicePaymentValidationProcessor::process) renvoie
+      // `count_approvals` + `transitioned_to`. L'ancien mapping lisait
+      // `approvals_count` / `invoice_status` — des clés absentes de la
+      // réponse : `count` retombait donc toujours sur 0 et le snackbar
+      // affichait « (0/3) » même quand la validation venait d'être
+      // enregistrée (bug remonté 2026-05-21).
+      const count = body?.data?.count_approvals ?? 0;
+      const required = this.approvalsRequired(inv);
+      const transitionedTo = body?.data?.transitioned_to ?? null;
       this.snack.open(
-        newStatus === 'ready_to_pay'
-          ? `Approbation enregistrée — facture bonne pour paiement (${count}/${required}) 🚩`
-          : newStatus === 'rejected'
-            ? 'Facture rejetée.'
+        // Pour le cas rejet on se fie au `status` qu'on vient d'envoyer :
+        // plus fiable que `transitioned_to` (un rejet ne transitionne pas
+        // toujours la facture).
+        status === 'rejected'
+          ? 'Facture rejetée.'
+          : transitionedTo === 'ready_to_pay'
+            ? `Approbation enregistrée — facture bonne pour paiement (${count}/${required}) 🚩`
             : `Approbation enregistrée (${count}/${required}).`,
         'OK',
         { duration: 5000 },
@@ -1210,14 +1229,23 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     } catch (err: any) {
       const apiMsg = err?.error?.error?.message;
       this.snack.open(apiMsg ?? 'Erreur réseau lors de la validation.', 'OK', { duration: 6000 });
+    } finally {
+      this.validatingUuid.set(null);
     }
   }
 
-  webhookEvents(sent: AuditTrailDetail['webhooks_sent'] | undefined | null): { event: string; sent_at: string | null }[] {
-    const order: (keyof AuditTrailDetail['webhooks_sent'])[] = [
-      'rejected', 'ready_to_pay', 'payment_in_progress', 'paid', 'reopened',
-    ];
-    return order.map(k => ({ event: k, sent_at: sent?.[k] ?? null }));
+  /**
+   * Garde-fou de forme : la carte audit trail attend un OBJET
+   * (`{ payment_validations, ... }`). Si l'API renvoie autre chose
+   * (liste, null, primitive), on neutralise en `null` — le `*ngIf`
+   * masque alors proprement la section au lieu de laisser le template
+   * planter sur `.payment_validations.length`.
+   */
+  private normalizeAudit(data: unknown): AuditTrailDetail | null {
+    if (data === null || data === undefined || Array.isArray(data) || typeof data !== 'object') {
+      return null;
+    }
+    return data as AuditTrailDetail;
   }
 
   trackByFieldKey(_idx: number, item: DialogField): string {
@@ -1347,19 +1375,36 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** Reflète l'onglet courant dans l'URL (?tab=...) sans recharger la page.
+   *  queryParamsHandling 'merge' → on garde ?filter=stuck s'il est présent.
+   *  replaceUrl: true → un clic d'onglet n'empile pas une entrée d'historique
+   *  (le bouton « retour » du navigateur ne se transforme pas en cycle d'onglets). */
+  private syncTabToUrl(tab: TabKey): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
   private switchTabByIndex(idx: number): void {
     const order: TabKey[] = ['pending', 'ready', 'inprogress', 'disputed', 'all'];
     const tab = order[idx];
     if (tab) {
       this.activeTab.set(tab);
       this.initialTabIndex.set(idx);
+      this.syncTabToUrl(tab);
       this.selectedInvoice.set(null);
       this.resetPanePdf();
       if (this.tabs[tab]().rows.length === 0) {
         this.loadTab(tab);
       } else {
+        // Cache affiché tout de suite + rafraîchissement silencieux en fond
+        // (cf. onTabChange) — raccourcis clavier 1-5.
         const firstRow = this.tabs[tab]().rows[0];
         if (firstRow) this.selectInvoice(firstRow);
+        this.silentReloadList(tab);
       }
     }
   }

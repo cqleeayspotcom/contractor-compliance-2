@@ -88,6 +88,78 @@
 }
 
 // ----------------------------------------------------------------------------
+// Loading skeleton — calque hero + tuiles KPI + onglets + tableau pour que
+// rien ne « saute » à l'arrivée des données. Réutilise les classes de layout
+// réelles (.hero-card, .kpi-grid, .kpi-tile, .contractor-tabs, .tab-content) ;
+// seules les formes fantômes ont des classes dédiées ci-dessous.
+// ----------------------------------------------------------------------------
+.contractor-skeleton {
+  .skel-hero-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .skel-hero-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .skel-hero-name {
+    width: 240px;
+    height: 22px;
+    border-radius: 6px;
+  }
+
+  .skel-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+
+  .kpi-tile {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .skel-kpi-value {
+    width: 84px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  .skel-tab-strip {
+    display: flex;
+    gap: 32px;
+    padding: 18px 16px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .skel-filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .skel-filter-search {
+    flex: 1 1 280px;
+    min-width: 240px;
+    height: 40px;
+    border-radius: 6px;
+  }
+
+  .skel-filter-select {
+    width: 200px;
+    height: 40px;
+    border-radius: 6px;
+  }
+}
+
+// ----------------------------------------------------------------------------
 // Hero card
 // ----------------------------------------------------------------------------
 .hero-card {

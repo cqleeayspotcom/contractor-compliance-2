@@ -18,6 +18,7 @@ import { ActivatedRoute, RouterModule } from '@angular/router';
 import { EMPTY, Subject, catchError, interval, switchMap, takeUntil } from 'rxjs';
 
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
@@ -105,6 +106,7 @@ const DOC_TYPE_ICONS: Record<string, string> = {
     MatProgressSpinnerModule,
     MatTooltipModule,
     BackButtonComponent,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-documents.component.html',
   styleUrl: './contractor-documents.component.scss',

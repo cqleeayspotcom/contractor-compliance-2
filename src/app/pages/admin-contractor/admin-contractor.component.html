@@ -19,10 +19,55 @@
     </div>
   </div>
 
-  <!-- Loading -->
-  <div *ngIf="loading()" class="state-block">
-    <mat-spinner diameter="36"></mat-spinner>
-    <p>Chargement du contractor…</p>
+  <!-- Loading : skeleton qui calque la structure réelle de la fiche (hero +
+       tuiles KPI + onglets + tableau). Mêmes dimensions que le contenu final
+       → aucun saut de mise en page à l'arrivée des données. -->
+  <div *ngIf="loading()" class="contractor-skeleton">
+    <span class="sr-only" role="status">Chargement du contractor…</span>
+
+    <div aria-hidden="true">
+      <!-- Hero -->
+      <section class="hero-card">
+        <span class="skeleton skel-hero-avatar"></span>
+        <div class="skel-hero-info">
+          <span class="skeleton skel-hero-name"></span>
+          <div class="skel-hero-meta">
+            <span class="skeleton skeleton--text" style="width: 150px"></span>
+            <span class="skeleton skeleton--text" style="width: 120px"></span>
+            <span class="skeleton skeleton--text" style="width: 140px"></span>
+            <span class="skeleton skeleton--text" style="width: 130px"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI tiles -->
+      <section class="kpi-grid">
+        <mat-card class="kpi-tile" *ngFor="let k of skeletonKpis">
+          <span class="skeleton skeleton--text" style="width: 58%"></span>
+          <span class="skeleton skel-kpi-value"></span>
+          <span class="skeleton skeleton--text" style="width: 46%"></span>
+        </mat-card>
+      </section>
+
+      <!-- Tabs + contenu du 1er onglet -->
+      <div class="contractor-tabs">
+        <div class="skel-tab-strip">
+          <span class="skeleton skeleton--text" style="width: 88px" *ngFor="let t of skeletonTabs"></span>
+        </div>
+        <div class="tab-content">
+          <div class="chip-row">
+            <span class="skeleton skeleton--chip"></span>
+          </div>
+          <div class="skel-filter-bar">
+            <span class="skeleton skel-filter-search"></span>
+            <span class="skeleton skel-filter-select"></span>
+          </div>
+          <div class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="5" />
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Error -->
@@ -119,7 +164,7 @@
     </section>
 
     <!-- Tabs -->
-    <mat-tab-group class="contractor-tabs" animationDuration="0ms" (selectedTabChange)="onTabChange($event)">
+    <mat-tab-group class="contractor-tabs" animationDuration="0ms" [selectedIndex]="initialTabIndex()" (selectedTabChange)="onTabChange($event)">
 
       <!-- ============ KYC ============ -->
       <mat-tab>
@@ -154,6 +199,11 @@
             <span *ngIf="kyc.loading()" class="filter-bar__loader">
               <mat-spinner diameter="18"></mat-spinner>
             </span>
+          </div>
+
+          <!-- Skeleton de 1er chargement de l'onglet (table 5 colonnes). -->
+          <div *ngIf="kyc.loading() && kyc.rows().length === 0" class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="5" label="Chargement des sessions KYC…" />
           </div>
 
           <div *ngIf="!kyc.loading() && kyc.rows().length === 0" class="empty-state">
@@ -268,6 +318,11 @@
             </span>
           </div>
 
+          <!-- Skeleton de 1er chargement de l'onglet (table 6 colonnes). -->
+          <div *ngIf="documents.loading() && documents.rows().length === 0" class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="6" label="Chargement des documents…" />
+          </div>
+
           <div *ngIf="!documents.loading() && documents.rows().length === 0" class="empty-state">
             <mat-icon>folder_open</mat-icon>
             <p>Aucun document.</p>
@@ -348,6 +403,130 @@
         </div>
       </mat-tab>
 
+      <!-- ============ INVOICES ============ -->
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <mat-icon>receipt_long</mat-icon>
+          Factures ({{ d.invoices.summary.total }})
+        </ng-template>
+
+        <div class="tab-content">
+          <div class="chip-row">
+            <span class="chip">{{ d.invoices.summary.pending_count }} en validation</span>
+            <span class="chip chip--ok">{{ d.invoices.summary.ready_to_pay_count }} bon pour paiement</span>
+            <span class="chip chip--info">{{ d.invoices.summary.payment_in_progress_count }} en cours</span>
+            <span class="chip chip--err" *ngIf="d.invoices.summary.rejected_count > 0">{{ d.invoices.summary.rejected_count }} rejetées</span>
+          </div>
+
+          <div class="filter-bar">
+            <mat-form-field appearance="outline" class="filter-bar__search">
+              <mat-icon matPrefix>search</mat-icon>
+              <mat-label>Rechercher (numéro, mission, uuid…)</mat-label>
+              <input matInput [ngModel]="invoices.search()" (ngModelChange)="onSearchInput('invoices', $event)" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="filter-bar__select">
+              <mat-label>Statut</mat-label>
+              <mat-select [ngModel]="invoices.status()" (ngModelChange)="onStatusChange('invoices', $event)">
+                <mat-option *ngFor="let s of invoiceStatuses" [value]="s">{{ s || 'Tous' }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <button mat-stroked-button (click)="resetFilters('invoices')" matTooltip="Réinitialiser">
+              <mat-icon>clear</mat-icon>
+            </button>
+            <span class="filter-bar__spacer"></span>
+            <span *ngIf="invoices.loading()" class="filter-bar__loader">
+              <mat-spinner diameter="18"></mat-spinner>
+            </span>
+          </div>
+
+          <!-- Skeleton de 1er chargement de l'onglet (table 6 colonnes). -->
+          <div *ngIf="invoices.loading() && invoices.rows().length === 0" class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="6" label="Chargement des factures…" />
+          </div>
+
+          <div *ngIf="!invoices.loading() && invoices.rows().length === 0" class="empty-state">
+            <mat-icon>receipt</mat-icon>
+            <p>Aucune facture.</p>
+          </div>
+
+          <div *ngIf="invoices.rows().length > 0" class="table-wrapper">
+            <table mat-table [dataSource]="invoices.rows()" class="data-table">
+              <ng-container matColumnDef="number">
+                <th mat-header-cell *matHeaderCellDef>
+                  <button class="sort-btn" (click)="onSortChange('invoices', 'number')">
+                    Numéro <mat-icon>{{ sortIcon(invoices, 'number') }}</mat-icon>
+                  </button>
+                </th>
+                <td mat-cell *matCellDef="let row">
+                  <a class="link-btn" (click)="goToInvoice(row.uuid)">{{ row.number || row.uuid.slice(0, 8) }}</a>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>
+                  <button class="sort-btn" (click)="onSortChange('invoices', 'status')">
+                    Statut <mat-icon>{{ sortIcon(invoices, 'status') }}</mat-icon>
+                  </button>
+                </th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-pill" [class]="'status-' + row.status">{{ invoiceStatusLabel(row.status) }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="amount">
+                <th mat-header-cell *matHeaderCellDef>
+                  <button class="sort-btn" (click)="onSortChange('invoices', 'amount_ttc')">
+                    Montant TTC <mat-icon>{{ sortIcon(invoices, 'amount_ttc') }}</mat-icon>
+                  </button>
+                </th>
+                <td mat-cell *matCellDef="let row"><strong>{{ row.amount_ttc | number:'1.2-2' }} €</strong></td>
+              </ng-container>
+
+              <ng-container matColumnDef="mission">
+                <th mat-header-cell *matHeaderCellDef>Mission</th>
+                <td mat-cell *matCellDef="let row">
+                  <code *ngIf="row.mission_ref">{{ row.mission_ref }}</code>
+                  <span *ngIf="!row.mission_ref" class="muted">—</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="issued_at">
+                <th mat-header-cell *matHeaderCellDef>
+                  <button class="sort-btn" (click)="onSortChange('invoices', 'issued_at')">
+                    Émise le <mat-icon>{{ sortIcon(invoices, 'issued_at') }}</mat-icon>
+                  </button>
+                </th>
+                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.issued_at) }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="created_at">
+                <th mat-header-cell *matHeaderCellDef>
+                  <button class="sort-btn" (click)="onSortChange('invoices', 'created_at')">
+                    Créée le <mat-icon>{{ sortIcon(invoices, 'created_at') }}</mat-icon>
+                  </button>
+                </th>
+                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.created_at) }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="invoiceColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: invoiceColumns;"
+                  class="clickable-row" (click)="goToInvoice(row.uuid)"
+                  matTooltip="Ouvrir la facture"></tr>
+            </table>
+          </div>
+
+          <mat-paginator
+            *ngIf="invoices.meta() as m"
+            [length]="m.total"
+            [pageSize]="m.per_page"
+            [pageIndex]="m.current_page - 1"
+            [pageSizeOptions]="pageSizeOptions"
+            (page)="onPageChange('invoices', $event)"
+            showFirstLastButtons
+          ></mat-paginator>
+        </div>
+      </mat-tab>
+
       <!-- ============ MISSIONS RÉALISÉES ============ -->
       <mat-tab>
         <ng-template mat-tab-label>
@@ -381,6 +560,11 @@
             <span *ngIf="missions.loading()" class="filter-bar__loader">
               <mat-spinner diameter="18"></mat-spinner>
             </span>
+          </div>
+
+          <!-- Skeleton de 1er chargement de l'onglet (table 6 colonnes). -->
+          <div *ngIf="missions.loading() && missions.rows().length === 0" class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="6" label="Chargement des missions…" />
           </div>
 
           <div *ngIf="!missions.loading() && missions.rows().length === 0" class="empty-state">
@@ -469,125 +653,6 @@
         </div>
       </mat-tab>
 
-      <!-- ============ INVOICES ============ -->
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon>receipt_long</mat-icon>
-          Factures ({{ d.invoices.summary.total }})
-        </ng-template>
-
-        <div class="tab-content">
-          <div class="chip-row">
-            <span class="chip">{{ d.invoices.summary.pending_count }} en validation</span>
-            <span class="chip chip--ok">{{ d.invoices.summary.ready_to_pay_count }} bon pour paiement</span>
-            <span class="chip chip--info">{{ d.invoices.summary.payment_in_progress_count }} en cours</span>
-            <span class="chip chip--err" *ngIf="d.invoices.summary.rejected_count > 0">{{ d.invoices.summary.rejected_count }} rejetées</span>
-          </div>
-
-          <div class="filter-bar">
-            <mat-form-field appearance="outline" class="filter-bar__search">
-              <mat-icon matPrefix>search</mat-icon>
-              <mat-label>Rechercher (numéro, mission, uuid…)</mat-label>
-              <input matInput [ngModel]="invoices.search()" (ngModelChange)="onSearchInput('invoices', $event)" />
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="filter-bar__select">
-              <mat-label>Statut</mat-label>
-              <mat-select [ngModel]="invoices.status()" (ngModelChange)="onStatusChange('invoices', $event)">
-                <mat-option *ngFor="let s of invoiceStatuses" [value]="s">{{ s || 'Tous' }}</mat-option>
-              </mat-select>
-            </mat-form-field>
-            <button mat-stroked-button (click)="resetFilters('invoices')" matTooltip="Réinitialiser">
-              <mat-icon>clear</mat-icon>
-            </button>
-            <span class="filter-bar__spacer"></span>
-            <span *ngIf="invoices.loading()" class="filter-bar__loader">
-              <mat-spinner diameter="18"></mat-spinner>
-            </span>
-          </div>
-
-          <div *ngIf="!invoices.loading() && invoices.rows().length === 0" class="empty-state">
-            <mat-icon>receipt</mat-icon>
-            <p>Aucune facture.</p>
-          </div>
-
-          <div *ngIf="invoices.rows().length > 0" class="table-wrapper">
-            <table mat-table [dataSource]="invoices.rows()" class="data-table">
-              <ng-container matColumnDef="number">
-                <th mat-header-cell *matHeaderCellDef>
-                  <button class="sort-btn" (click)="onSortChange('invoices', 'number')">
-                    Numéro <mat-icon>{{ sortIcon(invoices, 'number') }}</mat-icon>
-                  </button>
-                </th>
-                <td mat-cell *matCellDef="let row">
-                  <a class="link-btn" (click)="goToInvoice(row.uuid)">{{ row.number || row.uuid.slice(0, 8) }}</a>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="status">
-                <th mat-header-cell *matHeaderCellDef>
-                  <button class="sort-btn" (click)="onSortChange('invoices', 'status')">
-                    Statut <mat-icon>{{ sortIcon(invoices, 'status') }}</mat-icon>
-                  </button>
-                </th>
-                <td mat-cell *matCellDef="let row">
-                  <span class="status-pill" [class]="'status-' + row.status">{{ invoiceStatusLabel(row.status) }}</span>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="amount">
-                <th mat-header-cell *matHeaderCellDef>
-                  <button class="sort-btn" (click)="onSortChange('invoices', 'amount_ttc')">
-                    Montant TTC <mat-icon>{{ sortIcon(invoices, 'amount_ttc') }}</mat-icon>
-                  </button>
-                </th>
-                <td mat-cell *matCellDef="let row"><strong>{{ row.amount_ttc | number:'1.2-2' }} €</strong></td>
-              </ng-container>
-
-              <ng-container matColumnDef="mission">
-                <th mat-header-cell *matHeaderCellDef>Mission</th>
-                <td mat-cell *matCellDef="let row">
-                  <code *ngIf="row.mission_ref">{{ row.mission_ref }}</code>
-                  <span *ngIf="!row.mission_ref" class="muted">—</span>
-                </td>
-              </ng-container>
-
-              <ng-container matColumnDef="issued_at">
-                <th mat-header-cell *matHeaderCellDef>
-                  <button class="sort-btn" (click)="onSortChange('invoices', 'issued_at')">
-                    Émise le <mat-icon>{{ sortIcon(invoices, 'issued_at') }}</mat-icon>
-                  </button>
-                </th>
-                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.issued_at) }}</td>
-              </ng-container>
-
-              <ng-container matColumnDef="created_at">
-                <th mat-header-cell *matHeaderCellDef>
-                  <button class="sort-btn" (click)="onSortChange('invoices', 'created_at')">
-                    Créée le <mat-icon>{{ sortIcon(invoices, 'created_at') }}</mat-icon>
-                  </button>
-                </th>
-                <td mat-cell *matCellDef="let row">{{ formatDateOnly(row.created_at) }}</td>
-              </ng-container>
-
-              <tr mat-header-row *matHeaderRowDef="invoiceColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: invoiceColumns;"
-                  class="clickable-row" (click)="goToInvoice(row.uuid)"
-                  matTooltip="Ouvrir la facture dans /admin/invoices"></tr>
-            </table>
-          </div>
-
-          <mat-paginator
-            *ngIf="invoices.meta() as m"
-            [length]="m.total"
-            [pageSize]="m.per_page"
-            [pageIndex]="m.current_page - 1"
-            [pageSizeOptions]="pageSizeOptions"
-            (page)="onPageChange('invoices', $event)"
-            showFirstLastButtons
-          ></mat-paginator>
-        </div>
-      </mat-tab>
-
       <!-- ============ PURCHASES ============ -->
       <mat-tab>
         <ng-template mat-tab-label>
@@ -621,6 +686,11 @@
             <span *ngIf="purchases.loading()" class="filter-bar__loader">
               <mat-spinner diameter="18"></mat-spinner>
             </span>
+          </div>
+
+          <!-- Skeleton de 1er chargement de l'onglet (table 6 colonnes). -->
+          <div *ngIf="purchases.loading() && purchases.rows().length === 0" class="table-wrapper">
+            <app-skeleton variant="table" [rows]="6" [columns]="6" label="Chargement des achats…" />
           </div>
 
           <div *ngIf="!purchases.loading() && purchases.rows().length === 0" class="empty-state">

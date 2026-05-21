@@ -38,9 +38,11 @@
     </button>
   </div>
 
-  @if (isLoading()) {
-    <div class="invitation-page__loader">
-      <mat-spinner diameter="36"></mat-spinner>
+  @if (isLoading() && rows().length === 0) {
+    <!-- Skeleton de 1er chargement : reproduit la table des codes (8 colonnes)
+         pour éviter l'écran blanc le temps de la requête. -->
+    <div class="invitation-page__table-wrap">
+      <app-skeleton variant="table" [rows]="8" [columns]="8" label="Chargement des codes d'invitation…" />
     </div>
   } @else if (rows().length === 0) {
     <div class="empty-state">

@@ -18,7 +18,6 @@ import {
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatTooltipModule } from '@angular/material/tooltip';
@@ -26,6 +25,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { AdminKycService, KycArtifact, KycSessionRow } from '../../services/admin-kyc.service';
 import { AdminKycArtifactPreviewDialogComponent } from './admin-kyc-artifact-preview-dialog.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface ArtifactWithUrl extends KycArtifact {
   blobUrl?: string;
@@ -60,11 +60,11 @@ interface RematchData {
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatCardModule,
     MatExpansionModule,
     MatTooltipModule,
     PhoneDisplayPipe,
+    SkeletonComponent,
   ],
   templateUrl: './admin-kyc-session-dialog.component.html',
   styleUrl: './admin-kyc-session-dialog.component.scss',

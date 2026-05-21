@@ -2240,11 +2240,17 @@ paths:
           in: query
           required: false
           schema: { type: string }
-        - name: amount_min
+        # Noms alignés sur ce que lit réellement le backend
+        # (AdminInvoiceController::buildFilters) : `min_amount`, `max_amount`,
+        # `missing_approvals`, `pending_since`, `blocked`. Les anciens noms
+        # (amount_min, missing_validations, stale_days) n'étaient jamais lus
+        # côté serveur → les sliders €, chips d'approbations et la checkbox
+        # « Bloquées » ne filtraient rien.
+        - name: min_amount
           in: query
           required: false
           schema: { type: number }
-        - name: amount_max
+        - name: max_amount
           in: query
           required: false
           schema: { type: number }
@@ -2260,13 +2266,15 @@ paths:
           in: query
           required: false
           schema: { type: string, enum: [compliance, production, accounting] }
-        - name: missing_validations
+        - name: missing_approvals
           in: query
           required: false
-          schema: { type: integer, enum: [1, 2, 3] }
-        - name: stale_days
+          description: "Nombre de validations manquantes (0 à 3). 3 = aucune approbation."
+          schema: { type: integer, minimum: 0, maximum: 3 }
+        - name: pending_since
           in: query
           required: false
+          description: "Ancienneté minimale en jours sur le statut courant."
           schema: { type: integer }
         - name: plan
           in: query
@@ -2275,6 +2283,19 @@ paths:
         - name: paid_disputed
           in: query
           required: false
+          schema: { type: boolean }
+        - name: blocked
+          in: query
+          required: false
+          description: "Factures avec une cause de blocage métier (failure_reason ou statut rejeté)."
+          schema: { type: boolean }
+        - name: exclude_self_validated
+          in: query
+          required: false
+          description: >-
+            Onglet « À valider » en file par admin : exclut les factures sur
+            lesquelles l'admin courant a déjà voté (approve ou reject).
+            L'identité de l'admin est résolue côté backend via le Bearer OAuth2.
           schema: { type: boolean }
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 

@@ -36,10 +36,15 @@
 </header>
 
 @if (loadingDetail()) {
-  <div class="loading-wrapper">
-    <mat-spinner diameter="40"></mat-spinner>
-    <span class="loading-wrapper__label">Chargement de la demande…</span>
-  </div>
+  <!-- Skeleton « texte » le temps du chargement : blocs fantômes à la place
+       du détail de la demande (montant, description, sections). -->
+  <mat-dialog-content>
+    <app-skeleton
+      variant="text"
+      [rows]="6"
+      label="Chargement de la demande…"
+    />
+  </mat-dialog-content>
 } @else if (detail(); as d) {
   <mat-dialog-content>
     <div class="layout">
@@ -190,9 +195,15 @@
               mat-flat-button
               color="primary"
               type="submit"
+              [disabled]="submitting()"
             >
-              <mat-icon>check_circle</mat-icon>
-              Approuver la demande
+              @if (submitting()) {
+                <mat-spinner diameter="18"></mat-spinner>
+                En cours...
+              } @else {
+                <mat-icon>check_circle</mat-icon>
+                Approuver la demande
+              }
             </button>
           </form>
         </div>
@@ -214,10 +225,15 @@
             mat-flat-button
             color="warn"
             (click)="reject()"
-            [disabled]="rejectReason().length < 10"
+            [disabled]="rejectReason().length < 10 || submitting()"
           >
-            <mat-icon>cancel</mat-icon>
-            Rejeter la demande
+            @if (submitting()) {
+              <mat-spinner diameter="18"></mat-spinner>
+              En cours...
+            } @else {
+              <mat-icon>cancel</mat-icon>
+              Rejeter la demande
+            }
           </button>
         </div>
       </section>

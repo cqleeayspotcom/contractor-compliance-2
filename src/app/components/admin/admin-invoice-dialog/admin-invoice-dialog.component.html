@@ -1,0 +1,233 @@
+<app-admin-dialog-shell
+  [loading]="loading()"
+  [error]="error()"
+  (close)="close()">
+
+  <div slot="title" class="inv-title">
+    <mat-icon>receipt_long</mat-icon>
+    @if (detail(); as d) {
+      <span class="inv-title__num">{{ d.invoice.number || d.invoice.uuid.slice(0, 8) }}</span>
+      <app-invoice-status-chip [status]="d.invoice.status"></app-invoice-status-chip>
+      <span class="inv-title__amount">
+        {{ d.invoice.amount_ttc != null ? (d.invoice.amount_ttc | number:'1.2-2') + ' €' : '—' }}
+      </span>
+    }
+  </div>
+
+  @if (detail(); as d) {
+    <div class="inv-body">
+
+      <!-- Colonne gauche : infos métier -->
+      <div class="inv-info">
+
+        <!-- Mission -->
+        @if (d.mission_snapshot; as m) {
+          <section class="card">
+            <h3><mat-icon>engineering</mat-icon> Mission</h3>
+            <div class="grid">
+              <div><label>Référence</label><strong><code>{{ m.mission_ref }}</code></strong></div>
+              <div>
+                <label>Montant convenu (TTC)</label>
+                <strong>{{ m.expected_amount_ttc | number:'1.2-2' }} €</strong>
+              </div>
+              <div><label>Terminée le</label><strong>{{ formatDate(m.completed_at) }}</strong></div>
+            </div>
+          </section>
+        } @else {
+          <section class="card card--alert">
+            <h3><mat-icon>warning</mat-icon> Mission</h3>
+            <p>Aucune mission tuita.fr rattachée — à vérifier avant validation.</p>
+          </section>
+        }
+
+        <!-- Montants -->
+        <section class="card">
+          <h3><mat-icon>euro</mat-icon> Montants</h3>
+          <div class="grid">
+            <div><label>HT</label><strong>{{ d.invoice.amount_ht != null ? ((d.invoice.amount_ht | number:'1.2-2') + ' €') : '—' }}</strong></div>
+            <div><label>TVA</label><strong>{{ d.invoice.amount_tva != null ? ((d.invoice.amount_tva | number:'1.2-2') + ' €') : '—' }}</strong></div>
+            <div><label>TTC</label><strong class="ttc">{{ d.invoice.amount_ttc != null ? ((d.invoice.amount_ttc | number:'1.2-2') + ' €') : '—' }}</strong></div>
+            @if (d.invoice.payment_ref_masked) {
+              <div><label>Réf. virement</label><strong><code>{{ d.invoice.payment_ref_masked }}</code></strong></div>
+            }
+          </div>
+          @if (amountDeviation(); as dev) {
+            <p class="deviation" [class]="deviationClass(dev.pct)">
+              Écart vs prix convenu : <strong>{{ dev.delta | number:'1.2-2' }} €</strong>
+              ({{ dev.pct | number:'1.1-1' }} %)
+            </p>
+          }
+        </section>
+
+        <!-- Émetteur / Destinataire -->
+        <section class="card">
+          <h3><mat-icon>business</mat-icon> Émetteur / Destinataire</h3>
+          <div class="grid">
+            <div>
+              <label>Émetteur</label>
+              <strong>{{ d.invoice.from_company?.name || '—' }}</strong>
+              @if (d.invoice.from_company?.siren) {
+                <span class="muted">SIREN {{ d.invoice.from_company?.siren }}</span>
+              }
+            </div>
+            <div>
+              <label>Destinataire</label>
+              <strong>{{ d.invoice.to_company?.name || '—' }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <!-- Validations -->
+        <section class="card">
+          <h3>
+            <mat-icon>verified_user</mat-icon> Validations
+            <span class="muted">({{ d.approvals_count ?? 0 }}/{{ d.approvals_required ?? 3 }})</span>
+          </h3>
+          @if (validations().length > 0) {
+            <ul class="validators">
+              @for (v of validations(); track v.uuid) {
+                <li [class.validators--rejected]="v.status === 'rejected'">
+                  <mat-icon>{{ v.status === 'approved' ? 'check_circle' : 'cancel' }}</mat-icon>
+                  <div>
+                    <strong>{{ v.status === 'approved' ? 'Approuvée' : 'Rejetée' }}</strong>
+                    <span class="muted">— {{ v.validated_by_name || v.validated_by_email }}</span>
+                    <span class="muted">· {{ formatDate(v.validated_at) }}</span>
+                    @if (v.comment) { <p class="comment">« {{ v.comment }} »</p> }
+                  </div>
+                </li>
+              }
+            </ul>
+          } @else {
+            <p class="muted">Aucune validation pour l'instant.</p>
+          }
+        </section>
+
+        <!-- Timeline -->
+        <section class="card">
+          <h3><mat-icon>schedule</mat-icon> Chronologie</h3>
+          <ul class="timeline">
+            <li><span>Créée</span><span>{{ formatDate(d.invoice.created_at) }}</span></li>
+            @if (d.invoice.issued_at) { <li><span>Émise</span><span>{{ formatDate(d.invoice.issued_at) }}</span></li> }
+            @if (d.invoice.validated_at) { <li><span>Validée</span><span>{{ formatDate(d.invoice.validated_at) }}</span></li> }
+            @if (d.invoice.payment_launched_at) { <li><span>Virement lancé</span><span>{{ formatDate(d.invoice.payment_launched_at) }}</span></li> }
+            @if (d.invoice.paid_at) { <li><span>Payée</span><span>{{ formatDate(d.invoice.paid_at) }}</span></li> }
+          </ul>
+        </section>
+
+        <!-- Rejet -->
+        @if (d.invoice.rejection_reason) {
+          <section class="card card--alert">
+            <h3><mat-icon>error_outline</mat-icon> Rejet</h3>
+            <p><code>{{ d.invoice.rejection_reason }}</code></p>
+            @if (d.invoice.rejection_details) { <p>{{ d.invoice.rejection_details }}</p> }
+          </section>
+        }
+
+        <!-- Litige -->
+        @if (d.dispute; as dispute) {
+          <section class="card card--alert">
+            <h3><mat-icon>gavel</mat-icon> Litige</h3>
+            <p><strong>Ouvert le</strong> {{ formatDate(dispute.disputed_at) }}</p>
+            @if (dispute.reason) { <p>{{ dispute.reason }}</p> }
+            @if (dispute.resolved_at) {
+              <p class="muted">Résolu le {{ formatDate(dispute.resolved_at) }} — {{ dispute.resolution }}</p>
+            }
+          </section>
+        }
+
+        <!-- Notes admin -->
+        @if (d.admin_notes && d.admin_notes.length > 0) {
+          <section class="card">
+            <h3><mat-icon>sticky_note_2</mat-icon> Notes admin ({{ d.admin_notes.length }})</h3>
+            <ul class="notes">
+              @for (n of d.admin_notes; track n.uuid) {
+                <li>
+                  <header><strong>{{ n.author_email || '—' }}</strong>
+                    <span class="muted">· {{ formatDate(n.created_at) }}</span></header>
+                  <p>{{ n.content }}</p>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <!-- Colonne droite : PDF -->
+      <aside class="inv-pdf">
+        @if (pdfLoading()) {
+          <div class="inv-pdf__state"><mat-spinner diameter="32"></mat-spinner><span>Chargement du PDF…</span></div>
+        } @else if (pdfError()) {
+          <div class="inv-pdf__state inv-pdf__state--error">
+            <mat-icon>error_outline</mat-icon><span>{{ pdfError() }}</span>
+          </div>
+        } @else if (pdfUrl(); as url) {
+          <iframe [src]="url" title="PDF facture" loading="lazy"></iframe>
+        }
+      </aside>
+    </div>
+  }
+
+  <!-- Footer : actions de traitement -->
+  <div slot="footer">
+    @if (detail()) {
+      <button mat-stroked-button (click)="openPdfInNewTab()" [disabled]="!pdfUrl()">
+        <mat-icon>open_in_new</mat-icon> PDF
+      </button>
+
+      @if (hotAction(); as hot) {
+        <button mat-flat-button color="primary" [disabled]="acting()" (click)="hot.run()">
+          <mat-icon>{{ hot.icon }}</mat-icon> {{ hot.label }}
+        </button>
+      }
+
+      <button mat-stroked-button [matMenuTriggerFor]="actionsMenu" [disabled]="acting()">
+        <mat-icon>more_vert</mat-icon> Actions
+      </button>
+      <mat-menu #actionsMenu="matMenu">
+        @if (isPending) {
+          <button mat-menu-item (click)="reject()">
+            <mat-icon color="warn">close</mat-icon><span>Rejeter</span>
+          </button>
+        }
+        @if (isReady) {
+          <button mat-menu-item (click)="markPaidFastPath()">
+            <mat-icon color="warn">flash_on</mat-icon><span>Marquer payée (fast path)</span>
+          </button>
+        }
+        @if (hasOpenDispute) {
+          <button mat-menu-item (click)="resolveDispute()">
+            <mat-icon>gavel</mat-icon><span>Résoudre le litige</span>
+          </button>
+        }
+        <button mat-menu-item (click)="addNote()">
+          <mat-icon>note_add</mat-icon><span>Ajouter une note</span>
+        </button>
+      </mat-menu>
+    }
+  </div>
+</app-admin-dialog-shell>
+
+<!-- Sous-dialog générique de confirmation d'action -->
+<ng-template #confirmTpl>
+  <h2 mat-dialog-title>{{ confirmCtx.title }}</h2>
+  <mat-dialog-content class="confirm-content">
+    <p class="confirm-body">{{ confirmCtx.body }}</p>
+    @for (f of confirmCtx.fields; track f.key) {
+      <mat-form-field appearance="outline" class="confirm-field">
+        <mat-label>{{ f.label }}</mat-label>
+        @if (f.type === 'textarea') {
+          <textarea matInput [(ngModel)]="f.value" rows="3"></textarea>
+        } @else {
+          <input matInput [type]="f.type" [(ngModel)]="f.value" />
+        }
+        @if (f.hint) { <mat-hint>{{ f.hint }}</mat-hint> }
+      </mat-form-field>
+    }
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="confirmCancel()">Annuler</button>
+    <button mat-flat-button [color]="confirmCtx.danger ? 'warn' : 'primary'" (click)="confirmOk()">
+      {{ confirmCtx.confirmLabel }}
+    </button>
+  </mat-dialog-actions>
+</ng-template>

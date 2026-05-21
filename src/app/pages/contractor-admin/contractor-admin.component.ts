@@ -26,6 +26,7 @@ import { adminDashboardOutreach } from '../../api/fn/admin/admin-dashboard-outre
 import { adminHealth } from '../../api/fn/admin-supervision/admin-health';
 
 import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 // ---------------------------------------------------------------------------
 // Types — shapes attendues dans `data` côté backend (cf. AdminDashboardController,
@@ -209,6 +210,7 @@ interface OutreachData {
     MatProgressBarModule,
     MatTableModule,
     MatDialogModule,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-admin.component.html',
   styleUrl: './contractor-admin.component.scss',

@@ -10,11 +10,19 @@
   </header>
 
   @if (loading()) {
-    <div class="loading-wrapper">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
+    <!-- Skeleton tableau le temps du chargement : structure fantôme à la place
+         des onglets, dimensionnée sur la table la plus large (7 colonnes). -->
+    <app-skeleton
+      variant="table"
+      [rows]="6"
+      [columns]="7"
+      label="Chargement des factures libres…"
+    />
   } @else {
-    <mat-tab-group animationDuration="150ms">
+    <mat-tab-group
+      animationDuration="150ms"
+      [selectedIndex]="initialTabIndex()"
+      (selectedIndexChange)="onTabChange($event)">
       <!-- Tab 1 : À approuver -->
       <mat-tab>
         <ng-template mat-tab-label>

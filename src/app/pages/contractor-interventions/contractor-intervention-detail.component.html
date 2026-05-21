@@ -1,6 +1,8 @@
 @if (isLoading()) {
-  <div class="detail-loading">
-    <mat-spinner diameter="40"></mat-spinner>
+  <!-- Skeleton « cartes » pendant le chargement du détail mission :
+       reproduit l'en-tête + la fiche infos + la section facturation. -->
+  <div class="detail-page">
+    <app-skeleton variant="cards" [rows]="3" label="Chargement de la mission…" />
   </div>
 } @else if (notFound()) {
   <div class="detail-page">

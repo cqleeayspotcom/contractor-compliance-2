@@ -14,6 +14,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Router, RouterModule } from '@angular/router';
 
 import { ContractorApiService } from '../../../services/contractor-api.service';
+import { SkeletonComponent } from '../../../components/shared/skeleton.component';
 
 interface InvoicePreviewData {
   uuid: string;
@@ -31,6 +32,7 @@ interface InvoicePreviewData {
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
+    SkeletonComponent,
   ],
   templateUrl: './invoice-preview-panel.component.html',
   styleUrl: './invoice-preview-panel.component.scss',

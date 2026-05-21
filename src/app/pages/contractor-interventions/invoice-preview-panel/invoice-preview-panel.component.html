@@ -17,10 +17,9 @@
   <div class="invoice-panel__body">
 
     @if (isLoading()) {
-      <div class="invoice-panel__loading">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Chargement de la facture...</p>
-      </div>
+      <!-- Skeleton « cartes » pendant le chargement de la facture :
+           reproduit les blocs statut / KPI / suivi du panel. -->
+      <app-skeleton variant="cards" [rows]="3" label="Chargement de la facture…" />
     } @else if (error()) {
       <div class="invoice-panel__error">
         <mat-icon>error_outline</mat-icon>

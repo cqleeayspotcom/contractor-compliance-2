@@ -15,6 +15,7 @@ import { RefreshService } from '../../services/refresh.service';
 import { rejectionMessage, DocumentRejectionCopy } from './document-rejection-messages';
 import { OnboardingNextStepCtaComponent } from '../../components/shared/onboarding-next-step-cta/onboarding-next-step-cta.component';
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface DocumentDetail {
   uuid: string;
@@ -43,6 +44,7 @@ interface DocumentDetail {
     MatProgressBarModule,
     OnboardingNextStepCtaComponent,
     BackButtonComponent,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-document-status.component.html',
   styleUrl: './contractor-document-status.component.scss',

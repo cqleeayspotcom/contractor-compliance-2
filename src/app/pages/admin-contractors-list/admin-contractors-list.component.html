@@ -118,9 +118,15 @@
   <!-- ===== Table ===== -->
   <mat-card class="table-card">
     <mat-card-content>
-      <div *ngIf="loading()" class="loading">
-        <mat-spinner diameter="48"></mat-spinner>
-      </div>
+      <!-- Skeleton au 1er chargement (loading + aucune ligne) : structure
+           fantôme alignée sur les 11 colonnes du tableau pour éviter le saut. -->
+      <app-skeleton
+        *ngIf="loading() && rows().length === 0"
+        variant="table"
+        [rows]="8"
+        [columns]="11"
+        label="Chargement des prestataires…"
+      />
 
       <div *ngIf="!loading() && rows().length === 0" class="empty-state">
         <mat-icon>search_off</mat-icon>

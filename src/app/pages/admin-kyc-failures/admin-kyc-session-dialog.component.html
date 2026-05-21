@@ -300,9 +300,8 @@
     <h3><mat-icon>image</mat-icon> Artefacts visuels</h3>
 
     @if (artifactsLoading()) {
-      <div class="centered">
-        <mat-spinner diameter="32"></mat-spinner>
-      </div>
+      <!-- Skeleton « cards » : reproduit la grille de vignettes des artefacts. -->
+      <app-skeleton variant="cards" [rows]="3" label="Chargement des artefacts…" />
     } @else if (artifactsError()) {
       <div class="error-banner">{{ artifactsError() }}</div>
     } @else if (artifacts().length === 0) {

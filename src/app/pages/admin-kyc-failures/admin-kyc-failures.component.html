@@ -48,10 +48,12 @@
     </div>
   </mat-card>
 
-  @if (isLoading()) {
-    <div class="centered">
-      <mat-spinner diameter="48"></mat-spinner>
-    </div>
+  @if (isLoading() && !hasResults()) {
+    <!-- Skeleton de 1er chargement : reproduit la table des échecs KYC
+         (8 colonnes) pour éviter l'écran blanc et le saut de mise en page. -->
+    <mat-card class="table-card">
+      <app-skeleton variant="table" [rows]="8" [columns]="8" label="Chargement des échecs KYC…" />
+    </mat-card>
   } @else if (errorMsg()) {
     <div class="error-banner">{{ errorMsg() }}</div>
   } @else if (!hasResults()) {

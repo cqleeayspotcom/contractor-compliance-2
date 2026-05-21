@@ -8,7 +8,7 @@ import {
 } from './guards';
 
 /**
- * Contractor Compliance microservice routing.
+ * Contractor Compliance routing.
  *
  * No client-side guards needed — cookie auth (__contractor_ssid) is validated
  * by the backend. If the cookie is invalid/missing the API returns 401 and

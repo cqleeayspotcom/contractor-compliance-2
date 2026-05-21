@@ -1,7 +1,9 @@
 @if (isLoading()) {
-  <div class="page-loading">
-    <mat-spinner diameter="48"></mat-spinner>
-    <p>Chargement...</p>
+  <!-- Squelette de chargement : la page facturation est faite de cartes
+       (statut Pro / carte « Passer en Pro » / factures), on mime donc des
+       blocs de cartes pour eviter le saut de mise en page. -->
+  <div class="page">
+    <app-skeleton variant="cards" [rows]="3" label="Chargement de la facturation…" />
   </div>
 } @else {
   <!-- Bannière flottante post-Stripe Checkout : visible le temps que le
@@ -207,10 +209,9 @@
         </div>
 
         @if (isLoadingInvoices()) {
-          <div class="subscription-invoices__loading">
-            <mat-spinner diameter="28"></mat-spinner>
-            <span>Chargement de vos factures...</span>
-          </div>
+          <!-- Squelette : les factures d'abonnement s'affichent en lignes
+               (date + montant + statut + actions) → variante "list". -->
+          <app-skeleton variant="list" [rows]="4" label="Chargement de vos factures…" />
         } @else if (subscriptionInvoices().length === 0) {
           <div class="subscription-invoices__empty">
             <mat-icon>inbox</mat-icon>

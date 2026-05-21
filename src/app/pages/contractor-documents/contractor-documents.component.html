@@ -1,7 +1,8 @@
 @if (isLoading()) {
-  <div class="page-loading">
-    <mat-spinner diameter="48"></mat-spinner>
-    <p>Chargement des documents...</p>
+  <!-- Skeleton « liste » pendant le 1er chargement : reproduit les lignes
+       de documents (icône + libellé + badge) pour éviter l'écran blanc. -->
+  <div class="page">
+    <app-skeleton variant="list" [rows]="6" label="Chargement des documents…" />
   </div>
 } @else {
   <!-- Bannière flottante visible quel que soit le scroll : garantit que

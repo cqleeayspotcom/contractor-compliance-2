@@ -20,7 +20,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatInputModule } from '@angular/material/input';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatCardModule } from '@angular/material/card';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -31,6 +30,7 @@ import {
 import { AdminKycSessionDialogComponent } from './admin-kyc-session-dialog.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface FailureReasonOption {
   value: string;
@@ -54,9 +54,9 @@ interface FailureReasonOption {
     MatSelectModule,
     MatInputModule,
     MatChipsModule,
-    MatProgressSpinnerModule,
     MatCardModule,
     PhoneDisplayPipe,
+    SkeletonComponent,
   ],
   templateUrl: './admin-kyc-failures.component.html',
   styleUrl: './admin-kyc-failures.component.scss',

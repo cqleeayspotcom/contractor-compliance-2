@@ -307,6 +307,21 @@
   button {
     width: 100%;
     margin-top: 0.5rem;
+    // Permet d'aligner le spinner « En cours... » avec le texte du bouton.
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  // Le spinner Material indeterminate tourne tout seul. Les boutons d'action
+  // sont des mat-flat-button (fond plein, texte blanc) : un spinner couleur
+  // primary/warn serait quasi invisible sur ce fond. On force le tracé du
+  // cercle sur `currentColor` (= couleur du texte du bouton) pour qu'on le
+  // voie réellement tourner. `::ng-deep` car le <circle> appartient au
+  // template interne de MatProgressSpinner (encapsulation Emulated ici).
+  mat-spinner ::ng-deep circle {
+    stroke: currentColor;
   }
 }
 

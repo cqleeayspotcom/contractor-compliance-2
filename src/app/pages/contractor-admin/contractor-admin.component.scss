@@ -1214,3 +1214,21 @@
   color: #6B7280;
   font-size: 0.875rem;
 }
+
+// ---------------------------------------------------------------------------
+// Bouton « Actualiser » — l'icône tourne tant que le chargement est en cours.
+// Les squelettes eux-mêmes viennent du système GLOBAL (cf. src/styles.scss,
+// section « Skeletons ») via le composant <app-skeleton> : rien à styler ici.
+// ---------------------------------------------------------------------------
+
+@keyframes cadmin-refresh-spin {
+  to { transform: rotate(360deg); }
+}
+
+.cadmin__refresh-icon--spin {
+  animation: cadmin-refresh-spin 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cadmin__refresh-icon--spin { animation: none; }
+}

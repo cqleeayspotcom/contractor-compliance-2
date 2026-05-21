@@ -5,6 +5,7 @@
 export * from './tuita-icon.component';
 export * from './tuita-logo.component';
 export * from './loading-spinner.component';
+export * from './skeleton.component';
 export * from './error-alert.component';
 export * from './confirmation-dialog.component';
 export * from './empty-state.component';

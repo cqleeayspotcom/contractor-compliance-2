@@ -4,11 +4,11 @@ import { RouterModule } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { ContractorDashboard } from '../../services/contractor-api.service';
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 type SubcardStatus = 'ok' | 'warn' | 'bad';
 
@@ -27,7 +27,7 @@ type SubcardStatus = 'ok' | 'warn' | 'bad';
 @Component({
   selector: 'app-contractor-chantiers',
   standalone: true,
-  imports: [CommonModule, RouterModule, MatIconModule, MatProgressSpinnerModule, BackButtonComponent],
+  imports: [CommonModule, RouterModule, MatIconModule, BackButtonComponent, SkeletonComponent],
   templateUrl: './contractor-chantiers.component.html',
   styleUrl: './contractor-chantiers.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

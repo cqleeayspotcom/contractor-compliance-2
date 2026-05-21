@@ -1,7 +1,8 @@
 @if (isLoading()) {
-  <div class="page-loading">
-    <mat-spinner diameter="48"></mat-spinner>
-    <p>Chargement...</p>
+  <!-- Squelette : le contenu principal est une liste de cartes facture
+       (icone statut + numero + montant + mission) → variante "list". -->
+  <div class="page">
+    <app-skeleton variant="list" [rows]="6" label="Chargement de vos factures…" />
   </div>
 } @else {
   <div class="page">

@@ -1,6 +1,8 @@
 @if (isLoading()) {
-  <div class="detail-loading">
-    <mat-spinner diameter="40"></mat-spinner>
+  <!-- Squelette : la fiche facture est un bloc detail (en-tete + cartes
+       montant / infos) → variante "text" pour mimer les lignes de contenu. -->
+  <div class="detail-page">
+    <app-skeleton variant="text" [rows]="6" label="Chargement de la facture…" />
   </div>
 } @else if (notFound()) {
   <div class="detail-page">

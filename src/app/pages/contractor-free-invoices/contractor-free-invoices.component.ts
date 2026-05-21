@@ -10,11 +10,12 @@ import { NewFreeInvoiceRequestDialogComponent } from './new-free-invoice-request
 import { UploadFreeInvoiceDialogComponent } from './upload-free-invoice-dialog.component';
 import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 @Component({
   selector: 'app-contractor-free-invoices',
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatDialogModule, RouterLink, RouterLinkActive, BackButtonComponent],
+  imports: [CommonModule, MatIconModule, MatButtonModule, MatDialogModule, RouterLink, RouterLinkActive, BackButtonComponent, SkeletonComponent],
   templateUrl: './contractor-free-invoices.component.html',
   styleUrl: './contractor-free-invoices.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

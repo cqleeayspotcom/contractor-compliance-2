@@ -12,7 +12,6 @@ import { RouterModule } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
@@ -29,6 +28,7 @@ import { GenerateCodeDialogComponent, GenerateCodeResult } from './generate-code
 import { CodeDetailDialogComponent } from './code-detail-dialog.component';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
 import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 type StatusFilter = 'all' | 'active' | 'expired' | 'revoked';
 
@@ -59,11 +59,11 @@ type StatusFilter = 'all' | 'active' | 'expired' | 'revoked';
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
     MatSortModule,
     MatTableModule,
     MatTooltipModule,
+    SkeletonComponent,
   ],
   templateUrl: './admin-invitation-codes.component.html',
   styleUrl: './admin-invitation-codes.component.scss',

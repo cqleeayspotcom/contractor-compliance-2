@@ -22,9 +22,10 @@
   </div>
 
   <div class="doc-preview__body">
+    <!-- Skeleton « text » : préfigure le document en cours de chargement
+         plutôt qu'un spinner isolé dans le cadre de prévisualisation. -->
     <div *ngIf="loading()" class="doc-preview__state">
-      <mat-spinner diameter="40"></mat-spinner>
-      <p>Chargement du document…</p>
+      <app-skeleton variant="text" [rows]="6" label="Chargement du document…" />
     </div>
 
     <div *ngIf="!loading() && errorMsg() as err" class="doc-preview__state doc-preview__state--error">

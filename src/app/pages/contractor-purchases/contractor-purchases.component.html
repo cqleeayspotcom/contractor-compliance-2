@@ -10,10 +10,9 @@
   </header>
 
   @if (loading()) {
-    <div class="purchases__loading">
-      <mat-spinner diameter="32"></mat-spinner>
-      <p>Chargement...</p>
-    </div>
+    <!-- Squelette : les achats officiels s'affichent en lignes
+         (icone statut + libelle + meta + actions) → variante "list". -->
+    <app-skeleton variant="list" [rows]="5" label="Chargement de vos achats…" />
   } @else {
     <div class="purchases__toolbar">
       <mat-form-field appearance="outline" class="filter">

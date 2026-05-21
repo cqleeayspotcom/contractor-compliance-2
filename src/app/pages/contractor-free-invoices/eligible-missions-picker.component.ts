@@ -2,14 +2,14 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, output, s
 import { CommonModule } from '@angular/common';
 import { MatListModule } from '@angular/material/list';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { EligibleMission, FreeInvoiceService } from '../../services/free-invoice.service';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 @Component({
   selector: 'app-eligible-missions-picker',
   standalone: true,
-  imports: [CommonModule, MatListModule, MatCheckboxModule, MatProgressSpinnerModule, MatIconModule],
+  imports: [CommonModule, MatListModule, MatCheckboxModule, MatIconModule, SkeletonComponent],
   templateUrl: './eligible-missions-picker.component.html',
   styleUrl: './eligible-missions-picker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

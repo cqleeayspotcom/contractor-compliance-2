@@ -1,8 +1,7 @@
 @if (isLoading$ | async) {
-  <div class="chantiers__loading">
-    <mat-spinner diameter="40"></mat-spinner>
-    <p>Chargement...</p>
-  </div>
+  <!-- Skeleton « cartes » pendant le chargement du hub chantiers :
+       reproduit les deux tuiles (Interventions / Factures). -->
+  <app-skeleton variant="cards" [rows]="2" label="Chargement de tes chantiers…" />
 } @else if (error$ | async; as error) {
   <div class="chantiers__error">
     <mat-icon>error_outline</mat-icon>

@@ -12,12 +12,12 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import {
   AdminContractorService,
   ContractorDocumentRow,
 } from '../../services/admin-contractor.service';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 /**
  * Modal preview admin pour un document uploadé par le contractor.
@@ -37,7 +37,7 @@ import {
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
+    SkeletonComponent,
   ],
   templateUrl: './admin-document-preview-dialog.component.html',
   styleUrl: './admin-document-preview-dialog.component.scss',

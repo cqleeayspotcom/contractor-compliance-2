@@ -2,7 +2,7 @@
  * Pages Module
  * Exports all page components for the contractor compliance portal.
  * Legacy DO pages (dashboard, documents, auth, companies, employees, settings) were removed —
- * this microservice only serves contractor pages.
+ * only contractor pages remain.
  */
 export * from './not-found/not-found.component';
 export * from './contractor-dashboard/contractor-dashboard.component';

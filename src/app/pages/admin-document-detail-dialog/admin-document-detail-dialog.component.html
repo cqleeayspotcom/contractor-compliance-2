@@ -45,9 +45,10 @@
 
   <!-- ── Loading / error state ─────────────────────────────────────── -->
   @if (loading()) {
+    <!-- Skeleton « cards » : préfigure les fiches d'info (statut, dates,
+         OCR…) le temps du chargement du détail du document. -->
     <div class="doc-detail__loading">
-      <mat-progress-spinner mode="indeterminate" diameter="36" />
-      <span>Chargement du document…</span>
+      <app-skeleton variant="cards" [rows]="4" label="Chargement du document…" />
     </div>
   } @else if (loadError()) {
     <div class="doc-detail__loading doc-detail__loading--error">
@@ -232,9 +233,10 @@
       <section class="doc-detail__file">
         <div class="doc-detail__file-frame">
           @if (fileLoading()) {
+            <!-- Skeleton « text » : préfigure l'aperçu du fichier en cours
+                 de chargement plutôt qu'un spinner isolé. -->
             <div class="doc-detail__file-state">
-              <mat-progress-spinner mode="indeterminate" diameter="36" />
-              <span>Chargement de l'aperçu…</span>
+              <app-skeleton variant="text" [rows]="6" label="Chargement de l'aperçu…" />
             </div>
           } @else if (fileError()) {
             <div class="doc-detail__file-state doc-detail__file-state--error">

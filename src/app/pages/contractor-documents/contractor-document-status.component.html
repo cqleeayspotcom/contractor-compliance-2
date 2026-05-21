@@ -1,7 +1,8 @@
 @if (isLoading()) {
-  <div class="page-loading">
-    <mat-spinner diameter="48"></mat-spinner>
-    <p>Chargement...</p>
+  <!-- Skeleton « texte » pendant le chargement de la fiche statut :
+       reproduit le bloc d'infos du document. -->
+  <div class="page">
+    <app-skeleton variant="text" [rows]="6" label="Chargement du document…" />
   </div>
 } @else if (errorMessage()) {
   <div class="page-loading">

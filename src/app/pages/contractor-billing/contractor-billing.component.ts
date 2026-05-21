@@ -13,6 +13,7 @@ import { ContractorApiService, BillingPlan, PaymentRecord } from '../../services
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { RefreshService } from '../../services/refresh.service';
 import { PricingService } from '../../services/pricing.service';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 import {
   StripeEmbeddedCheckoutDialogComponent,
   StripeEmbeddedCheckoutDialogData,
@@ -42,6 +43,7 @@ interface InvoiceYearGroup {
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-billing.component.html',
   styleUrl: './contractor-billing.component.scss',

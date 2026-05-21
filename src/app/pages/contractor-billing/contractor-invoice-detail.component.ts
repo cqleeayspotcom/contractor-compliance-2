@@ -5,13 +5,13 @@ import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { ContractorApiService } from '../../services/contractor-api.service';
 import { RefreshService } from '../../services/refresh.service';
 import { getInvoiceRejectionCopy, InvoiceRejectionCopy } from './invoice-rejection-messages';
 import { InvoiceTimelineComponent } from '../../components/shared/invoice-timeline/invoice-timeline.component';
 import { InvoiceTimeline } from '../../models/invoice-timeline.model';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface InvoiceMission {
   title: string;
@@ -59,8 +59,8 @@ interface Invoice {
     RouterModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     InvoiceTimelineComponent,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-invoice-detail.component.html',
   styleUrl: './contractor-invoice-detail.component.scss',

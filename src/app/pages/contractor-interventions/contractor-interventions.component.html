@@ -48,9 +48,9 @@
   </div>
 
   @if (isLoading()) {
-    <div class="page__loading">
-      <mat-spinner diameter="40"></mat-spinner>
-    </div>
+    <!-- Skeleton « cartes » pendant le 1er chargement : reproduit la grille
+         des cartes mission pour que la page ne saute pas. -->
+    <app-skeleton variant="cards" [rows]="4" label="Chargement des missions…" />
   } @else {
 
     @if (missions().length === 0) {

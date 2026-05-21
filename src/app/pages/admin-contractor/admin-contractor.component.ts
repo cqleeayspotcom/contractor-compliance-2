@@ -48,6 +48,8 @@ import { AdminKycSessionDialogComponent } from '../admin-kyc-failures/admin-kyc-
 import { PurchaseDetailDialogComponent } from '../admin-purchases/purchase-detail-dialog/purchase-detail-dialog.component';
 import { PurchaseDetail } from '../admin-purchases/admin-purchases.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { AdminDialogService } from '../../services/admin-dialog.service';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface TabState<T> {
   rows: WritableSignal<T[]>;
@@ -115,6 +117,7 @@ function makeTabState<T>(defaultSort: string): TabState<T> {
     MatSlideToggleModule,
     MatDialogModule,
     PhoneDisplayPipe,
+    SkeletonComponent,
   ],
   templateUrl: './admin-contractor.component.html',
   styleUrl: './admin-contractor.component.scss',
@@ -127,6 +130,7 @@ export class AdminContractorComponent implements OnInit {
   private readonly location = inject(Location);
   private readonly snackBar = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
+  private readonly adminDialog = inject(AdminDialogService);
   // Wrapper SDK genere : `invoke(fn, params)` -> Promise<body>. Utilise pour
   // les routes admin sans helper dans AdminContractorService.
   private readonly sdk = inject(Api);
@@ -141,8 +145,21 @@ export class AdminContractorComponent implements OnInit {
   readonly errorMsg = signal<string | null>(null);
   readonly activeTab = signal<number>(0);
 
+  // Ordre des onglets tel qu'affiché — sert au mapping index <-> clé d'URL.
+  private readonly tabOrder: ('documents' | 'kyc' | 'invoices' | 'purchases' | 'missions')[] =
+    ['kyc', 'documents', 'invoices', 'missions', 'purchases'];
+  // Onglet initial : on le reflète dans l'URL (?tab=...) UNIQUEMENT en mode
+  // page. En mode dialog (ouvert par-dessus une autre page admin), toucher
+  // l'URL changerait la route de la page de fond — interdit.
+  readonly initialTabIndex = signal<number>(0);
+
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly defaultPageSize = DEFAULT_PAGE_SIZE;
+
+  // Skeleton de chargement : nombre de tuiles KPI / onglets à pré-figurer.
+  // Référence stable → pas de recréation de tableau à chaque change detection.
+  readonly skeletonKpis = [0, 1, 2, 3];
+  readonly skeletonTabs = [0, 1, 2, 3, 4];
 
   // Tab states
   readonly documents = makeTabState<ContractorDocumentRow>('created_at');
@@ -193,6 +210,18 @@ export class AdminContractorComponent implements OnInit {
   ngOnInit(): void {
     const phone = this.dialogData?.phone ?? this.route.snapshot.paramMap.get('phone') ?? '';
     this.phone.set(phone);
+
+    // Deep-link entrant : en mode page seulement, restaurer l'onglet depuis
+    // l'URL (?tab=...). En mode dialog il n'y a pas d'URL propre à lire.
+    if (!this.isDialog) {
+      const requested = this.route.snapshot.queryParamMap.get('tab');
+      const idx = requested ? this.tabOrder.indexOf(requested as 'kyc') : -1;
+      if (idx >= 0) {
+        this.initialTabIndex.set(idx);
+        this.activeTab.set(idx);
+      }
+    }
+
     this.fetchSummary();
 
     this.searchInput$.pipe(debounceTime(300)).subscribe(({ tab, value }) => {
@@ -217,8 +246,10 @@ export class AdminContractorComponent implements OnInit {
       next: (res) => {
         this.data.set(res.data);
         this.loading.set(false);
-        // Auto-load first tab
-        this.loadTabIfNeeded('documents');
+        // Précharge l'onglet visible à l'ouverture. mat-tab-group n'émet pas
+        // selectedTabChange au 1er rendu : sans ça l'onglet affiché (KYC par
+        // défaut, ou celui restauré depuis ?tab=) ne se chargerait jamais seul.
+        this.loadTabIfNeeded(this.tabOrder[this.activeTab()] ?? 'kyc');
       },
       error: (err: { status?: number; message?: string }) => {
         this.loading.set(false);
@@ -247,15 +278,29 @@ export class AdminContractorComponent implements OnInit {
 
   onTabChange(event: MatTabChangeEvent): void {
     this.activeTab.set(event.index);
-    const map: Record<number, 'documents' | 'kyc' | 'invoices' | 'purchases' | 'missions'> = {
-      0: 'kyc',
-      1: 'documents',
-      2: 'missions',
-      3: 'invoices',
-      4: 'purchases',
-    };
-    const tab = map[event.index];
-    if (tab) this.loadTabIfNeeded(tab);
+    // En mode page : refléter l'onglet dans l'URL (?tab=...) pour un lien
+    // partageable + un refresh qui retombe au bon endroit. Pas en mode dialog
+    // (ça écraserait la route de la page de fond).
+    if (!this.isDialog) {
+      const tabKey = this.tabOrder[event.index] ?? 'kyc';
+      this.router.navigate([], {
+        relativeTo: this.route,
+        queryParams: { tab: tabKey },
+        queryParamsHandling: 'merge',
+        replaceUrl: true,
+      });
+    }
+    const tab = this.tabOrder[event.index];
+    if (!tab) return;
+    const state = this[tab] as TabState<unknown>;
+    if (state.loaded()) {
+      // Onglet déjà visité : on garde le cache affiché (pas de spinner) et on
+      // relance une requête silencieuse en arrière-plan pour que les données
+      // ne soient jamais périmées au retour sur l'onglet.
+      if (!state.loading()) this.reloadTab(tab, true);
+    } else {
+      this.loadTabIfNeeded(tab);
+    }
   }
 
   private loadTabIfNeeded(tab: 'documents' | 'kyc' | 'invoices' | 'purchases' | 'missions'): void {
@@ -284,11 +329,14 @@ export class AdminContractorComponent implements OnInit {
     return q;
   }
 
-  reloadTab(tab: 'documents' | 'kyc' | 'invoices' | 'purchases' | 'missions'): void {
+  reloadTab(tab: 'documents' | 'kyc' | 'invoices' | 'purchases' | 'missions', silent = false): void {
     const phone = this.phone();
     if (!phone) return;
     const state = this[tab] as TabState<unknown>;
-    state.loading.set(true);
+    // `silent` : rechargement en fond (retour sur un onglet en cache) — on
+    // n'allume pas le spinner pour ne pas faire clignoter la liste déjà
+    // affichée. La requête et la mise à jour des données restent identiques.
+    if (!silent) state.loading.set(true);
 
     const query = this.buildQuery(state, tab);
     const obs: Observable<{ data: unknown[]; meta: PaginatedMeta }> =
@@ -474,8 +522,17 @@ export class AdminContractorComponent implements OnInit {
     return (exp - Date.now()) / (1000 * 60 * 60 * 24) < 30;
   }
 
+  /**
+   * Ouvre la facture dans un dialog empilé par-dessus la fiche contractor
+   * (Material gère le stacking). Avant, on faisait un router.navigate vers
+   * /admin/invoices : ça changeait l'URL sans fermer le modal et n'ouvrait
+   * rien d'utile. Ici l'admin voit le détail + agit dessus sans quitter la
+   * fiche. Si une action a modifié la facture, on recharge l'onglet Factures.
+   */
   goToInvoice(uuid: string): void {
-    this.router.navigate(['/admin/invoices'], { queryParams: { uuid } });
+    this.adminDialog.openInvoice(uuid).afterClosed().subscribe((changed) => {
+      if (changed) this.reloadTab('invoices');
+    });
   }
 
   invoiceStatusLabel(status: string | null): string {

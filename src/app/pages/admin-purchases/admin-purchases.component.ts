@@ -30,7 +30,6 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -40,6 +39,7 @@ import { PricingService } from '../../services/pricing.service';
 import { PurchaseDetailDialogComponent } from './purchase-detail-dialog/purchase-detail-dialog.component';
 import { PurchaseRetryDialogComponent } from './purchase-retry-dialog/purchase-retry-dialog.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -148,11 +148,11 @@ export function statusColor(status: string): string {
     MatFormFieldModule,
     MatSelectModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatSortModule,
     MatDialogModule,
     MatSnackBarModule,
     PhoneDisplayPipe,
+    SkeletonComponent,
   ],
   templateUrl: './admin-purchases.component.html',
   styleUrl: './admin-purchases.component.scss',

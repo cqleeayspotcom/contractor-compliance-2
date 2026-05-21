@@ -18,7 +18,6 @@ import {
 } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
@@ -27,6 +26,7 @@ import {
   AdminDocumentService,
   DocumentDetail,
 } from '../../services/admin-document.service';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface ExtractedField {
   key: string;
@@ -46,8 +46,8 @@ interface ExtractedField {
     MatDialogModule,
     MatIconModule,
     MatProgressBarModule,
-    MatProgressSpinnerModule,
     MatTooltipModule,
+    SkeletonComponent,
   ],
   templateUrl: './admin-document-detail-dialog.component.html',
   styleUrl: './admin-document-detail-dialog.component.scss',

@@ -28,7 +28,9 @@
   </p>
 
   @if (loading()) {
-    <div class="empty">Chargement...</div>
+    <!-- Squelette : les demandes de factures libres s'affichent en grille
+         de cartes → variante "cards". -->
+    <app-skeleton variant="cards" [rows]="3" label="Chargement de vos demandes…" />
   } @else if (requests().length === 0) {
     <div class="empty">
       <mat-icon>inbox</mat-icon>

@@ -14,6 +14,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AdminFreeInvoiceService } from '../../services/admin-free-invoice.service';
 import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
 import { ContractorComplianceSummaryComponent } from '../../components/shared/contractor-compliance-summary/contractor-compliance-summary.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface AssociatedMission {
   mission_ref: string;
@@ -56,6 +57,7 @@ export interface AdminFreeInvoiceDialogData {
     MatTooltipModule,
     MatSnackBarModule,
     ContractorComplianceSummaryComponent,
+    SkeletonComponent,
   ],
   templateUrl: './admin-free-invoice-detail-dialog.component.html',
   styleUrl: './admin-free-invoice-detail-dialog.component.scss',
@@ -107,6 +109,11 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
 
   readonly rejectReason = signal('');
   private readonly blobUrls: string[] = [];
+
+  // Vrai pendant l'envoi d'une action (approve/reject) au serveur. Sert à
+  // afficher un spinner « En cours... » et désactiver les deux boutons pour
+  // empêcher les double-clics → double traitement (le serveur peut être lent).
+  readonly submitting = signal(false);
 
   // F4 : le montant autorisé n'est plus saisi côté admin — le backend le fige
   // sur le montant demandé (FreeInvoiceService::approve). Le formulaire ne
@@ -259,6 +266,7 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
   approve(): void {
     const d = this.detail();
     if (!d) return;
+    if (this.submitting()) return;
 
     // Montant figé = montant demandé (le backend ne lit plus de montant
     // autorisé envoyé par le front — cf. F4). On l'affiche pour confirmation.
@@ -276,10 +284,12 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
     }).subscribe((ok) => {
       if (!ok) return;
 
+      this.submitting.set(true);
       this.svc
         .approve(this.uuid(), { note })
         .subscribe({
           next: () => {
+            this.submitting.set(false);
             const advancing = this.hasNext();
             this.snack.open(
               advancing ? 'Approuvée. Passage à la suivante.' : 'Approuvée. Le contractor a été notifié.',
@@ -289,6 +299,7 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
             this.advanceOrClose();
           },
           error: (err) => {
+            this.submitting.set(false);
             const msg = (err as any)?.error?.error?.message ?? 'Erreur lors de l\'approbation.';
             this.snack.open(msg, 'OK', { duration: 4000 });
           },
@@ -297,6 +308,7 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
   }
 
   reject(): void {
+    if (this.submitting()) return;
     const reason = this.rejectReason();
     if (reason.length < 10) {
       this.snack.open('La raison doit contenir au moins 10 caractères.', 'OK', { duration: 3000 });
@@ -313,8 +325,10 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
     }).subscribe((ok) => {
       if (!ok) return;
 
+      this.submitting.set(true);
       this.svc.reject(this.uuid(), reason).subscribe({
         next: () => {
+          this.submitting.set(false);
           const advancing = this.hasNext();
           this.snack.open(
             advancing ? 'Rejetée. Passage à la suivante.' : 'Rejetée. Le contractor a été notifié.',
@@ -324,6 +338,7 @@ export class AdminFreeInvoiceDetailDialogComponent implements OnInit, OnDestroy 
           this.advanceOrClose();
         },
         error: (err) => {
+          this.submitting.set(false);
           const msg = (err as any)?.error?.error?.message ?? 'Erreur lors du rejet.';
           this.snack.open(msg, 'OK', { duration: 4000 });
         },

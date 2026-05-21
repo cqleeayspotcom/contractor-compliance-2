@@ -1,14 +1,14 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdminFreeInvoiceService } from '../../services/admin-free-invoice.service';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 import {
   AdminFreeInvoiceDetailDialogComponent,
   AdminFreeInvoiceDialogData,
@@ -24,8 +24,8 @@ import {
     MatButtonModule,
     MatDialogModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatSnackBarModule,
+    SkeletonComponent,
   ],
   templateUrl: './admin-free-invoices.component.html',
   styleUrl: './admin-free-invoices.component.scss',
@@ -36,15 +36,37 @@ export class AdminFreeInvoicesComponent implements OnInit {
   private readonly dialog = inject(MatDialog);
   private readonly snack = inject(MatSnackBar);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly pending = signal<any[]>([]);
   readonly all = signal<any[]>([]);
   readonly loading = signal(true);
 
+  // Onglet courant reflété dans l'URL (?tab=pending|all) : deep-link entrant
+  // au chargement + URL qui suit le clic d'onglet (lien partageable, refresh
+  // qui retombe sur le bon onglet). Index 0 = « À approuver », 1 = « Toutes ».
+  private readonly tabOrder: ('pending' | 'all')[] = ['pending', 'all'];
+  readonly initialTabIndex = signal<number>(0);
+
   ngOnInit(): void {
     // Auth garantie par AdminAuthGuard sur la route /admin/* ; le Bearer est
     // injecté par admin-key.interceptor sur chaque appel admin.
+    const requested = this.route.snapshot.queryParamMap.get('tab');
+    const idx = requested ? this.tabOrder.indexOf(requested as 'pending' | 'all') : -1;
+    this.initialTabIndex.set(idx >= 0 ? idx : 0);
     this.refresh();
+  }
+
+  /** Reflète l'onglet courant dans l'URL (?tab=...) sans recharger la page.
+   *  replaceUrl: true → un clic d'onglet n'empile pas une entrée d'historique. */
+  onTabChange(idx: number): void {
+    const tab = this.tabOrder[idx] ?? 'pending';
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { tab },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
   }
 
   refresh(): void {

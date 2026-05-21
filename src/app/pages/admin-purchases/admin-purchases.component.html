@@ -145,13 +145,21 @@
     <!-- TABLE                                                         -->
     <!-- ============================================================ -->
     <mat-card class="table-card">
-      @if (isLoading()) {
-        <div class="loading"><mat-spinner diameter="32"></mat-spinner></div>
+      <!-- Skeleton au 1er chargement (loading + aucune ligne) : 7 colonnes
+           fantômes, alignées sur le tableau, pour éviter le saut de layout. -->
+      @if (isLoading() && purchases().length === 0) {
+        <app-skeleton
+          variant="table"
+          [rows]="8"
+          [columns]="7"
+          label="Chargement des achats…"
+        />
       }
 
       <table mat-table [dataSource]="purchases() || []" [trackBy]="trackByUuid" matSort
              [matSortActive]="sort()" [matSortDirection]="direction()"
-             (matSortChange)="onSortChange($event)" class="purchases-table">
+             (matSortChange)="onSortChange($event)" class="purchases-table"
+             [hidden]="isLoading() && purchases().length === 0">
         <ng-container matColumnDef="created_at">
           <th mat-header-cell *matHeaderCellDef mat-sort-header="created_at">Date</th>
           <td mat-cell *matCellDef="let row">{{ row.created_at | date: 'dd/MM/yy HH:mm' }}</td>

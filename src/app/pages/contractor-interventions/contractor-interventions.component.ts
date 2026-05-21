@@ -7,11 +7,11 @@ import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 import { ContractorApiService, ContractorMission, MissionsQuery } from '../../services/contractor-api.service';
 import { RefreshService } from '../../services/refresh.service';
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 type InvoiceStatusKey = ContractorMission['invoice_status'];
 
@@ -48,8 +48,8 @@ const SEARCH_DEBOUNCE_MS = 300;
     FormsModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule,
     BackButtonComponent,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-interventions.component.html',
   styleUrl: './contractor-interventions.component.scss',

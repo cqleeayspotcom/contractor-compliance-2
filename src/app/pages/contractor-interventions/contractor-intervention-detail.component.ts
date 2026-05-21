@@ -13,6 +13,7 @@ import { ContractorApiService, ContractorMission } from '../../services/contract
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { RefreshService } from '../../services/refresh.service';
 import { InvoicePreviewPanelComponent } from './invoice-preview-panel/invoice-preview-panel.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 import { environment } from '../../../environments/environment';
 
 @Component({
@@ -25,6 +26,7 @@ import { environment } from '../../../environments/environment';
     MatIconModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    SkeletonComponent,
   ],
   templateUrl: './contractor-intervention-detail.component.html',
   styleUrl: './contractor-intervention-detail.component.scss',

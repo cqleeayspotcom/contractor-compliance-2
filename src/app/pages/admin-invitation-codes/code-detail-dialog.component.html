@@ -12,8 +12,10 @@
   </header>
 
   @if (isLoading() && !detail()) {
+    <!-- Skeleton « text » : reproduit le bloc de métadonnées du détail le
+         temps du chargement, plutôt qu'un spinner isolé. -->
     <div class="detail-dialog__loader">
-      <mat-spinner diameter="32"></mat-spinner>
+      <app-skeleton variant="text" [rows]="6" label="Chargement du détail du code…" />
     </div>
   } @else if (detail(); as d) {
     <mat-tab-group dynamicHeight>

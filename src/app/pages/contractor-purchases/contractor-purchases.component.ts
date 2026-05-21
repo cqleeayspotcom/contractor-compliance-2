@@ -12,6 +12,7 @@ import { RouterLink } from '@angular/router';
 // d'endpoint dédié côté Tuita (seul l'admin l'expose). La page affiche un
 // état vide informatif et redirige le contractor vers le support email.
 import { BackButtonComponent } from '../../components/shared/back-button/back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 interface PurchaseRow {
   uuid: string;
@@ -43,6 +44,7 @@ interface PurchaseRow {
     MatSelectModule,
     DatePipe,
     BackButtonComponent,
+    SkeletonComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './contractor-purchases.component.html',

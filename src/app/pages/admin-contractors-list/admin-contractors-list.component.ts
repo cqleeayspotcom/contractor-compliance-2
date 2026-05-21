@@ -16,7 +16,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
@@ -35,6 +34,7 @@ import {
 import { AdminContractorComponent } from '../admin-contractor/admin-contractor.component';
 import { PhoneDisplayPipe } from '../../pipes/phone-display.pipe';
 import { AdminBackButtonComponent } from '../../components/admin/admin-back-button/admin-back-button.component';
+import { SkeletonComponent } from '../../components/shared/skeleton.component';
 
 const DEPARTMENTS: string[] = [
   ...Array.from({ length: 95 }, (_, i) => String(i + 1).padStart(2, '0')),
@@ -59,7 +59,6 @@ const DEPARTMENTS: string[] = [
     MatIconModule,
     MatInputModule,
     MatPaginatorModule,
-    MatProgressSpinnerModule,
     MatSelectModule,
     MatSlideToggleModule,
     MatSnackBarModule,
@@ -69,6 +68,7 @@ const DEPARTMENTS: string[] = [
     MatDialogModule,
     PhoneDisplayPipe,
     AdminBackButtonComponent,
+    SkeletonComponent,
   ],
   templateUrl: './admin-contractors-list.component.html',
   styleUrl: './admin-contractors-list.component.scss',
@@ -269,7 +269,7 @@ export class AdminContractorsListComponent implements OnInit {
   }
 
   openContractor(row: ContractorListRow): void {
-    this.dialog.open(AdminContractorComponent, {
+    const ref = this.dialog.open(AdminContractorComponent, {
       data: { phone: row.phone },
       width: '95vw',
       maxWidth: '1400px',
@@ -277,6 +277,11 @@ export class AdminContractorsListComponent implements OnInit {
       panelClass: 'admin-contractor-dialog',
       autoFocus: false,
     });
+    // La fiche permet de muter le contractor (KYC, documents, factures…).
+    // Sans ce refresh, la ligne de la liste resterait figée sur l'ancien
+    // statut / score après fermeture du dialogue. `refresh()` rejoue la
+    // requête avec les filtres + page courants.
+    ref.afterClosed().subscribe(() => this.refresh());
   }
 
   // ----- Display helpers -----

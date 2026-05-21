@@ -302,6 +302,44 @@ button {
   z-index: 9999;
 }
 
+// ── Tooltip (matTooltip) — fix global ───────────────────────────────────────
+// Angular Material 21 (moteur MDC / M3) lit l'apparence du tooltip via des
+// CSS variables `--mdc-plain-tooltip-*`. Le thème Tuita n'inclut PAS
+// `mat.all-component-themes` (commenté dans _theme.scss) → ces variables ne
+// sont jamais définies → le tooltip s'affiche en texte brut transparent, sans
+// fond ni padding. L'ancienne règle `.mat-tooltip` de _theme.scss ne matche
+// plus rien : la classe MDC réelle est `.mat-mdc-tooltip` (conteneur) et
+// `.mdc-tooltip__surface` (la boîte visible).
+//
+// Fix global : on définit les variables MDC sur `.mat-mdc-tooltip` → TOUS les
+// tooltips de l'app (back-button, en-têtes admin, widgets, etc.) récupèrent
+// la boîte foncée Tuita d'un seul coup. Le bloc `.mdc-tooltip__surface` sert
+// de filet de sécurité si une version MDC ignore une variable.
+.mat-mdc-tooltip {
+  --mdc-plain-tooltip-container-color: #073148;
+  --mdc-plain-tooltip-container-shape: 8px;
+  --mdc-plain-tooltip-supporting-text-color: #ffffff;
+  --mdc-plain-tooltip-supporting-text-font: 'M PLUS Rounded 1c', sans-serif;
+  --mdc-plain-tooltip-supporting-text-size: 12.5px;
+  --mdc-plain-tooltip-supporting-text-weight: 500;
+  --mdc-plain-tooltip-supporting-text-line-height: 1.4;
+  --mdc-plain-tooltip-supporting-text-tracking: 0.01em;
+
+  .mdc-tooltip__surface {
+    background-color: var(--mdc-plain-tooltip-container-color);
+    color: var(--mdc-plain-tooltip-supporting-text-color);
+    border-radius: var(--mdc-plain-tooltip-container-shape);
+    font-family: var(--mdc-plain-tooltip-supporting-text-font);
+    font-size: var(--mdc-plain-tooltip-supporting-text-size);
+    font-weight: var(--mdc-plain-tooltip-supporting-text-weight);
+    line-height: var(--mdc-plain-tooltip-supporting-text-line-height);
+    letter-spacing: var(--mdc-plain-tooltip-supporting-text-tracking);
+    padding: 6px 10px;
+    max-width: 240px;
+    box-shadow: 0 4px 12px rgba(7, 49, 72, 0.24);
+  }
+}
+
 // ── Side panel slide-in droit (invoice preview, etc.) ───────────────────────
 // MatDialog config recommandée pour un panel latéral droit :
 //   width: '480px', height: '100vh', position: { right: '0', top: '0' },
@@ -487,6 +525,249 @@ mat-hint {
   @media (max-width: 600px) {
     padding-top: 70px !important;
   }
+}
+
+// ============================================================================
+// Skeletons & états de chargement — système GLOBAL
+// ----------------------------------------------------------------------------
+// Remplace les spinners isolés + écrans blancs par des placeholders qui
+// reproduisent la structure réelle (tables, cartes, listes, documents) : le
+// contenu paraît arriver plus vite et l'œil garde ses repères. Indispensable en
+// dev où les fetch sont lents.
+//
+// Usage : composant <app-skeleton variant="table|cards|list|text"> (cf.
+// components/shared/skeleton.component.ts), ou directement les classes ci-dessous.
+// Respecte strictement prefers-reduced-motion.
+// ============================================================================
+
+@keyframes skeleton-shimmer { to { background-position: -120% 0; } }
+@keyframes skeleton-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes skeleton-loading-bar {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(390%); }
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+
+// ── Brique de base : bloc gris avec reflet qui balaie ──────────────────────
+.skeleton {
+  display: block;
+  border-radius: 6px;
+  background-color: #e7ebf0;
+  background-image: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0) 35%,
+    rgba(255, 255, 255, 0.75) 50%,
+    rgba(255, 255, 255, 0) 65%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  background-position: 180% 0;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton--text    { height: 12px; border-radius: 4px; }
+.skeleton--label   { height: 8px;  width: 46px; border-radius: 3px; opacity: 0.65; }
+.skeleton--heading { height: 13px; width: 38%;  border-radius: 4px; }
+.skeleton--pill    { height: 20px; width: 84px; border-radius: 11px; }
+.skeleton--chip    { height: 18px; width: 104px; border-radius: 9px; }
+.skeleton--icon    { height: 28px; width: 28px;  border-radius: 50%; }
+.skeleton--avatar  { height: 40px; width: 40px;  border-radius: 50%; }
+
+// ── Barre de progression fine (haut d'une carte / table) ───────────────────
+// Le conteneur parent doit être en position: relative.
+.loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(99, 102, 241, 0.14);
+  overflow: hidden;
+  z-index: 6;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 34%;
+    background: linear-gradient(90deg, transparent, #6366f1 45%, #818cf8 55%, transparent);
+    animation: skeleton-loading-bar 1.15s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  }
+}
+
+// ── Indicateur discret « Actualisation… » (refetch avec données déjà là) ───
+.refreshing-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #6366f1;
+
+  .refreshing-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6366f1;
+    animation: skeleton-pulse 1.1s ease-in-out infinite;
+  }
+}
+
+.total-label-skeleton { width: 92px; height: 13px; }
+
+// ── Variante TABLE : lignes fantômes alignées en colonnes ──────────────────
+.table-skeleton {
+  padding: 2px 0 6px;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 15px 16px;
+    border-bottom: 1px solid #f4f6f8;
+    animation: skeleton-rise 0.4s ease both;
+    animation-delay: calc(var(--row-index, 0) * 55ms);
+
+    &:last-child { border-bottom: none; }
+
+    // Décalage de phase du reflet → vague diagonale entre les lignes.
+    .skeleton { animation-delay: calc(var(--row-index, 0) * -160ms); }
+  }
+
+  &__cell {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+
+    &--number  { flex: 1.5 1 0; }
+    &--actions { flex: 0 0 56px; align-items: flex-end; }
+  }
+}
+
+// ── Variante CARDS : cartes fantômes empilées (modals, sections) ───────────
+.cards-skeleton,
+.audit-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skel-card {
+  background: #fff;
+  border: 1px solid #e9ecf1;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  animation: skeleton-rise 0.45s ease both;
+  animation-delay: calc(var(--row-index, 0) * 85ms);
+}
+
+.skel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+}
+
+.skel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+// ── Variante LIST : lignes « icône + 2 textes + badge » ────────────────────
+.list-skeleton {
+  display: flex;
+  flex-direction: column;
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 4px;
+    border-bottom: 1px solid #f4f6f8;
+    animation: skeleton-rise 0.4s ease both;
+    animation-delay: calc(var(--row-index, 0) * 55ms);
+
+    &:last-child { border-bottom: none; }
+
+    .skeleton { animation-delay: calc(var(--row-index, 0) * -160ms); }
+  }
+
+  &__lines {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+  }
+}
+
+// ── Variante TEXT : paragraphes fantômes ───────────────────────────────────
+.text-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+// ── Variante DOCUMENT : placeholder d'un viewer PDF ────────────────────────
+// Le conteneur parent doit être en position: relative.
+.skel-doc {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  padding: 30px 34px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+
+  &__head { display: flex; gap: 16px; margin-bottom: 8px; }
+  &__logo { flex: 0 0 56px; height: 56px; border-radius: 8px; }
+
+  &__head-lines {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  &__body { display: flex; flex-direction: column; gap: 13px; }
+  &__line { height: 10px; border-radius: 3px; }
+}
+
+// ── Utilitaire : texte réservé aux lecteurs d'écran ────────────────────────
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// Accessibilité : on calme le balayage et on coupe les entrées en cascade.
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation-duration: 3.2s; }
+  .table-skeleton__row,
+  .list-skeleton__row,
+  .skel-card { animation: none; }
+  .loading-bar::after { animation-duration: 2.6s; }
 }
 
 // Scrollbar styling

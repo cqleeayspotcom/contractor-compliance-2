@@ -12,6 +12,7 @@
   margin-top: 12px;
 
   &__inner {
+    position: relative;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -132,6 +133,36 @@
       font-size: 11px;
       min-height: 20px;
       padding: 2px 8px;
+    }
+  }
+}
+
+// ── Spinner d'attente dans les boutons Approuver / Rejeter ───────────────────
+// Pendant l'envoi de la validation au serveur (qui peut être lent), on affiche
+// un vrai mat-spinner qui tourne dans le bouton + on désactive le bouton, pour
+// empêcher les double-clics qui enregistraient plusieurs validations.
+//
+// Détail important : "Approuver" est un mat-flat-button color="primary" → fond
+// bleu, texte blanc. Un mat-spinner garde par défaut la couleur primary (bleu) :
+// bleu sur bleu = invisible. On force donc le tracé du cercle sur `currentColor`
+// (= la couleur du texte du bouton, blanc) pour qu'on le voie réellement tourner.
+// Encapsulation None sur ce composant → ces règles s'appliquent au dialog monté
+// dans l'overlay CDK.
+.actions {
+  display: flex;
+  gap: 8px;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  mat-spinner {
+    // Le spinner Material indeterminate tourne tout seul ; on ne touche qu'à
+    // la taille et à la couleur du tracé.
+    circle {
+      stroke: currentColor;
     }
   }
 }
@@ -290,15 +321,6 @@
     font-weight: 700;
     color: #073148;
     font-variant-numeric: tabular-nums;
-  }
-
-  &__loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 60px;
-    color: #6b7280;
   }
 
   &__body {
@@ -566,33 +588,6 @@
   }
 }
 
-.webhook-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    font-size: 0.85rem;
-
-    .wh-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      color: #d1d5db;
-
-      &--sent { color: #16a34a; }
-    }
-
-    .wh-label { flex: 1; font-weight: 500; }
-
-    .muted { font-size: 0.78rem; color: #6b7280; }
-  }
-}
-
 .note-list {
   list-style: none;
   padding: 0;
@@ -657,123 +652,6 @@
 
 // Note : override Material dialog padding fait dans styles.scss global
 // (encapsulation = ::ng-deep ne traverse pas l'overlay CDK ajouté à <body>).
-
-// Legacy detail-dialog-content classes (orphelines après refonte) — on garde les
-// règles pour audit-list/audit-line réutilisées plus bas
-.detail-dialog-content {
-  width: min(760px, 100%);
-  max-width: 100%;
-  box-sizing: border-box;
-
-  h3 {
-    font-size: 1rem;
-    margin: 16px 0 8px;
-    color: #1a1a1a;
-
-    &:first-child {
-      margin-top: 0;
-    }
-  }
-
-  .json-block {
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 12px;
-    border-radius: 6px;
-    font-size: 12px;
-    line-height: 1.4;
-    max-height: 200px;
-    overflow: auto;
-    margin: 0;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .audit-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    li {
-      padding: 10px 12px;
-      border-bottom: 1px solid #f1f5f9;
-
-      &:last-child {
-        border-bottom: none;
-      }
-    }
-  }
-
-  .audit-line {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    align-items: baseline;
-    font-size: 0.85rem;
-
-    .audit-date {
-      color: #6b7280;
-      font-variant-numeric: tabular-nums;
-      min-width: 130px;
-    }
-
-    .audit-transition code {
-      background: #e0e7ff;
-      padding: 1px 6px;
-      border-radius: 4px;
-      color: #3730a3;
-      font-size: 0.78rem;
-    }
-
-    .audit-actor {
-      color: #4b5563;
-      font-style: italic;
-    }
-
-    .audit-payref {
-      color: #b91c1c;
-      font-family: 'Courier New', monospace;
-      font-size: 0.78rem;
-    }
-  }
-
-  .audit-meta {
-    margin-top: 6px;
-    font-size: 11px;
-    background: #f3f4f6;
-    padding: 8px;
-    border-radius: 4px;
-    color: #1a1a1a;
-    overflow-x: auto;
-  }
-
-  .muted {
-    color: #6b7280;
-    font-style: italic;
-  }
-}
-
-@media (max-width: 600px) {
-  .detail-dialog-content {
-    width: 100%;
-
-    h3 {
-      font-size: 0.95rem;
-      margin: 12px 0 6px;
-    }
-
-    .json-block {
-      font-size: 11px;
-      max-height: 160px;
-      padding: 10px;
-    }
-
-    .audit-line {
-      font-size: 0.78rem;
-      gap: 8px;
-    }
-  }
-}
 
 // ── Carte Contractor 360° (badges plan, score conformité, KYC) ────────────
 .plan-pill {
@@ -937,6 +815,34 @@
       font-style: italic;
     }
   }
+
+  // Bloc audit trail : un groupe = un intitulé + sa liste.
+  .audit-block {
+    & + .audit-block {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed #e5e7eb;
+    }
+
+    > strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+      color: #1a1a1a;
+    }
+  }
+
+  // Commentaire libre d'une validation (note du validateur).
+  .audit-meta {
+    margin: 6px 0 0;
+    font-size: 11px;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 4px;
+    color: #1a1a1a;
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
 }
 
 .detail-nav {
@@ -982,4 +888,20 @@
   padding: 0 8px; min-width: 0; line-height: 24px;
   code { font-size: 12px; }
   &:hover { background: rgba(0, 0, 0, 0.04); }
+}
+
+// ── Toolbar admin-factures : groupe gauche (label + chip filtre) ───────────
+// Les briques génériques de chargement (.skeleton, .table-skeleton, .skel-card,
+// .skel-doc, .loading-bar, .refreshing-hint, .sr-only…) sont désormais GLOBALES
+// dans styles.scss, donc disponibles pour tous les composants. Ne reste ici que
+// ce qui est propre à la toolbar de cette page.
+.table-toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+// La grille 2 colonnes du skeleton détail réutilise .invoice-detail__body.
+.invoice-detail__body--skeleton {
+  pointer-events: none;
 }

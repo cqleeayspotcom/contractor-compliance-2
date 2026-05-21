@@ -25,15 +25,33 @@ export interface AdminInvoicesList$Params {
   contractor_phone?: string;
   contractor_siren?: string;
   mission_ref?: string;
-  amount_min?: number;
-  amount_max?: number;
+  min_amount?: number;
+  max_amount?: number;
   date_from?: string;
   date_to?: string;
   validator_missing?: 'compliance' | 'production' | 'accounting';
-  missing_validations?: 1 | 2 | 3;
-  stale_days?: number;
+
+/**
+ * Nombre de validations manquantes (0 à 3). 3 = aucune approbation.
+ */
+  missing_approvals?: number;
+
+/**
+ * Ancienneté minimale en jours sur le statut courant.
+ */
+  pending_since?: number;
   plan?: 'free' | 'pro';
   paid_disputed?: boolean;
+
+/**
+ * Factures avec une cause de blocage métier (failure_reason ou statut rejeté).
+ */
+  blocked?: boolean;
+
+/**
+ * Onglet « À valider » en file par admin : exclut les factures sur lesquelles l'admin courant a déjà voté (approve ou reject). L'identité de l'admin est résolue côté backend via le Bearer OAuth2.
+ */
+  exclude_self_validated?: boolean;
 }
 
 export function adminInvoicesList(http: HttpClient, rootUrl: string, params?: AdminInvoicesList$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
@@ -50,15 +68,17 @@ export function adminInvoicesList(http: HttpClient, rootUrl: string, params?: Ad
     rb.query('contractor_phone', params.contractor_phone, {});
     rb.query('contractor_siren', params.contractor_siren, {});
     rb.query('mission_ref', params.mission_ref, {});
-    rb.query('amount_min', params.amount_min, {});
-    rb.query('amount_max', params.amount_max, {});
+    rb.query('min_amount', params.min_amount, {});
+    rb.query('max_amount', params.max_amount, {});
     rb.query('date_from', params.date_from, {});
     rb.query('date_to', params.date_to, {});
     rb.query('validator_missing', params.validator_missing, {});
-    rb.query('missing_validations', params.missing_validations, {});
-    rb.query('stale_days', params.stale_days, {});
+    rb.query('missing_approvals', params.missing_approvals, {});
+    rb.query('pending_since', params.pending_since, {});
     rb.query('plan', params.plan, {});
     rb.query('paid_disputed', params.paid_disputed, {});
+    rb.query('blocked', params.blocked, {});
+    rb.query('exclude_self_validated', params.exclude_self_validated, {});
   }
 
   return http.request(

@@ -100,7 +100,6 @@ describe('AdminInvoiceService', () => {
       data: {
         invoice: { uuid: 'uuid-1', status: 'paid' },
         payment_validations: [],
-        webhooks_sent: {},
       },
     });
   });
