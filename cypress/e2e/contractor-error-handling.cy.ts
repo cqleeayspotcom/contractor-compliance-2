@@ -42,7 +42,8 @@ describe('Gestion erreurs â€” resilience frontend', () => {
 
   it('500 sur les missions ne crash pas', () => {
     cy.mockContractorApi();
-    cy.intercept('GET', '/contractor-compliance/missions*', {
+    // La page /missions consomme GET /missions/offers (missionsOffers.PATH).
+    cy.intercept('GET', '/contractor-compliance/missions/offers*', {
       statusCode: 500,
       body: { error: 'Internal Server Error' },
     }).as('missionsError');
@@ -57,7 +58,8 @@ describe('Gestion erreurs â€” resilience frontend', () => {
 
   it('500 sur la facturation ne crash pas', () => {
     cy.mockContractorApi();
-    cy.intercept('GET', '/contractor-compliance/billing/plan', {
+    // La page /billing consomme GET /billing/subscription (route SDK actuelle).
+    cy.intercept('GET', '/contractor-compliance/billing/subscription', {
       statusCode: 500,
       body: { error: 'Internal Server Error' },
     }).as('billingError');
@@ -106,7 +108,9 @@ describe('Gestion erreurs â€” resilience frontend', () => {
 
   it('document introuvable (404) affiche un message propre', () => {
     cy.mockContractorApi();
-    cy.intercept('GET', '/contractor-compliance/documents/*/status', {
+    // Détail document : route SDK = GET /documents/{uuid} (documentsGet.PATH).
+    // Registré APRÈS mockContractorApi pour gagner la priorité d'intercept.
+    cy.intercept('GET', '/contractor-compliance/documents/*', {
       statusCode: 404,
       body: { error: { code: 'DOCUMENT_NOT_FOUND', message: 'Document introuvable.' } },
     }).as('docNotFound');

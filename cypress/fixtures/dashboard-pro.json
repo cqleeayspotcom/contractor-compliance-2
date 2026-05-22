@@ -44,6 +44,6 @@
     },
     "account_state": "fully_verified",
     "missions_count": 5,
-    "next_action": "all_done"
+    "next_action": "none"
   }
 }

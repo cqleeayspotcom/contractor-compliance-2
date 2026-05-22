@@ -44,7 +44,7 @@
     {
       "uuid": "inv-auto-003",
       "invoice_number": "FAC-2026-A003",
-      "status": "sent",
+      "status": "ready_to_pay",
       "amount_ht": 583.33,
       "amount_ttc": 700.00,
       "currency": "EUR",
@@ -64,7 +64,7 @@
     {
       "uuid": "inv-auto-004",
       "invoice_number": "FAC-2026-A004",
-      "status": "validating",
+      "status": "pending_payment_validation",
       "amount_ht": 416.67,
       "amount_ttc": 500.00,
       "currency": "EUR",
@@ -84,7 +84,7 @@
     {
       "uuid": "inv-auto-005",
       "invoice_number": "FAC-2026-A005",
-      "status": "draft",
+      "status": "payment_in_progress",
       "amount_ht": 333.33,
       "amount_ttc": 400.00,
       "currency": "EUR",
@@ -110,8 +110,10 @@
     "stats": {
       "total_invoices": 5,
       "total_amount_ttc": 3740.00,
+      "pending_payment_validation": 1,
+      "ready_to_pay": 1,
+      "payment_in_progress": 1,
       "paid": 2,
-      "pending": 3,
       "rejected": 0
     }
   }

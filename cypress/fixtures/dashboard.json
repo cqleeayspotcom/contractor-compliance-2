@@ -44,6 +44,6 @@
     },
     "account_state": "verification_pending",
     "missions_count": 0,
-    "next_action": "upload_documents"
+    "next_action": "upload_missing_documents"
   }
 }

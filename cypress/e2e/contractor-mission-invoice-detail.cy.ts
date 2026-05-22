@@ -33,14 +33,17 @@ describe('Pages detail — missions et factures', () => {
   // MISSION DETAIL
   // ═══════════════════════════════════════════
 
-  describe('Detail mission (/missions/:mid)', () => {
+  // Le détail d'une mission réalisée (avec son statut de facturation) vit
+  // sur /interventions/:mid (ContractorInterventionDetailComponent). La route
+  // /missions/:mid affiche désormais le détail d'une OFFRE (sans facture).
+  describe('Detail intervention (/interventions/:mid)', () => {
 
     it('affiche toutes les infos de la mission', function () {
-      // Détail d'une mission précise = uuid de fixture (MIS-2026-043).
+      // Détail d'une mission précise = fixture figée (MIS-2026-043).
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.visit('/missions/MIS-2026-043');
+      cy.visit('/interventions/MIS-2026-043');
       cy.wait('@getMissionDetail');
 
       cy.contains('Diagnostic plomb').should('be.visible');
@@ -57,7 +60,7 @@ describe('Pages detail — missions et factures', () => {
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.visit('/missions/MIS-2026-043');
+      cy.visit('/interventions/MIS-2026-043');
       cy.wait('@getMissionDetail');
 
       cy.contains('Envoyer ma facture').should('be.visible');
@@ -69,7 +72,7 @@ describe('Pages detail — missions et factures', () => {
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.visit('/missions/MIS-2026-043');
+      cy.visit('/interventions/MIS-2026-043');
       cy.wait('@getMissionDetail');
 
       cy.contains('Envoyer ma facture').click();
@@ -86,7 +89,7 @@ describe('Pages detail — missions et factures', () => {
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.intercept('GET', '/contractor-compliance/missions/*', {
+      cy.intercept('GET', '/contractor-compliance/missions/MIS-*', {
         statusCode: 200,
         body: {
           data: {
@@ -106,11 +109,12 @@ describe('Pages detail — missions et factures', () => {
         },
       }).as('getMissionFacturee');
 
-      cy.visit('/missions/MIS-2026-042');
+      cy.visit('/interventions/MIS-2026-042');
       cy.wait('@getMissionFacturee');
 
       cy.contains('Diagnostic amiante avant travaux').should('be.visible');
-      cy.contains('Facture envoyee').should('be.visible');
+      // invoice_status=uploaded → libellé accentué « Facture envoyée ».
+      cy.contains('Facture envoyée').should('be.visible');
       cy.contains('Envoyer ma facture').should('not.exist');
 
       cy.wait(PAUSE);
@@ -120,7 +124,7 @@ describe('Pages detail — missions et factures', () => {
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.intercept('GET', '/contractor-compliance/missions/*', {
+      cy.intercept('GET', '/contractor-compliance/missions/MIS-*', {
         statusCode: 200,
         body: {
           data: {
@@ -140,16 +144,17 @@ describe('Pages detail — missions et factures', () => {
         },
       }).as('getMissionRejetee');
 
-      cy.visit('/missions/MIS-2026-043');
+      cy.visit('/interventions/MIS-2026-043');
       cy.wait('@getMissionRejetee');
 
-      cy.contains('Facture rejetee').should('be.visible');
+      // invoice_status=rejected → libellé accentué « Facture rejetée ».
+      cy.contains('Facture rejetée').should('be.visible');
       cy.contains('Corriger la facture').should('be.visible');
 
       cy.wait(PAUSE);
     });
 
-    it('la page liste des missions est atteignable', () => {
+    it('la page des offres disponibles est atteignable', () => {
       // Test réel : la page /missions (offres) se rend.
       cy.visit('/missions');
       cy.url().should('include', '/missions');
@@ -168,8 +173,12 @@ describe('Pages detail — missions et factures', () => {
 
   describe('Detail facture (/invoices/:uuid)', () => {
 
+    // NB : ContractorInvoiceDetailComponent n'a pas d'endpoint dédié — il
+    // charge la LISTE (/invoices) et filtre par uuid côté client. On attend
+    // donc @getInvoices, et la fixture liste doit contenir l'uuid visé.
+
     it('affiche les details complets d\'une facture payee', function () {
-      // Détail d'une facture précise = uuid de fixture (inv-uuid-001).
+      // Détail d'une facture présente dans la liste (inv-uuid-001 de invoices.json).
       if (REAL_BACKEND) {
         this.skip();
       }
@@ -178,12 +187,13 @@ describe('Pages detail — missions et factures', () => {
 
       cy.contains('FAC-2026-001').should('be.visible');
       cy.contains('1250,00').should('be.visible');
-      cy.contains('Payee').should('be.visible');
+      // Badge accentué « Payée » (statusLabel paid).
+      cy.contains('Payée').should('be.visible');
 
       cy.wait(PAUSE);
     });
 
-    it('affiche le contexte mission avec lien cliquable', function () {
+    it('affiche le contexte mission', function () {
       if (REAL_BACKEND) {
         this.skip();
       }
@@ -203,7 +213,7 @@ describe('Pages detail — missions et factures', () => {
       cy.visit('/invoices/inv-uuid-001');
       cy.wait('@getInvoices');
 
-      cy.contains('Telecharger').should('be.visible');
+      cy.contains('Telecharger le PDF').should('be.visible');
 
       cy.wait(PAUSE);
     });
@@ -212,15 +222,17 @@ describe('Pages detail — missions et factures', () => {
       if (REAL_BACKEND) {
         this.skip();
       }
-      cy.mockContractorApi({
-        invoices: 'invoices-free-rejected.json',
-      });
+      // invoices-free-rejected.json contient inv-manual-002 (rejected,
+      // rejection_reason=low_confidence) — le détail le retrouve dans la liste.
+      cy.mockContractorApi({ invoices: 'invoices-free-rejected.json' });
 
       cy.visit('/invoices/inv-manual-002');
       cy.wait('@getInvoices');
 
-      cy.contains('Rejetee').should('be.visible');
-      cy.contains('Re-uploader').should('be.visible');
+      // Bloc de rejet : titre « Facture illisible » (low_confidence) +
+      // bouton de correction (actionLabel) « Re-uploader le PDF original ».
+      cy.contains('Facture illisible').should('be.visible');
+      cy.contains('Re-uploader le PDF original').should('be.visible');
 
       cy.wait(PAUSE);
     });
@@ -257,10 +269,11 @@ describe('Pages detail — missions et factures', () => {
         cy.get('mat-icon').contains('assignment').should('exist');
         cy.get('mat-icon').contains('verified_user').should('exist');
       } else {
-        // Les icones de navigation du header (fixtures mock).
+        // Icônes de navigation du header (app-header) : assignment, verified_user,
+        // person. L'ancienne icône `receipt_long` n'est plus dans le header.
         cy.get('mat-icon').contains('assignment').should('exist');
-        cy.get('mat-icon').contains('receipt_long').should('exist');
         cy.get('mat-icon').contains('verified_user').should('exist');
+        cy.get('mat-icon').contains('person').should('exist');
       }
 
       cy.wait(PAUSE);

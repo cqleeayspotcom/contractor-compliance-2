@@ -24,7 +24,7 @@
     {
       "uuid": "inv-uuid-002",
       "invoice_number": "FAC-2026-002",
-      "status": "validating",
+      "status": "pending_payment_validation",
       "amount_ht": 741.67,
       "amount_ttc": 890.00,
       "currency": "EUR",
@@ -50,8 +50,10 @@
     "stats": {
       "total_invoices": 2,
       "total_amount_ttc": 2140.00,
+      "pending_payment_validation": 1,
+      "ready_to_pay": 0,
+      "payment_in_progress": 0,
       "paid": 1,
-      "pending": 1,
       "rejected": 0
     }
   }

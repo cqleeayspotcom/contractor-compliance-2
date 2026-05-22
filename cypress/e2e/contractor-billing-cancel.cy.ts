@@ -17,12 +17,14 @@ describe('Billing â€” resiliation et historique', () => {
       });
     });
 
-    it('le plan Pro affiche "Plan actuel" desactive + option resiliation', () => {
+    it('le plan Pro affiche le bandeau abonnement actif + option resiliation', () => {
       cy.visit('/billing');
       cy.wait('@getBilling');
 
+      // Plan payant : bandeau « Plan Professionnel » + bouton « Gérer »
+      // (ouvre le dialog de résiliation).
       cy.contains('Plan Professionnel').should('be.visible');
-      cy.contains('Plan actuel').should('be.visible');
+      cy.contains('Gérer').should('be.visible');
 
       cy.wait(PAUSE);
     });
@@ -30,27 +32,16 @@ describe('Billing â€” resiliation et historique', () => {
     it('la resiliation appelle l\'API cancel', () => {
       cy.intercept('POST', '/contractor-compliance/billing/cancel', {
         statusCode: 200,
-        body: { success: true, data: { plan: 'free', cancelled_at: new Date().toISOString() } },
+        body: { data: { plan: 'free', effective_at: new Date().toISOString(), message: 'Abonnement résilié.' } },
       }).as('cancelPlan');
 
       cy.visit('/billing');
       cy.wait('@getBilling');
 
-      // Si un bouton/lien "Gerer" ou "Resilier" existe
-      cy.get('body').then($body => {
-        const cancelBtn = $body.find('button:contains("Resilier"), button:contains("Gerer"), a:contains("Resilier")');
-        if (cancelBtn.length) {
-          cy.wrap(cancelBtn.first()).click();
-          // Confirmation dialog
-          cy.get('body').then($dialog => {
-            const confirmBtn = $dialog.find('button:contains("Confirmer"), button:contains("Oui")');
-            if (confirmBtn.length) {
-              cy.wrap(confirmBtn.first()).click();
-              cy.wait('@cancelPlan');
-            }
-          });
-        }
-      });
+      // Bouton « Gérer » → ouvre le dialog inline → « Confirmer la résiliation ».
+      cy.contains('button', 'Gérer').click();
+      cy.contains('button', 'Confirmer la résiliation').click();
+      cy.wait('@cancelPlan');
 
       cy.wait(PAUSE);
     });
@@ -71,23 +62,22 @@ describe('Billing â€” resiliation et historique', () => {
       cy.visit('/billing');
       cy.wait('@getBilling');
 
-      cy.get('body').then($body => {
-        const btn = $body.find('button:contains("Souscrire")');
-        if (btn.length) {
-          cy.wrap(btn.first()).click();
-          cy.wait('@subscribeFail');
-        }
-      });
+      // Plan gratuit : le CTA d'abonnement est « Passer en Pro - X €/mois ».
+      cy.contains('button', 'Passer en Pro').click();
+      cy.wait('@subscribeFail');
+      // Le composant affiche un message d'erreur (l'app ne crash pas).
+      cy.url().should('include', '/billing');
 
       cy.wait(PAUSE);
     });
 
-    it('le plan Gratuit affiche les limitations', () => {
+    it('le plan Gratuit affiche la carte d\'upsell Pro', () => {
       cy.visit('/billing');
       cy.wait('@getBilling');
 
-      // Les limitations du plan gratuit
-      cy.contains('Gratuit').should('be.visible');
+      // Plan gratuit : carte « Tuita Pro » avec CTA « Passer en Pro ».
+      cy.contains('Facturation').should('be.visible');
+      cy.contains('Passer en Pro').should('be.visible');
 
       cy.wait(PAUSE);
     });

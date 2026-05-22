@@ -37,9 +37,9 @@ describe('DEMO — Parcours contractor au ralenti', () => {
       cy.assertAppShell();
       cy.url().should('include', '/dashboard');
     } else {
+      cy.contains('Bonjour LUCIAN').should('be.visible');
       cy.contains('Bienvenue LUCIAN').should('be.visible');
-      cy.contains('45% complete').should('be.visible');
-      cy.contains('2/6').should('be.visible');
+      cy.contains('Mes chantiers').should('be.visible');
     }
     cy.wait(PAUSE);
   });
@@ -68,7 +68,10 @@ describe('DEMO — Parcours contractor au ralenti', () => {
     }
     cy.visit('/documents/upload');
     cy.wait('@getDashboard');
-    cy.get('input[type="file"]').selectFile(
+    cy.dismissStepperVideo();
+    // Étape 1 = identité : choisir la variante CNI pour révéler les zones de dépôt.
+    cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 fake content'),
         fileName: 'rib_entreprise.pdf',
@@ -76,6 +79,7 @@ describe('DEMO — Parcours contractor au ralenti', () => {
       },
       { force: true }
     );
+    cy.wait('@uploadDocument');
     cy.wait(PAUSE);
   });
 
@@ -86,8 +90,8 @@ describe('DEMO — Parcours contractor au ralenti', () => {
     }
     cy.visit('/documents/doc-kbis-uuid-001');
     cy.wait('@getDocumentStatus');
-    cy.contains('Document verifie').should('be.visible');
-    cy.contains('Extrait KBIS').should('be.visible');
+    cy.contains('Document vérifié').should('be.visible');
+    cy.contains('KBIS').should('be.visible');
     cy.contains('95%').should('be.visible');
     cy.wait(PAUSE);
   });
@@ -99,16 +103,16 @@ describe('DEMO — Parcours contractor au ralenti', () => {
     cy.wait(PAUSE);
   });
 
-  it('Etape 6 — Missions', () => {
+  it('Etape 6 — Offres disponibles', () => {
     cy.visit('/missions');
     if (REAL_BACKEND) {
       cy.url().should('include', '/missions');
       cy.assertAppShell();
     } else {
-      cy.wait('@getMissions');
+      cy.waitApi('@getMissionOffers');
+      cy.contains('Offres disponibles').should('be.visible');
       cy.contains('Diagnostic amiante avant travaux').should('be.visible');
       cy.contains('Paris').should('be.visible');
-      cy.contains('1250,00').should('be.visible');
     }
     cy.wait(PAUSE);
   });
@@ -120,7 +124,7 @@ describe('DEMO — Parcours contractor au ralenti', () => {
     }
     cy.visit('/billing');
     cy.wait('@getBilling');
-    cy.contains('Gratuit').should('be.visible');
+    cy.contains('Passer en Pro').should('be.visible');
     cy.wait(PAUSE);
   });
 
@@ -134,6 +138,7 @@ describe('DEMO — Parcours contractor au ralenti', () => {
       cy.contains('FAC-2026-001').should('be.visible');
       cy.contains('FAC-2026-002').should('be.visible');
       cy.contains('Mes factures').should('be.visible');
+      cy.contains('Payées').should('be.visible');
     }
     cy.wait(PAUSE);
   });
@@ -158,8 +163,8 @@ describe('DEMO — Parcours contractor au ralenti', () => {
     cy.mockContractorApi('dashboard-100.json');
     cy.visit('/dashboard');
     cy.wait('@getDashboard');
-    cy.contains('Votre compte est verifie').should('be.visible');
-    cy.contains('Complet').should('be.visible');
+    cy.contains('Bonjour LUCIAN').should('be.visible');
+    cy.contains('Conforme').should('be.visible');
     cy.wait(PAUSE);
   });
 

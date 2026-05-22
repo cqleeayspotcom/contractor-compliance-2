@@ -26,15 +26,17 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
     cy.mockContractorApi();
 
     // Override le statut du document pour montrer le rejet
-    cy.intercept('GET', '/contractor-compliance/documents/*/status', {
+    cy.intercept('GET', '/contractor-compliance/documents/*', {
       fixture: 'document-status-rejected.json',
     }).as('getDocumentStatus');
 
     cy.visit('/documents/doc-rc-uuid-004');
     cy.wait('@getDocumentStatus');
 
-    // Titre
-    cy.contains('Document refuse').should('be.visible');
+    // Titre — libellé accentué « Document refusé » (code de rejet
+    // manual_review_rejected non mappé → fallback titre générique +
+    // failure_detail affiché en sous-titre).
+    cy.contains('Document refusé').should('be.visible');
 
     // LE MOTIF DE L'ADMIN EST AFFICHE AU CONTRACTOR
     cy.contains('Document illisible').should('be.visible');
@@ -59,7 +61,7 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
   it('Etape 2 â€” Le contractor clique "Renvoyer" et uploade un nouveau scan', () => {
     cy.mockContractorApi();
 
-    cy.intercept('GET', '/contractor-compliance/documents/*/status', {
+    cy.intercept('GET', '/contractor-compliance/documents/*', {
       fixture: 'document-status-rejected.json',
     }).as('getDocumentStatus');
 
@@ -76,8 +78,10 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
   it('Etape 3 â€” Le contractor uploade le nouveau scan corrige', () => {
     cy.mockContractorApi();
     cy.visit('/documents/upload');
+    cy.dismissStepperVideo();
+    cy.openStepperUploadZone();
 
-    cy.get('input[type="file"]').selectFile(
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 RC PRO\nATTESTATION RC PROFESSIONNELLE\nMARTIN PLOMBERIE\nSIRET: 55566677700012\nValide du 01/01/2026 au 31/12/2026'),
         fileName: 'rc_pro_martin_corrige.pdf',
@@ -86,6 +90,7 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
       { force: true }
     );
 
+    cy.wait('@uploadDocument');
     cy.wait(PAUSE);
   });
 
@@ -93,14 +98,14 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
     cy.mockContractorApi();
 
     // Le document est passe en "verified" apres le re-upload
-    cy.intercept('GET', '/contractor-compliance/documents/*/status', {
+    cy.intercept('GET', '/contractor-compliance/documents/*', {
       fixture: 'document-status.json', // kbis verified (on reutilise)
     }).as('getDocumentStatus');
 
     cy.visit('/documents/doc-rc-uuid-004');
     cy.wait('@getDocumentStatus');
 
-    cy.contains('Document verifie').should('be.visible');
+    cy.contains('Document vérifié').should('be.visible');
     cy.contains('Retour au tableau de bord').should('be.visible');
 
     cy.wait(PAUSE);

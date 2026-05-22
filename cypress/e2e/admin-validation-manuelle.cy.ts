@@ -25,7 +25,9 @@ const ADMIN_KEY = 'test-admin-api-key-cypress';
 
 function preAuth() {
   cy.visit('/admin');
-  cy.window().then(win => win.sessionStorage.setItem('tuita_admin_key', ADMIN_KEY));
+  // adminAuthGuard lit la clé `tuita_admin_token` (et non `tuita_admin_key`,
+  // ancienne clé de l'auth par clé API supprimée). On pose donc la bonne clé.
+  cy.window().then(win => win.sessionStorage.setItem('tuita_admin_token', ADMIN_KEY));
 }
 
 describe('Validation manuelle — Admin Tuita', () => {

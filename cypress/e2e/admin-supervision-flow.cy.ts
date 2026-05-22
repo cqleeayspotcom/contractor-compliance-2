@@ -127,6 +127,15 @@ const outreachBody = {
 
 /** Branche les 5 intercepts du tableau de bord. */
 function mockDashboard(opts: { degraded?: boolean; alerts?: boolean } = {}) {
+  // POURQUOI ce stub du dashboard contractor : le layout applicatif partagé
+  // déclenche un GET /contractor-compliance/dashboard. Non mocké, il part au
+  // vrai backend → 401 → l'intercepteur d'auth rabat sur /admin/login, ce qui
+  // faisait échouer toute la page admin. On le neutralise par un 200 vide.
+  cy.intercept('GET', '/contractor-compliance/dashboard*', {
+    statusCode: 200,
+    body: { data: {} },
+  }).as('getContractorDashboard');
+
   cy.intercept('GET', EP.overview,   overviewBody(opts.alerts)).as('getOverview');
   cy.intercept('GET', EP.health,     healthBody(opts.degraded)).as('getHealth');
   cy.intercept('GET', EP.compliance, complianceBody).as('getCompliance');

@@ -51,18 +51,17 @@ describe('Contractor Compliance - Flow complet', () => {
         cy.assertAppShell();
         cy.url().should('include', '/dashboard');
       } else {
-        // Welcome banner with firstName
+        // Le dashboard réécrit est une grille de tuiles. Pendant l'onboarding
+        // (next_action=upload_missing_documents), le bandeau d'accueil affiche
+        // « Bonjour LUCIAN » dans le header + le bandeau d'étape « Bienvenue
+        // LUCIAN - Étape 1 sur 3 ».
+        cy.contains('Bonjour LUCIAN').should('be.visible');
         cy.contains('Bienvenue LUCIAN').should('be.visible');
-        // Progress bar label
-        cy.contains('45% complete').should('be.visible');
-        // Step cards
-        cy.contains('Mes documents').should('be.visible');
-        cy.contains('2/6').should('be.visible');
-        cy.contains("Verification d'identite").should('be.visible');
-        cy.contains('Certification TUITA').should('be.visible');
-        cy.contains('Missions & Factures').should('be.visible');
-        // Plan upgrade
-        cy.contains('99 EUR/mois').should('be.visible');
+        cy.contains('Étape 1 sur 3').should('be.visible');
+        // Tuile « Mes chantiers » (porte d'entrée missions/factures, toujours
+        // visible) et CTA upsell « Passer en Pro » (plan gratuit).
+        cy.contains('Mes chantiers').should('be.visible');
+        cy.contains('Passer en Pro').should('be.visible');
       }
     });
 
@@ -77,7 +76,12 @@ describe('Contractor Compliance - Flow complet', () => {
       cy.visit('/dashboard');
       cy.wait('@getDashboard');
 
-      cy.contains('Votre compte est verifie').should('be.visible');
+      // Contractor 100% conforme : plus de bandeau onboarding, les tuiles
+      // « Mes documents » et « Mes chantiers » portent le badge « Conforme ».
+      cy.contains('Bonjour LUCIAN').should('be.visible');
+      cy.contains('Mes documents').should('be.visible');
+      cy.contains('Mes chantiers').should('be.visible');
+      cy.contains('Conforme').should('be.visible');
     });
   });
 
@@ -116,22 +120,27 @@ describe('Contractor Compliance - Flow complet', () => {
       cy.visit('/documents/upload');
       cy.wait('@getDashboard');
 
-      cy.get('input[type="file"]').selectFile(
+      // À l'arrivée sur le stepper, une modale vidéo explicative s'ouvre
+      // (OnboardingVideoDialogComponent). On la ferme pour accéder au
+      // contenu de l'étape.
+      cy.dismissStepperVideo();
+
+      // L'étape 1 est « Ta pièce d'identité » : choisir la variante CNI
+      // fait apparaître les zones de dépôt.
+      cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
+
+      // Le chemin « J'ai déjà un fichier complet » (dernier input fichier)
+      // déclenche l'upload synchrone du PDF.
+      cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
         {
-          contents: Cypress.Buffer.from('fake-pdf-content'),
+          contents: Cypress.Buffer.from('%PDF-1.4 fake-pdf-content'),
           fileName: 'attestation_test.pdf',
           mimeType: 'application/pdf',
         },
         { force: true }
       );
 
-      // Try clicking submit if visible
-      cy.get('body').then($body => {
-        const btn = $body.find('button[type="submit"], button:contains("Envoyer"), button:contains("Valider")');
-        if (btn.length) {
-          cy.wrap(btn.first()).click();
-        }
-      });
+      cy.wait('@uploadDocument');
     });
 
     it('affiche le statut d\'un document verifie (KBIS)', function () {
@@ -142,12 +151,12 @@ describe('Contractor Compliance - Flow complet', () => {
       cy.visit('/documents/doc-kbis-uuid-001');
       cy.wait('@getDocumentStatus');
 
-      // The component shows "Document verifie" for verified status
-      cy.contains('Document verifie').should('be.visible');
+      // Le composant affiche « Document vérifié » (libellé accentué).
+      cy.contains('Document vérifié').should('be.visible');
       // File name
       cy.contains('kbis_2026.pdf').should('be.visible');
-      // Type label
-      cy.contains('Extrait KBIS').should('be.visible');
+      // typeLabel(kbis) — libellé long « KBIS (société) ou Avis SIRENE... ».
+      cy.contains('KBIS').should('be.visible');
       // Confidence
       cy.contains('95%').should('be.visible');
     });
@@ -183,7 +192,7 @@ describe('Contractor Compliance - Flow complet', () => {
   // ═══════════════════════════════════════════
 
   describe('Missions', () => {
-    it('affiche la page missions', () => {
+    it('affiche la page des offres disponibles', () => {
       cy.visit('/missions');
 
       if (REAL_BACKEND) {
@@ -192,20 +201,16 @@ describe('Contractor Compliance - Flow complet', () => {
         cy.url().should('include', '/missions');
         cy.assertAppShell();
       } else {
-        cy.waitApi('@getMissions');
-        // Page title
-        cy.contains('Mes missions').should('be.visible');
-        // Mission titles
+        // La route /missions affiche désormais ContractorMissionOffersComponent
+        // (« Offres disponibles »), alimentée par GET /missions/offers.
+        cy.waitApi('@getMissionOffers');
+        cy.contains('Offres disponibles').should('be.visible');
+        // Titres des offres (format MissionOffer, fixture mission-offers.json).
         cy.contains('Diagnostic amiante avant travaux').should('be.visible');
         cy.contains('Diagnostic plomb').should('be.visible');
-        // Price formatted: 1250.00 → "1250,00 €"
-        cy.contains('1250,00').should('be.visible');
-        cy.contains('890,00').should('be.visible');
-        // Cities
+        // Villes (offer.address.city).
         cy.contains('Paris').should('be.visible');
         cy.contains('Lyon').should('be.visible');
-        // Subtitle
-        cy.contains('Missions terminees').should('be.visible');
       }
     });
   });
@@ -225,7 +230,10 @@ describe('Contractor Compliance - Flow complet', () => {
       cy.visit('/billing');
       cy.wait('@getBilling');
 
-      cy.contains('Gratuit').should('be.visible');
+      // Plan gratuit : la page facturation affiche la carte d'upsell « Tuita
+      // Pro » avec le CTA « Passer en Pro ».
+      cy.contains('Facturation').should('be.visible');
+      cy.contains('Passer en Pro').should('be.visible');
     });
 
     it('affiche la liste des factures', () => {
@@ -239,10 +247,12 @@ describe('Contractor Compliance - Flow complet', () => {
         // Invoice numbers (invoice_number field, not "number")
         cy.contains('FAC-2026-001').should('be.visible');
         cy.contains('FAC-2026-002').should('be.visible');
-        // Amount formatted: 1250.00 → "1250,00 €"
+        // Montant formaté par le composant : 1250.00 → « 1250,00 € »
+        // (formatAmount fait toFixed(2).replace('.', ',') — pas de séparateur
+        // de milliers, contrairement au pipe Angular `number`).
         cy.contains('1250,00').should('be.visible');
-        // Stats
-        cy.contains('Payees').should('be.visible');
+        // Chip de filtre « Payées » (libellé accentué dans le composant).
+        cy.contains('Payées').should('be.visible');
       }
     });
   });

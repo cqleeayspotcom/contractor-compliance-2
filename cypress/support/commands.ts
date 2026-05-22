@@ -65,10 +65,16 @@ function skipIfRealBackend(): boolean {
 function spyContractorApi(): void {
   cy.intercept('GET', '/contractor-compliance/dashboard*').as('getDashboard');
   cy.intercept('GET', '/contractor-compliance/documents*').as('getDocuments');
-  cy.intercept('GET', '/contractor-compliance/documents/*/status').as('getDocumentStatus');
-  cy.intercept('GET', '/contractor-compliance/billing/plan*').as('getBilling');
+  // Détail document : le SDK ng-openapi-gen appelle GET /documents/{uuid}
+  // (documentsGet.PATH) — l'ancien `/documents/*/status` n'existe plus.
+  cy.intercept('GET', '/contractor-compliance/documents/*').as('getDocumentStatus');
+  // Plan courant : route SDK = /billing/subscription (billingSubscription.PATH),
+  // l'ancien /billing/plan a été renommé côté backend Tuita.
+  cy.intercept('GET', '/contractor-compliance/billing/subscription*').as('getBilling');
   cy.intercept('GET', '/contractor-compliance/invoices*').as('getInvoices');
-  cy.intercept('GET', '/contractor-compliance/missions*').as('getMissions');
+  // Missions : pas de route agrégée `/missions` — le SDK route sur
+  // /missions/active, /missions/history et /missions/offers.
+  cy.intercept('GET', '/contractor-compliance/missions/*').as('getMissions');
   cy.intercept('GET', '/contractor-compliance/kyc/status*').as('getKycStatus');
   cy.intercept('GET', '/contractor-compliance/certification/status*').as('getCertificationStatus');
 }
@@ -118,8 +124,12 @@ Cypress.Commands.add('mockContractorApi', (fixtures?: string | MockFixtures) => 
     },
   }).as('uploadDocument');
 
-  // Backend: GET /documents/{document}/status (contractor.php:60)
-  cy.intercept('GET', '/contractor-compliance/documents/*/status', { fixture: 'document-status.json' }).as('getDocumentStatus');
+  // Détail d'un document. Le SDK ng-openapi-gen appelle GET /documents/{uuid}
+  // (documentsGet.PATH = /contractor-compliance/documents/{uuid}). L'ancienne
+  // route `/documents/{uuid}/status` n'existe plus côté backend ni dans le SDK.
+  // L'intercept `/documents/*` ne capture que les sous-chemins (un segment) :
+  // il ne chevauche donc PAS l'intercept liste `/documents*` ci-dessus.
+  cy.intercept('GET', '/contractor-compliance/documents/*', { fixture: 'document-status.json' }).as('getDocumentStatus');
 
   // Backend: POST /documents/purchase-kbis (contractor.php:72) — NB: hyphen, not slash
   cy.intercept('POST', '/contractor-compliance/documents/purchase-kbis', {
@@ -160,10 +170,30 @@ Cypress.Commands.add('mockContractorApi', (fixtures?: string | MockFixtures) => 
   }).as('getKycStatus');
 
   // ── Billing ──
-  // Backend: GET /billing/plan (contractor.php:85) — NB: /billing/plan, not /billing
-  cy.intercept('GET', '/contractor-compliance/billing/plan', {
+  // Plan courant. Route SDK = GET /billing/subscription (billingSubscription.PATH).
+  // L'ancien /billing/plan a été renommé côté backend Tuita — la page
+  // /billing (ContractorBillingComponent) consomme désormais /subscription.
+  cy.intercept('GET', '/contractor-compliance/billing/subscription', {
     fixture: f.billing ?? 'billing.json',
   }).as('getBilling');
+
+  // Historique de paiements abonnement. La page /billing appelle aussi
+  // getPaymentHistory() → /billing/payment-history. Sans ce stub, l'appel
+  // partirait au vrai backend (404) et laisserait la page en erreur.
+  cy.intercept('GET', '/contractor-compliance/billing/payment-history', {
+    statusCode: 200,
+    body: {
+      data: {
+        payments: [],
+        summary: {
+          total_spent_eur: 0,
+          subscriptions_eur: 0,
+          purchases_eur: 0,
+          current_plan: 'free',
+        },
+      },
+    },
+  }).as('getPaymentHistory');
 
   // Backend: POST /billing/subscribe (contractor.php:87)
   cy.intercept('POST', '/contractor-compliance/billing/subscribe', {
@@ -171,9 +201,23 @@ Cypress.Commands.add('mockContractorApi', (fixtures?: string | MockFixtures) => 
     body: { data: { checkout_url: '' } },
   }).as('subscribePlan');
 
+  // Backend: POST /billing/cancel — résiliation abonnement Pro.
+  cy.intercept('POST', '/contractor-compliance/billing/cancel', {
+    statusCode: 200,
+    body: { data: { plan: 'free', effective_at: new Date().toISOString(), message: 'Abonnement résilié.' } },
+  }).as('cancelPlan');
+
   // ── Invoices ──
-  // Backend: GET /invoices (contractor.php:99)
-  cy.intercept('GET', '/contractor-compliance/invoices*', {
+  // Liste paginée. Backend: GET /invoices (invoicesList.PATH).
+  // NB : `/invoices*` capture aussi `/invoices/{uuid}` — l'intercept détail
+  // ci-dessous est registré APRÈS pour gagner la priorité (Cypress applique
+  // le dernier intercept correspondant).
+  cy.intercept('GET', '/contractor-compliance/invoices', {
+    fixture: f.invoices ?? 'invoices.json',
+  }).as('getInvoices');
+  // Variante avec query string (?page=&per_page=&status=) — le composant
+  // factures pagine, l'URL porte donc toujours des paramètres.
+  cy.intercept('GET', '/contractor-compliance/invoices?*', {
     fixture: f.invoices ?? 'invoices.json',
   }).as('getInvoices');
 
@@ -189,23 +233,63 @@ Cypress.Commands.add('mockContractorApi', (fixtures?: string | MockFixtures) => 
     body: { success: true, data: { uuid: 'inv-manual-002', status: 'validating' } },
   }).as('reuploadInvoice');
 
-  // Backend: GET /invoices/{invoice}/pdf (contractor.php:102)
+  // Backend: GET /invoices/{invoice}/pdf (invoicesPdf.PATH)
   cy.intercept('GET', '/contractor-compliance/invoices/*/pdf', {
     statusCode: 200,
     headers: { 'content-type': 'application/pdf' },
     body: new Blob(['%PDF-1.4 fake'], { type: 'application/pdf' }),
   }).as('downloadInvoicePdf');
 
+  // Timeline d'une facture (invoicesTimeline.PATH) — relue par les écrans
+  // de détail après navigation. Stub minimal pour éviter un 404 réel.
+  cy.intercept('GET', '/contractor-compliance/invoices/*/timeline', {
+    statusCode: 200,
+    body: { data: { status: 'paid', phase: 'paid', events: [] } },
+  }).as('getInvoiceTimeline');
+
+  // Détail d'une facture (invoicesShow.PATH = /invoices/{uuid}). Registré
+  // APRÈS la liste pour gagner la priorité sur `/invoices/{uuid}`.
+  // La fixture `invoice-detail.json` porte un objet unique `{ data: {...} }`.
+  cy.intercept('GET', '/contractor-compliance/invoices/*', {
+    fixture: 'invoice-detail.json',
+  }).as('getInvoiceDetail');
+
   // ── Missions ──
-  // Backend: GET /missions/{mission} (contractor.php:94) — MUST be before the list intercept
-  cy.intercept('GET', /\/api\/contractor\/missions\/MIS-/, {
+  // Le backend Tuita n'expose pas de route `/missions` agrégée. Le SDK route :
+  //   - liste interventions  → /missions/active  (missionsActive.PATH)
+  //   - historique           → /missions/history (missionsHistory.PATH)
+  //   - offres disponibles   → /missions/offers  (missionsOffers.PATH)
+  //   - détail mission       → /missions/{ref}   (missionsShow.PATH)
+  //
+  // La route Angular /missions affiche ContractorMissionOffersComponent
+  // (page « Offres disponibles ») qui consomme /missions/offers → fixture
+  // au format MissionOffer[]. La route /interventions/:mid affiche le détail
+  // mission (facture) qui consomme /missions/{ref}.
+
+  // Offres disponibles — consommé par /missions (liste) ET /missions/:mid
+  // (détail offre, qui filtre la liste côté client par mission_ref).
+  cy.intercept('GET', '/contractor-compliance/missions/offers*', {
+    fixture: 'mission-offers.json',
+  }).as('getMissionOffers');
+
+  // Détail d'une mission précise (/missions/{ref}) — consommé par la page
+  // détail intervention (/interventions/:mid) qui affiche le statut facture.
+  // Doit être registré AVANT `/missions/active*` pour ne pas être masqué.
+  cy.intercept('GET', '/contractor-compliance/missions/MIS-*', {
+    fixture: 'mission-detail.json',
+  }).as('getMissionDetail');
+  cy.intercept('GET', '/contractor-compliance/missions/CASE-*', {
     fixture: 'mission-detail.json',
   }).as('getMissionDetail');
 
-  // Backend: GET /missions (contractor.php:93) — may have ?status= query param
-  cy.intercept('GET', '/contractor-compliance/missions*', {
+  // Liste des interventions (missions réalisées). Alias historique
+  // `getMissions` conservé pour les specs qui l'attendent encore.
+  cy.intercept('GET', '/contractor-compliance/missions/active*', {
     fixture: f.missions ?? 'missions.json',
   }).as('getMissions');
+  cy.intercept('GET', '/contractor-compliance/missions/history*', {
+    fixture: f.missions ?? 'missions.json',
+  }).as('getMissionsHistory');
 
 
   // ── Certification ──
@@ -435,6 +519,53 @@ Cypress.Commands.add('assertAppShell', () => {
   cy.get('app-header, .contractor-header', { timeout: 20000 }).should('exist');
 });
 
+// ───────────────────────────────────────────────────────────────────────
+// cy.dismissStepperVideo() — ferme la modale vidéo du stepper d'upload
+// ───────────────────────────────────────────────────────────────────────
+//
+// POURQUOI : à l'arrivée sur /documents/upload, le stepper guidé ouvre
+// automatiquement une modale vidéo explicative (OnboardingVideoDialogComponent)
+// qui recouvre le contenu de l'étape — y compris le <input type=file>. Tant
+// que la modale est ouverte, aucun upload n'est possible.
+//
+// La modale s'ouvre de façon asynchrone (après chargement des données du
+// stepper) : on attend donc explicitement l'apparition du bouton « J'ai
+// compris » avant de cliquer. En session Cypress fraîche (chaque test repart
+// d'un état vierge), la modale s'ouvre systématiquement sur le stepper.
+Cypress.Commands.add('dismissStepperVideo', () => {
+  cy.contains('button', "J'ai compris", { timeout: 15000 })
+    .should('be.visible')
+    .click();
+  // Attend la fin de l'animation de fermeture du MatDialog : le bouton
+  // « J'ai compris » ne doit plus être dans le DOM avant de cibler le
+  // contenu de l'étape.
+  cy.contains('button', "J'ai compris").should('not.exist');
+});
+
+// ───────────────────────────────────────────────────────────────────────
+// cy.openStepperUploadZone() — révèle la zone de dépôt de l'étape courante
+// ───────────────────────────────────────────────────────────────────────
+//
+// POURQUOI : sur l'étape « Ta pièce d'identité » du stepper, aucune zone de
+// dépôt n'est rendue tant que l'artisan n'a pas choisi une variante
+// (Carte d'identité / Passeport). Sur une étape document simple, la dropzone
+// est rendue d'emblée. Ce helper clique la variante CNI SI le sélecteur est
+// présent — sinon no-op — pour qu'un <input type=file> soit toujours
+// disponible juste après.
+Cypress.Commands.add('openStepperUploadZone', () => {
+  // Attend que le contenu de l'étape soit rendu (sélecteur de variante
+  // identité OU input fichier déjà présent) avant de décider.
+  cy.get('[data-testid="identity-variant-cni"], input[type="file"]', {
+    timeout: 15000,
+  }).should('exist');
+  cy.get('body').then(($body) => {
+    const variant = $body.find('[data-testid="identity-variant-cni"]:visible');
+    if (variant.length) {
+      cy.wrap(variant.first()).click();
+    }
+  });
+});
+
 // ─── Type augmentation ───
 
 declare global {
@@ -442,6 +573,10 @@ declare global {
     interface Chainable {
       mockContractorApi(fixtures?: string | MockFixtures): Chainable<void>;
       mockAdminValidationApi(): Chainable<void>;
+      /** Ferme la modale vidéo du stepper d'upload si elle est ouverte. */
+      dismissStepperVideo(): Chainable<void>;
+      /** Révèle la zone de dépôt de l'étape stepper courante (clic variante). */
+      openStepperUploadZone(): Chainable<void>;
       /** Attente d'un appel API tolérante aux modes mock / real-backend. */
       waitApi(alias: string): Chainable<void>;
       /** Auth contractor via PIN SMS (real-backend). Numéro FACTICE only. */

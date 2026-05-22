@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "mission_ref": "CASE-2026-042",
+      "category": "btp",
+      "title": "Diagnostic amiante avant travaux",
+      "description_short": "Diagnostic amiante a realiser avant le demarrage du chantier de renovation.",
+      "address": {
+        "city": "Paris",
+        "street": "12 rue de la Paix",
+        "postal_code": "75002",
+        "department": "75"
+      },
+      "expected_amount_ttc": 1250.00,
+      "scheduled_at": "2026-06-28T09:00:00Z",
+      "offered_at": "2026-06-20T10:00:00Z",
+      "expires_at": "2026-12-31T23:59:00Z",
+      "required_badges": []
+    },
+    {
+      "mission_ref": "CASE-2026-043",
+      "category": "btp",
+      "title": "Diagnostic plomb",
+      "description_short": "Diagnostic plomb sur un immeuble ancien avant mise en location.",
+      "address": {
+        "city": "Lyon",
+        "street": "5 avenue des Champs",
+        "postal_code": "69003",
+        "department": "69"
+      },
+      "expected_amount_ttc": 890.00,
+      "scheduled_at": "2026-07-05T14:00:00Z",
+      "offered_at": "2026-06-25T08:00:00Z",
+      "expires_at": "2026-12-31T23:59:00Z",
+      "required_badges": []
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "filtered_total": 2,
+    "page": 1,
+    "per_page": 20,
+    "last_page": 1,
+    "can_accept": false
+  }
+}

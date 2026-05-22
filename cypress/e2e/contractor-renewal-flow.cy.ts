@@ -27,21 +27,18 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
     cy.visit('/dashboard');
     cy.wait('@getDashboard');
 
-    // Score degrade
-    cy.contains('60% complete').should('be.visible');
-    cy.contains('Bienvenue LUCIAN').should('be.visible');
+    // Header dashboard.
+    cy.contains('Bonjour LUCIAN').should('be.visible');
 
-    // Documents : 3 verifies sur 6, 2 expires
-    cy.contains('Mes documents').should('be.visible');
-    // Le badge montre le ratio
-    cy.contains('3/6').should('be.visible');
+    // next_action=renew_expired_documents → bandeau maintenance « Renouvelle
+    // tes documents expirés ».
+    cy.contains('Renouvelle tes documents expirés').should('be.visible');
 
-    // KYC rejete
-    cy.contains("Verification d'identite").should('be.visible');
-    cy.contains('Refuse').should('be.visible');
+    // 2 documents expirés → bandeau alerte rouge sur la home.
+    cy.contains('2 documents ont expiré').should('be.visible');
 
-    // Certification toujours OK
-    cy.contains('Certifie').should('be.visible');
+    // Tuile « Mes chantiers » toujours présente.
+    cy.contains('Mes chantiers').should('be.visible');
 
     cy.wait(PAUSE);
   });
@@ -62,8 +59,13 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
     cy.mockContractorApi({ dashboard: 'dashboard-expired.json' });
     cy.visit('/documents/upload');
 
-    // Selectionner le nouveau KBIS
-    cy.get('input[type="file"]').selectFile(
+    // Fermer la modale vidéo du stepper, puis ouvrir la zone de dépôt de
+    // l'étape courante (clic variante CNI si l'étape est « identité »).
+    cy.dismissStepperVideo();
+    cy.openStepperUploadZone();
+
+    // Selectionner le nouveau document
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 KBIS\nSIRBU LUCIAN BTP\nSIREN: 123456789\nDate: 2026-07-15'),
         fileName: 'kbis_2026_renouvele.pdf',
@@ -72,14 +74,17 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
       { force: true }
     );
 
+    cy.wait('@uploadDocument');
     cy.wait(PAUSE);
   });
 
   it('Etape 4 â€” Upload la nouvelle attestation URSSAF', () => {
     cy.mockContractorApi({ dashboard: 'dashboard-expired.json' });
     cy.visit('/documents/upload');
+    cy.dismissStepperVideo();
+    cy.openStepperUploadZone();
 
-    cy.get('input[type="file"]').selectFile(
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 URSSAF\nSIRBU LUCIAN BTP\nSIRET: 12345678900012\nPeriode: T2 2026\nSituation: a jour'),
         fileName: 'attestation_urssaf_t2_2026.pdf',
@@ -88,22 +93,24 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
       { force: true }
     );
 
+    cy.wait('@uploadDocument');
     cy.wait(PAUSE);
   });
 
   it('Etape 5 â€” La nouvelle CNI est en cours de verification OCR', () => {
     cy.mockContractorApi({ dashboard: 'dashboard-expired.json' });
 
-    // Override le mock document status pour la CNI
-    cy.intercept('GET', '/contractor-compliance/documents/*/status', {
+    // Override le mock document status pour la CNI. Route SDK = GET
+    // /documents/{uuid} (documentsGet.PATH), pas /documents/{uuid}/status.
+    cy.intercept('GET', '/contractor-compliance/documents/*', {
       fixture: 'document-status-cni-pending.json',
     }).as('getDocumentStatus');
 
     cy.visit('/documents/doc-cni-uuid-002');
     cy.wait('@getDocumentStatus');
 
-    // Statut en cours
-    cy.contains('Verification en cours').should('be.visible');
+    // Statut en cours — libellé accentué « Vérification en cours ».
+    cy.contains('Vérification en cours').should('be.visible');
     cy.contains('cni_lucian_sirbu_2026.jpg').should('be.visible');
 
     cy.wait(PAUSE);
@@ -115,14 +122,11 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
     cy.visit('/dashboard');
     cy.wait('@getDashboard');
 
-    // Score remonte
-    cy.contains('85% complete').should('be.visible');
+    cy.contains('Bonjour LUCIAN').should('be.visible');
 
-    // Documents presque complets (5/6, CNI en pending)
-    cy.contains('5/6').should('be.visible');
-
-    // KYC toujours rejete â€” il faut le refaire avec la nouvelle CNI
-    cy.contains('Refuse').should('be.visible');
+    // next_action=retry_kyc → bandeau maintenance « Refais ta vérification
+    // d'identité ».
+    cy.contains('Refais ta vérification d\'identité').should('be.visible');
 
     cy.wait(PAUSE);
   });
@@ -144,11 +148,10 @@ describe('Renouvellement â€” documents expires + nouvelle CNI + KYC a refai
     cy.visit('/dashboard');
     cy.wait('@getDashboard');
 
-    // 100% conforme a nouveau
-    cy.contains('Votre compte est verifie').should('be.visible');
-    cy.contains('Complet').should('be.visible');
-    cy.contains('Identite verifiee').should('be.visible');
-    cy.contains('Certifie').should('be.visible');
+    // 100% conforme à nouveau : tuiles « Conforme », plus de bandeau alerte.
+    cy.contains('Bonjour LUCIAN').should('be.visible');
+    cy.contains('Mes chantiers').should('be.visible');
+    cy.contains('Conforme').should('be.visible');
 
     cy.wait(PAUSE);
   });

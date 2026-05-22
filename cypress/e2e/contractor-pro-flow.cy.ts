@@ -52,16 +52,14 @@ describe('Plan Professionnel — Flow complet', () => {
       cy.assertAppShell();
       cy.url().should('include', '/dashboard');
     } else {
-      // Fully verified
-      cy.contains('Votre compte est verifie').should('be.visible');
-      // All docs done
-      cy.contains('Complet').should('be.visible');
-      // KYC approved
-      cy.contains('Identite verifiee').should('be.visible');
-      // Certification done
-      cy.contains('Certifie').should('be.visible');
-      // No plan upgrade banner (can_upgrade = false)
-      cy.contains('99 EUR/mois').should('not.exist');
+      // Contractor Pro 100% conforme : header « Bonjour », chip « Plan Pro »
+      // (currentPlan=paid) et tuiles « Conforme ». Pas de CTA upsell « Passer
+      // en Pro » puisqu'il est déjà Pro.
+      cy.contains('Bonjour LUCIAN').should('be.visible');
+      cy.contains('Plan Pro').should('be.visible');
+      cy.contains('Mes chantiers').should('be.visible');
+      cy.contains('Conforme').should('be.visible');
+      cy.contains('Passer en Pro').should('not.exist');
     }
 
     cy.wait(PAUSE);
@@ -71,24 +69,22 @@ describe('Plan Professionnel — Flow complet', () => {
   // MISSIONS
   // ═══════════════════════════════════════════
 
-  it('Missions — rendu', () => {
+  it('Offres disponibles — rendu', () => {
     cy.visit('/missions');
 
     if (REAL_BACKEND) {
       cy.url().should('include', '/missions');
       cy.assertAppShell();
     } else {
-      cy.wait('@getMissions');
-      cy.contains('Mes missions').should('be.visible');
-      cy.contains('Missions terminees').should('be.visible');
+      // La route /missions affiche la page « Offres disponibles » (la même
+      // pour tous les plans). Le détail des missions réalisées vit sur
+      // /interventions, non couvert par ce flow Pro.
+      cy.waitApi('@getMissionOffers');
+      cy.contains('Offres disponibles').should('be.visible');
       cy.contains('Diagnostic amiante avant travaux').should('be.visible');
-      cy.contains('DPE appartement T3').should('be.visible');
-      cy.contains('Mesurage loi Carrez').should('be.visible');
-      cy.contains('1250,00').should('be.visible');
-      cy.contains('500,00').should('be.visible');
+      cy.contains('Diagnostic plomb').should('be.visible');
       cy.contains('Paris').should('be.visible');
-      cy.contains('Toulouse').should('be.visible');
-      cy.contains('Bordeaux').should('be.visible');
+      cy.contains('Lyon').should('be.visible');
     }
 
     cy.wait(PAUSE);
@@ -107,9 +103,9 @@ describe('Plan Professionnel — Flow complet', () => {
       cy.assertAppShell();
       cy.url().should('include', '/invoices');
     } else {
-      // Header pour plan payant
+      // Header plan payant : sous-titre « générées automatiquement ».
       cy.contains('Mes factures').should('be.visible');
-      cy.contains('generees automatiquement').should('be.visible');
+      cy.contains('générées automatiquement').should('be.visible');
 
       // 5 factures auto
       cy.contains('FAC-2026-A001').should('be.visible');
@@ -118,29 +114,24 @@ describe('Plan Professionnel — Flow complet', () => {
       cy.contains('FAC-2026-A004').should('be.visible');
       cy.contains('FAC-2026-A005').should('be.visible');
 
-      // Tag "Auto" present sur toutes les factures
+      // Tag "Auto" présent sur les factures auto-générées.
       cy.get('.source-tag').should('have.length.at.least', 1);
       cy.get('.source-tag').first().should('contain', 'Auto');
 
-      // Statuts corrects
-      cy.contains('Payee').should('be.visible');
-      cy.contains('Envoyee').should('be.visible');
-      cy.contains('Validation...').should('be.visible');
-      cy.contains('Brouillon').should('be.visible');
+      // Badges du pipeline unifié (validatingPhaseLabel) — libellés accentués.
+      cy.contains('Payée').should('be.visible');
+      cy.contains('Bon pour paiement').should('be.visible');
+      cy.contains('Validation Tuita').should('be.visible');
+      cy.contains('Virement en cours').should('be.visible');
 
-      // Montants
+      // Montants (formatAmount : pas de séparateur de milliers).
       cy.contains('1250,00').should('be.visible');
       cy.contains('890,00').should('be.visible');
       cy.contains('700,00').should('be.visible');
 
-      // Stats bar
-      cy.contains('Total').should('be.visible');
-      cy.contains('Payees').should('be.visible');
-      cy.contains('En cours').should('be.visible');
-
-      // Total banner
-      cy.contains('3740,00').should('be.visible');
-      cy.contains('TTC').should('be.visible');
+      // Chips de filtre du composant factures réécrit.
+      cy.contains('.chip', 'Toutes').should('be.visible');
+      cy.contains('.chip', 'Payées').should('be.visible');
 
       // Pas de formulaire upload (plan payant)
       cy.contains('Ajouter une facture').should('not.exist');
@@ -153,7 +144,7 @@ describe('Plan Professionnel — Flow complet', () => {
     cy.wait(PAUSE);
   });
 
-  it('Factures — filtre par statut Payees', function () {
+  it('Factures — filtre par statut Payées', function () {
     // Le filtrage s'appuie sur les statuts précis des fixtures Pro.
     if (REAL_BACKEND) {
       this.skip();
@@ -161,7 +152,8 @@ describe('Plan Professionnel — Flow complet', () => {
     cy.visit('/invoices');
     cy.wait('@getInvoices');
 
-    cy.contains('Payees').click();
+    // Chip de filtre « Payées » du composant factures.
+    cy.contains('.chip', 'Payées').click();
     cy.wait(500);
 
     cy.contains('FAC-2026-A001').should('be.visible');
@@ -199,12 +191,11 @@ describe('Plan Professionnel — Flow complet', () => {
     cy.visit('/billing');
     cy.wait('@getBilling');
 
-    cy.contains('Facturation').should('be.visible');
-    cy.contains('Plan Gratuit').should('be.visible');
+    // Plan payant : la page facturation affiche le bandeau d'abonnement Pro
+    // actif (« Mon abonnement », « Plan Professionnel », bouton « Gérer »).
+    cy.contains('Mon abonnement').should('be.visible');
     cy.contains('Plan Professionnel').should('be.visible');
-    cy.contains('Generation auto de factures').should('be.visible');
-    cy.contains('Rappels automatiques').should('be.visible');
-    cy.contains('Plan actuel').should('be.visible');
+    cy.contains('Gérer').should('be.visible');
 
     cy.wait(PAUSE);
   });

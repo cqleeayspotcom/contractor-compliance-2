@@ -28,24 +28,25 @@ describe('Parcours complet contractor', () => {
   // ─────────────────────────────────────────────────────────────────────
   if (!REAL_BACKEND) {
     it('navigue dans toutes les sections', () => {
-      // ETAPE 1 : Dashboard
+      // ETAPE 1 : Dashboard (grille de tuiles + bandeau onboarding)
       cy.mockContractorApi();
       cy.visit('/dashboard');
       cy.waitApi('@getDashboard');
+      cy.contains('Bonjour LUCIAN').should('be.visible');
       cy.contains('Bienvenue LUCIAN').should('be.visible');
-      cy.contains('45% complete').should('be.visible');
-      cy.contains('Mes documents').should('be.visible');
-      cy.contains('2/6').should('be.visible');
+      cy.contains('Mes chantiers').should('be.visible');
 
       // ETAPE 2 : Documents
       cy.visit('/documents');
       cy.waitApi('@getDocuments');
       cy.contains('kbis_2026.pdf').should('be.visible');
 
-      // ETAPE 3 : Upload
+      // ETAPE 3 : Upload (stepper guidé — étape 1 = identité)
       cy.visit('/documents/upload');
       cy.url().should('include', '/documents/upload');
-      cy.get('input[type="file"]').selectFile(
+      cy.dismissStepperVideo();
+      cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
+      cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
         {
           contents: Cypress.Buffer.from('%PDF-1.4 fake content'),
           fileName: 'rib_entreprise.pdf',
@@ -53,28 +54,29 @@ describe('Parcours complet contractor', () => {
         },
         { force: true }
       );
+      cy.wait('@uploadDocument');
 
       // ETAPE 4 : Statut document
       cy.visit('/documents/doc-kbis-uuid-001');
       cy.wait('@getDocumentStatus');
-      cy.contains('Document verifie').should('be.visible');
-      cy.contains('Extrait KBIS').should('be.visible');
+      cy.contains('Document vérifié').should('be.visible');
+      cy.contains('KBIS').should('be.visible');
 
       // ETAPE 5 : KYC
       cy.visit('/kyc');
       cy.url().should('include', '/kyc');
 
-      // ETAPE 6 : Missions
+      // ETAPE 6 : Offres disponibles (route /missions)
       cy.visit('/missions');
-      cy.wait('@getMissions');
+      cy.waitApi('@getMissionOffers');
+      cy.contains('Offres disponibles').should('be.visible');
       cy.contains('Diagnostic amiante avant travaux').should('be.visible');
       cy.contains('Paris').should('be.visible');
-      cy.contains('1250,00').should('be.visible');
 
       // ETAPE 7 : Facturation
       cy.visit('/billing');
       cy.wait('@getBilling');
-      cy.contains('Gratuit').should('be.visible');
+      cy.contains('Passer en Pro').should('be.visible');
 
       // ETAPE 8 : Factures
       cy.visit('/invoices');
@@ -85,7 +87,8 @@ describe('Parcours complet contractor', () => {
       cy.mockContractorApi('dashboard-100.json');
       cy.visit('/dashboard');
       cy.wait('@getDashboard');
-      cy.contains('Votre compte est verifie').should('be.visible');
+      cy.contains('Bonjour LUCIAN').should('be.visible');
+      cy.contains('Conforme').should('be.visible');
     });
     return;
   }

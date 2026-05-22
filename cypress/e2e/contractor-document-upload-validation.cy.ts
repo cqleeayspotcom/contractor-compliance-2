@@ -45,8 +45,17 @@ describe('Upload document — validations et erreurs', () => {
     }
     cy.visit('/documents/upload');
     cy.waitApi('@getDashboard');
+    cy.dismissStepperVideo();
 
-    cy.get('input[type="file"]').selectFile(
+    // L'étape 1 du stepper est « Ta pièce d'identité » : il faut d'abord
+    // choisir la variante (Carte d'identité) pour faire apparaître les zones
+    // de dépôt (recto/verso + chemin « fichier complet »).
+    cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
+
+    // Le stepper réécrit n'a plus de « preview puis bouton Envoyer » : la
+    // sélection d'un PDF via le chemin « J'ai déjà un fichier complet »
+    // (dernier input, onDirectFileSelected) déclenche l'upload synchrone.
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 document valide'),
         fileName: 'attestation_rc.pdf',
@@ -55,8 +64,7 @@ describe('Upload document — validations et erreurs', () => {
       { force: true }
     );
 
-    // Le nom du fichier apparait dans le preview (validation 100% côté client).
-    cy.contains('attestation_rc.pdf').should('be.visible');
+    cy.wait('@uploadDocument');
 
     cy.wait(PAUSE);
   });
@@ -69,8 +77,11 @@ describe('Upload document — validations et erreurs', () => {
     }
     cy.visit('/documents/upload');
     cy.waitApi('@getDashboard');
+    cy.dismissStepperVideo();
+    cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
 
-    cy.get('input[type="file"]').selectFile(
+    // Une image JPEG est aussi acceptée par le chemin « fichier complet ».
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('fake-jpeg-content'),
         fileName: 'photo_kbis.jpg',
@@ -79,7 +90,7 @@ describe('Upload document — validations et erreurs', () => {
       { force: true }
     );
 
-    cy.contains('photo_kbis.jpg').should('be.visible');
+    cy.wait('@uploadDocument');
 
     cy.wait(PAUSE);
   });
@@ -100,8 +111,11 @@ describe('Upload document — validations et erreurs', () => {
 
     cy.visit('/documents/upload');
     cy.wait('@getDashboard');
+    cy.dismissStepperVideo();
+    cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
 
-    cy.get('input[type="file"]').selectFile(
+    // La sélection déclenche l'upload synchrone — l'intercept renvoie 422.
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('corrupted content'),
         fileName: 'document_corrompu.pdf',
@@ -110,14 +124,9 @@ describe('Upload document — validations et erreurs', () => {
       { force: true }
     );
 
-    // Cliquer sur le bouton d'envoi si visible
-    cy.get('body').then($body => {
-      const btn = $body.find('button:contains("Envoyer"), button:contains("Valider")');
-      if (btn.length) {
-        cy.wrap(btn.first()).click();
-        cy.wait('@uploadFail');
-      }
-    });
+    // L'upload part et échoue (422). L'app ne crash pas — on reste sur la page.
+    cy.wait('@uploadFail');
+    cy.url().should('include', '/documents/upload');
 
     cy.wait(PAUSE);
   });
@@ -144,8 +153,11 @@ describe('Upload document — validations et erreurs', () => {
 
     cy.visit('/documents/upload');
     cy.wait('@getDashboard');
+    cy.dismissStepperVideo();
+    cy.get('[data-testid="identity-variant-cni"]', { timeout: 15000 }).click();
 
-    cy.get('input[type="file"]').selectFile(
+    // La sélection déclenche l'upload synchrone — l'intercept renvoie 201.
+    cy.get('input[type="file"]', { timeout: 15000 }).last().selectFile(
       {
         contents: Cypress.Buffer.from('%PDF-1.4 KBIS'),
         fileName: 'kbis_neuf.pdf',
@@ -154,15 +166,10 @@ describe('Upload document — validations et erreurs', () => {
       { force: true }
     );
 
-    cy.get('body').then($body => {
-      const btn = $body.find('button:contains("Envoyer"), button:contains("Valider")');
-      if (btn.length) {
-        cy.wrap(btn.first()).click();
-        cy.wait('@uploadSuccess');
-        // Redirige vers le statut du document uploade
-        cy.url().should('include', '/documents/');
-      }
-    });
+    // L'upload aboutit (201). Le stepper reste sur /documents/upload et
+    // affiche le verdict de l'analyse.
+    cy.wait('@uploadSuccess');
+    cy.url().should('include', '/documents/upload');
 
     cy.wait(PAUSE);
   });
