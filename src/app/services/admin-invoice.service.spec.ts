@@ -108,11 +108,12 @@ describe('AdminInvoiceService', () => {
   // Action endpoints
   // ---------------------------------------------------------------------
 
-  it('POST /{uuid}/mark-payment-in-progress sends payment_ref', () => {
-    service.markPaymentInProgress('uuid-1', { payment_ref: 'VIR-2026-001' }).subscribe();
+  it('POST /{uuid}/mark-payment-in-progress is a pure transition (no body)', () => {
+    service.markPaymentInProgress('uuid-1').subscribe();
     const req = http.expectOne('/contractor-compliance/admin/invoices/uuid-1/mark-payment-in-progress');
     expect(req.request.method).toBe('POST');
-    expect(req.request.body).toEqual({ payment_ref: 'VIR-2026-001' });
+    // Transition pure côté backend : le payment_ref n'est saisi qu'au mark-paid.
+    expect(req.request.body).toBeNull();
     req.flush({});
   });
 

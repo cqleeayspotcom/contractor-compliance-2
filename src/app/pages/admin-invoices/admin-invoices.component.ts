@@ -600,14 +600,15 @@ export class AdminInvoicesComponent implements OnInit, OnDestroy {
         confirmLabel: 'Lancer le virement',
         cancelLabel: 'Annuler',
         danger: false,
-        fields: [
-          { key: 'payment_ref', label: 'Référence de virement', type: 'text', required: true, value: '' },
-        ],
+        // Aucun champ : mark-payment-in-progress est une transition pure côté
+        // backend. La référence de virement n'est saisie qu'à l'étape
+        // « Marquer payée » (mark-paid) — la demander ici induisait l'admin
+        // en erreur (valeur silencieusement ignorée).
+        fields: [],
         invoice: inv,
       },
-      ctx => {
-        const payRef = this.fieldValue(ctx, 'payment_ref').trim();
-        this.api.markPaymentInProgress(inv.uuid, { payment_ref: payRef }, inv.updated_at ?? undefined).subscribe({
+      () => {
+        this.api.markPaymentInProgress(inv.uuid, undefined, inv.updated_at ?? undefined).subscribe({
           next: () => this.afterAction('Virement marqué en cours'),
           error: err => this.handleConflictOrFallback(err, 'mark-payment-in-progress'),
         });
