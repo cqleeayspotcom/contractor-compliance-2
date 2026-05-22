@@ -1,97 +1,105 @@
 /**
  * Unsaved Changes Guard — Unit Tests
  */
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { TestBed } from '@angular/core/testing';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { Observable, of } from 'rxjs';
 import {
   unsavedChangesGuard,
   CanComponentDeactivate,
 } from './unsaved-changes.guard';
 
-// Helper: invoke the guard with a fake component
-function runGuard(component: CanComponentDeactivate) {
-  // CanDeactivateFn signature: (component, currentRoute, currentState, nextState)
-  return (unsavedChangesGuard as any)(component, {} as any, {} as any, {} as any);
+/**
+ * Faux MatDialog : `open()` renvoie une ref dont `afterClosed()` émet la
+ * valeur configurée par chaque test (true = l'utilisateur confirme).
+ */
+class FakeMatDialog {
+  afterClosed$: Observable<boolean> = of(true);
+  open = vi.fn(() => ({
+    afterClosed: () => this.afterClosed$,
+  }) as unknown as MatDialogRef<unknown>);
 }
 
 describe('unsavedChangesGuard', () => {
-  it('should allow navigation when there are no unsaved changes', () => {
-    const component: CanComponentDeactivate = {
-      hasUnsavedChanges: () => false,
-    };
+  let dialog: FakeMatDialog;
 
-    const result = runGuard(component);
+  beforeEach(() => {
+    dialog = new FakeMatDialog();
+    TestBed.configureTestingModule({
+      providers: [{ provide: MatDialog, useValue: dialog }],
+    });
+  });
+
+  // Le guard est une CanDeactivateFn fonctionnelle : elle appelle `inject()`
+  // et doit donc tourner dans un contexte d'injection. Le router en fournit un
+  // en production ; en test on le simule via TestBed.runInInjectionContext.
+  function runGuard(component: CanComponentDeactivate) {
+    return TestBed.runInInjectionContext(() =>
+      (unsavedChangesGuard as unknown as (c: CanComponentDeactivate) => unknown)(
+        component,
+      ),
+    );
+  }
+
+  it('should allow navigation when there are no unsaved changes', () => {
+    const result = runGuard({ hasUnsavedChanges: () => false });
     expect(result).toBe(true);
+    expect(dialog.open).not.toHaveBeenCalled();
   });
 
   it('should allow navigation when hasUnsavedChanges is not defined', () => {
-    // Edge case: component without the method
-    const component = {} as CanComponentDeactivate;
-
-    const result = runGuard(component);
+    const result = runGuard({} as CanComponentDeactivate);
     expect(result).toBe(true);
   });
 
-  it('should show default confirm when unsaved changes exist and no custom dialog', () => {
-    const component: CanComponentDeactivate = {
-      hasUnsavedChanges: () => true,
-    };
+  it('should open the Material confirmation dialog when unsaved changes exist and no custom dialog', () => {
+    dialog.afterClosed$ = of(true);
 
-    // Mock window.confirm to return true (user confirms leave)
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const result = runGuard({ hasUnsavedChanges: () => true }) as Observable<boolean>;
 
-    const result = runGuard(component);
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(result).toBe(true);
-
-    confirmSpy.mockRestore();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    let emitted: boolean | undefined;
+    result.subscribe((v) => (emitted = v));
+    expect(emitted).toBe(true);
   });
 
-  it('should block navigation when user cancels default confirm', () => {
-    const component: CanComponentDeactivate = {
-      hasUnsavedChanges: () => true,
-    };
+  it('should block navigation when the user cancels the confirmation dialog', () => {
+    dialog.afterClosed$ = of(false);
 
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    const result = runGuard({ hasUnsavedChanges: () => true }) as Observable<boolean>;
 
-    const result = runGuard(component);
-    expect(confirmSpy).toHaveBeenCalled();
-    expect(result).toBe(false);
-
-    confirmSpy.mockRestore();
+    expect(dialog.open).toHaveBeenCalledTimes(1);
+    let emitted: boolean | undefined;
+    result.subscribe((v) => (emitted = v));
+    expect(emitted).toBe(false);
   });
 
   it('should use custom dialog when provided and return observable', () => {
-    const component: CanComponentDeactivate = {
+    const result = runGuard({
       hasUnsavedChanges: () => true,
       showUnsavedChangesDialog: () => of(true),
-    };
+    }) as Observable<boolean>;
 
-    const result = runGuard(component) as Observable<boolean>;
-    expect(result).toBeDefined();
-
-    // Subscribe to verify the value
+    expect(dialog.open).not.toHaveBeenCalled();
     let emitted: boolean | undefined;
-    (result as Observable<boolean>).subscribe((v) => (emitted = v));
+    result.subscribe((v) => (emitted = v));
     expect(emitted).toBe(true);
   });
 
   it('should use custom dialog when provided and return boolean', () => {
-    const component: CanComponentDeactivate = {
+    const result = runGuard({
       hasUnsavedChanges: () => true,
       showUnsavedChangesDialog: () => false,
-    };
-
-    const result = runGuard(component);
+    });
     expect(result).toBe(false);
   });
 
   it('should use custom dialog when provided and return promise', async () => {
-    const component: CanComponentDeactivate = {
+    const result = runGuard({
       hasUnsavedChanges: () => true,
       showUnsavedChangesDialog: () => Promise.resolve(true),
-    };
-
-    const result = runGuard(component);
+    });
     await expect(result).resolves.toBe(true);
   });
 });
