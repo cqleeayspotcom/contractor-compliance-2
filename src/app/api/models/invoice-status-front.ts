@@ -3,8 +3,8 @@
 
 
 /**
- * 9 statuts de facture exposés au front contractor. Mapping interne
- * 14 statuts -> 9 réalisé dans InvoiceStatusMapper côté backend.
+ * 10 statuts de facture exposés au front contractor. Mapping interne
+ * 14 statuts -> 10 réalisé dans InvoiceStatusMapper côté backend.
  */
 export enum InvoiceStatusFront {
   NONE = 'none',
@@ -15,5 +15,6 @@ export enum InvoiceStatusFront {
   PAID = 'paid',
   UPLOADED = 'uploaded',
   AUTO_GENERATED = 'auto_generated',
-  REJECTED = 'rejected'
+  REJECTED = 'rejected',
+  DISPUTED = 'disputed'
 }

@@ -190,6 +190,7 @@ export class ContractorInterventionDetailComponent implements OnInit {
       uploaded: 'Facture envoyée',
       auto_generated: 'Facture auto-générée',
       rejected: 'Facture rejetée',
+      disputed: 'Paiement en litige',
     };
     return labels[status] ?? status;
   }
@@ -207,6 +208,11 @@ export class ContractorInterventionDetailComponent implements OnInit {
       case 'pending_validation':
       case 'paying':
         return 'badge--blue';
+      // disputed : litige = paiement bloqué mais facture non rejetée.
+      // Orange (avertissement) plutôt que rouge (rejet) — l'artisan n'a
+      // rien fait de faux, il doit juste savoir que le virement est gelé.
+      case 'disputed':
+        return 'badge--orange';
       default:
         return 'badge--orange';
     }
@@ -222,6 +228,7 @@ export class ContractorInterventionDetailComponent implements OnInit {
       case 'validating':
       case 'pending_validation': return 'hourglass_top';
       case 'rejected': return 'error_outline';
+      case 'disputed': return 'gavel';
       default: return 'warning';
     }
   }
@@ -246,6 +253,8 @@ export class ContractorInterventionDetailComponent implements OnInit {
         "Facture générée automatiquement par Tuita à partir du bon de commande de la mission (plan Pro).",
       rejected:
         "La facture a été refusée. Consultez la raison dans l'onglet Factures - vous pouvez la corriger et la renvoyer.",
+      disputed:
+        "Le paiement de cette facture est bloqué par un litige en cours. Les équipes Tuita le traitent - aucune action de votre part n'est requise.",
     };
     return tooltips[status] ?? '';
   }

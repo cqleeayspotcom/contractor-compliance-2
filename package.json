@@ -19,7 +19,9 @@
     "analyze": "ng build --stats-json && webpack-bundle-analyzer dist/stats.json",
     "cy:open": "cypress open",
     "cy:run": "cypress run",
-    "e2e": "cypress open --e2e --browser chrome"
+    "e2e": "cypress open --e2e --browser chrome",
+    "cypress:seed": "powershell -ExecutionPolicy Bypass -File scripts/seed-real-backend.ps1",
+    "cypress:real-backend": "node scripts/run-cypress-real.js"
   },
   "private": true,
   "packageManager": "npm@10.9.3",
