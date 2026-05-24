@@ -277,12 +277,24 @@ html {
 // du label (`--mat-mdc-form-field-label-offset-x`). Notre `padding` forcé plus
 // haut écrasait ce calcul → le label venait se coller / chevaucher l'icône.
 // On rend donc la main à Material de ce côté-là.
-.mat-mdc-form-field.mat-mdc-form-field-appearance-outline.mat-mdc-form-field-has-icon-prefix
+//
+// NB sélecteur : la classe d'apparence en Material 21 est
+// `mat-form-field-appearance-outline` (SANS `-mdc-`), même si la plupart des
+// autres classes du form-field portent le préfixe `mat-mdc-`. On combine cette
+// classe au host avec `has-icon-prefix` pour viser pile les champs concernés.
+.mat-mdc-form-field.mat-form-field-appearance-outline.mat-mdc-form-field-has-icon-prefix
   .mat-mdc-text-field-wrapper {
   padding-left: 0 !important;
+  // Material applique en plus un `--mat-mdc-form-field-label-offset-x: -16px`
+  // (cf. règle native `.mat-mdc-form-field-has-icon-prefix .mat-mdc-text-field-wrapper`)
+  // pour compenser un padding qu'on ne lui laisse plus mettre. Sans neutralisation
+  // ce -16px tire le label sous l'icône → vérifié visuellement : 7 px de
+  // chevauchement résiduel. On remet ce décalage à 0 pour que le label s'aligne
+  // pile après le conteneur de l'icône.
+  --mat-mdc-form-field-label-offset-x: 0px;
 }
 
-.mat-mdc-form-field.mat-mdc-form-field-appearance-outline.mat-mdc-form-field-has-icon-suffix
+.mat-mdc-form-field.mat-form-field-appearance-outline.mat-mdc-form-field-has-icon-suffix
   .mat-mdc-text-field-wrapper {
   padding-right: 0 !important;
 }

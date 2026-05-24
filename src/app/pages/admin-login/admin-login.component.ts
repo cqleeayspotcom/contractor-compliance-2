@@ -38,11 +38,6 @@ import { adminAuthRequestPin } from '../../api/fn/admin-auth/admin-auth-request-
  *   qui ne marche pas pour un body JSON. Le wrapper module utilise le même
  *   storage OAuth2 mais via bodyParam() correctement.
  */
-// POURQUOI : alias local sur le shape retourné par le SDK `adminAuthRequestPin`.
-// On reste à plat (le backend ne wrappe PAS dans `{ data: ... }` pour cette route
-// pré-auth, contrairement aux autres endpoints admin sous SuccessEnvelope).
-type PincodeMedia = 'log' | 'slack';
-
 interface SigninResponse {
   access_token: string;
   expires_in: number;
@@ -87,7 +82,6 @@ export class AdminLoginComponent {
   readonly email = signal('');
   readonly pin = signal('');
   readonly smsTripToken = signal<string | null>(null);
-  readonly pincodeMedia = signal<PincodeMedia>('log');
   readonly loading = signal(false);
 
   async submitEmail(): Promise<void> {
@@ -103,15 +97,8 @@ export class AdminLoginComponent {
       // pincode_media }` — pas d'enveloppe `{ data }` côté pré-auth.
       const resp = await this.api.invoke(adminAuthRequestPin, { body: { email } });
       this.smsTripToken.set(resp.sms_trip_token);
-      this.pincodeMedia.set(resp.pincode_media);
       this.step.set('pin');
-      this.snack.open(
-        resp.pincode_media === 'slack'
-          ? 'PIN envoyé sur Slack #granting-enquiry.'
-          : 'PIN généré — récupère-le dans application.log (dev).',
-        'OK',
-        { duration: 4000 }
-      );
+      this.snack.open('PIN envoyé.', 'OK', { duration: 4000 });
     } catch (e) {
       const msg = this.extractError(e, 'Impossible de demander un PIN.');
       this.snack.open(msg, 'OK');

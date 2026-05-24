@@ -3,13 +3,11 @@
     <header>
       <mat-icon class="logo-icon">admin_panel_settings</mat-icon>
       <h1>Admin Tuita</h1>
-      <p class="subtitle">
-        @if (step() === 'email') {
-          Auth OAuth2 staff — PIN envoyé sur Slack (ou logs en dev).
-        } @else {
+      @if (step() === 'pin') {
+        <p class="subtitle">
           PIN envoyé pour <strong>{{ email() }}</strong>.
-        }
-      </p>
+        </p>
+      }
     </header>
 
     @if (step() === 'email') {
@@ -87,16 +85,5 @@
         </button>
       </form>
     }
-
-    <footer class="dev-hint">
-      <mat-icon>info</mat-icon>
-      <span>
-        @if (pincodeMedia() === 'slack') {
-          PIN diffusé sur Slack #granting-enquiry.
-        } @else {
-          DEV — PIN dans <code>application.log</code> (chercher "ADMIN PINCODE").
-        }
-      </span>
-    </footer>
   </div>
 </div>
