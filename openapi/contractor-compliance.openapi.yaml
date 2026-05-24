@@ -1755,6 +1755,18 @@ paths:
       parameters: [{ $ref: '#/components/parameters/UserId' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
+  # Vue 360 des blocages d'un contractor (KYC, documents stuck, score actuel,
+  # scopes suggérés). Sert d'amorce à POST .../unblock.
+  # Backend : AdminUnblockContractorController::diagnose
+  # Route Laminas : admin-contractors-diagnose (07-admin.config.php).
+  /contractor-compliance/admin/contractors/{userId}/diagnose:
+    get:
+      tags: [AdminContractors]
+      operationId: adminContractorsDiagnose
+      security: [{ bearerAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses: { '200': { $ref: '#/components/responses/JsonOk' } }
+
   /contractor-compliance/admin/contractors/{userId}/purchase-document:
     post:
       tags: [AdminContractors]

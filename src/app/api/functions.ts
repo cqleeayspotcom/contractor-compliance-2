@@ -149,6 +149,8 @@ export type { AdminContractorsBlocked$Params as AdminContractorsBlocked$Params }
 export { adminContractorsBlocked as adminContractorsBlocked } from './fn/admin-contractors/admin-contractors-blocked';
 export type { AdminContractorsUnblock$Params as AdminContractorsUnblock$Params } from './fn/admin-contractors/admin-contractors-unblock';
 export { adminContractorsUnblock as adminContractorsUnblock } from './fn/admin-contractors/admin-contractors-unblock';
+export type { AdminContractorsDiagnose$Params as AdminContractorsDiagnose$Params } from './fn/admin-contractors/admin-contractors-diagnose';
+export { adminContractorsDiagnose as adminContractorsDiagnose } from './fn/admin-contractors/admin-contractors-diagnose';
 export type { AdminContractorsPurchaseDocument$Params as AdminContractorsPurchaseDocument$Params } from './fn/admin-contractors/admin-contractors-purchase-document';
 export { adminContractorsPurchaseDocument as adminContractorsPurchaseDocument } from './fn/admin-contractors/admin-contractors-purchase-document';
 export type { AdminDashboardOverview$Params as AdminDashboardOverview$Params } from './fn/admin/admin-dashboard-overview';
