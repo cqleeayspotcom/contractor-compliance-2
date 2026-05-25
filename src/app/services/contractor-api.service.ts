@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, from } from 'rxjs';
-import { map, timeout } from 'rxjs/operators';
+import { Observable, from, throwError, timer } from 'rxjs';
+import { catchError, map, mergeMap, timeout } from 'rxjs/operators';
 import { MissionOffer } from '../api/models/mission-offer';
 import { ContractorMission } from '../api/models/contractor-mission';
 import { MissionsMeta } from '../api/models/missions-meta';
@@ -712,8 +712,32 @@ export class ContractorApiService {
   //   - PATCH /certification/answers    -> body { attempt_uuid, answers } (brouillon)
 
   startCertification(): Observable<{ attempt_uuid: string; attempt_number: number; started_at: string; partial_answers: Record<string, string> }> {
-    return from(this.api.invoke(certificationQcmStart) as Promise<any>).pipe(
-      map((res) => res.data),
+    const call = () =>
+      from(this.api.invoke(certificationQcmStart) as Promise<any>).pipe(
+        map((res) => res.data),
+      );
+
+    // POURQUOI ce retry-on-409 : depuis l'ajout de la contrainte UNIQUE
+    // `uniq_qcm_active_per_user` (entité QcmAttempt, MAJ schéma 2026-05-24),
+    // un démarrage concurrent du QCM (double-tab, double-clic, Angular
+    // StrictMode dev qui rejoue ngOnInit, perte réseau + retry navigateur)
+    // peut renvoyer 409 sur les requêtes "race losers" : le back tente
+    // l'INSERT, échoue sur la contrainte, fait un re-fetch — mais si la
+    // requête GAGNANTE n'a pas encore committé sa transaction au moment
+    // du re-fetch, le back retourne 409. 250 ms suffit largement pour
+    // que la transaction gagnante commit ; on retente alors et on tombe
+    // sur la branche "attempt actif déjà existant" du controller, qui
+    // renvoie l'attempt_uuid avec succès.
+    //
+    // Limité à 1 retry pour éviter les boucles si le 409 vient d'une autre
+    // cause (cas peu probable mais on garde un comportement borné).
+    return call().pipe(
+      catchError((err) => {
+        if (err?.status === 409) {
+          return timer(250).pipe(mergeMap(() => call()));
+        }
+        return throwError(() => err);
+      }),
     );
   }
 

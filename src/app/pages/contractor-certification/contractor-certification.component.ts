@@ -457,7 +457,18 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
         this.startHeartbeat();
       },
       error: () => {
-        // Pas bloquant : si le start échoue (réseau / legacy), on laisse quand même l'utilisateur passer le QCM.
+        // POURQUOI on surface l'erreur au contractor (versus l'avaler) :
+        //   Sans attemptUuid, le `complete` final fera 422 ANSWERS_UUID_MISSING
+        //   et le contractor perdra ses 24 réponses. Un toast + log explicites
+        //   évitent ce piège silencieux. Le service `startCertification()`
+        //   retente déjà automatiquement sur 409 (race-loser concurrent) ; si
+        //   on tombe ici, c'est une vraie erreur (réseau, 500…) qui mérite
+        //   un message clair plutôt qu'un quiz fantôme.
+        this.snack.open(
+          'Impossible de démarrer le QCM. Vérifie ta connexion et rafraîchis la page.',
+          'Fermer',
+          { duration: 8000, panelClass: ['snackbar-error'] },
+        );
       },
     });
 
@@ -664,7 +675,12 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
     this.quizPassed.set(false);
     this.showUnanswered.set(false);
 
-    // Nouvelle tentative côté back (la précédente reste trace avec completed_at/passed=false)
+    // Nouvelle tentative côté back (la précédente reste trace avec completed_at/passed=false).
+    // POURQUOI la transition vers 'quiz' est DANS le next() et pas en dehors :
+    //   un échec du start (réseau, 500…) ne doit pas faire transiter l'UI vers
+    //   le quiz sans attemptUuid — l'utilisateur verrait l'écran QCM mais le
+    //   submit final partirait sans UUID → 422. On reste sur la page review
+    //   avec un toast d'erreur si le start rate.
     this.api.startCertification().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
       next: res => {
         this.attemptUuid = res.attempt_uuid;
@@ -677,10 +693,16 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
           this.answers.set(draft);
         }
         this.startHeartbeat();
+        this.currentStep.set('quiz');
+      },
+      error: () => {
+        this.snack.open(
+          'Impossible de relancer le QCM. Réessaie dans quelques instants.',
+          'Fermer',
+          { duration: 8000, panelClass: ['snackbar-error'] },
+        );
       },
     });
-
-    this.currentStep.set('quiz');
   }
 
   goToDashboard(): void {
