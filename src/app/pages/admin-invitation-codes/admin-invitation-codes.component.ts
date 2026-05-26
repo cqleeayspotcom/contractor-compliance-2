@@ -190,7 +190,11 @@ export class AdminInvitationCodesComponent implements OnInit {
 
   statusLabel(row: InvitationCodeRow): { text: string; cls: string } {
     if (row.revoked_at) return { text: 'Révoqué', cls: 'badge--bad' };
-    if (new Date(row.expires_at) < new Date()) return { text: 'Expiré', cls: 'badge--warn' };
+    // expires_at peut être NULL côté backend (code sans expiration) → ne PAS
+    // appeler `new Date(null)` qui retourne le 1er janvier 1970 et marquerait
+    // tous les codes sans expiration comme "Expiré". On ne considère expiré
+    // que si une date est posée ET déjà passée.
+    if (row.expires_at && new Date(row.expires_at) < new Date()) return { text: 'Expiré', cls: 'badge--warn' };
     if (row.max_uses != null && row.uses_count >= row.max_uses) return { text: 'Épuisé', cls: 'badge--warn' };
     return { text: 'Actif', cls: 'badge--ok' };
   }

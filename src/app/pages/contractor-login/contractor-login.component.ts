@@ -98,18 +98,22 @@ export class ContractorLoginComponent {
     try {
       // Tuita monolithe : POST /contractor/auth/login avec { smsphone, pincode }.
       // Pose le cookie __contractor_ssid (ContractorOauthWrapper::contractorLogin).
-      // ATTENTION : le backend renvoie TOUJOURS 200, le succès se lit dans
-      // la réponse JSON (`connected: true` / `error: ...`). Un mauvais PIN
-      // ne lève PAS d'HttpErrorResponse — il faut inspecter le body.
+      // ATTENTION : le backend renvoie TOUJOURS 200, le succès se lit dans la
+      // réponse JSON. Forme exacte (cf. ContractorOauthWrapper::contractorLogin
+      // + ContractorAuthActionController::login → jsonResponse) :
+      //   - succès → { data: { profile: { firstname, lastname, ... } } }
+      //   - échec  → { data: false }   (PIN faux, expiré, ou champ vide)
+      // C'est `data` qu'il faut tester (PAS `connected`, qui est la forme
+      // de /contractor/auth/status — endpoint différent).
       const resp = await firstValueFrom(
-        this.http.post<{ connected?: boolean; error?: string }>(
+        this.http.post<{ data?: { profile?: unknown } | false }>(
           `${environment.apiUrl}/contractor/auth/login`,
           // Même format strict +33 — un mismatch entre /pin et /login
           // empêcherait la résolution du contractor (lookup sur smsphone).
           { smsphone: this.phonePlus(), pincode: this.code() },
           { withCredentials: true })
       );
-      if (!resp || resp.connected !== true) {
+      if (!resp?.data) {
         this.snack.open('Code incorrect.', 'OK', { duration: 3000 });
         return;
       }
