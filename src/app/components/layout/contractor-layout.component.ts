@@ -39,6 +39,30 @@ export class ContractorLayoutComponent {
     { initialValue: this.router.url.startsWith('/admin') },
   );
 
+  /**
+   * Routes publiques (pré-auth) qui ne doivent afficher NI header NI footer :
+   * pages où l'utilisateur n'est pas encore authentifié, ou qui n'ont pas
+   * besoin de la navigation contractor (login, signup, login admin, page
+   * service indisponible, KYC mobile via QR code public).
+   */
+  readonly isAuthRoute = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map(() => this.isAuthUrl(this.router.url)),
+    ),
+    { initialValue: this.isAuthUrl(this.router.url) },
+  );
+
+  private isAuthUrl(url: string): boolean {
+    return (
+      url.startsWith('/login') ||
+      url.startsWith('/signup') ||
+      url.startsWith('/admin/login') ||
+      url.startsWith('/service-unavailable') ||
+      url.startsWith('/kyc/mobile')
+    );
+  }
+
   constructor() {
     inject(NavigationHistoryService);
   }

@@ -1,16 +1,23 @@
-<!-- Header : admin dédié sur /admin/**, header contractor partout ailleurs.
+<!-- Header :
+     - routes publiques d'auth (/login, /signup, /admin/login, ...) → AUCUN header
+       (sinon l'utilisateur non authentifié voit la navigation contractor).
+     - /admin/** authentifié → header admin dédié.
+     - reste contractor authentifié → header contractor.
      Voir feedback Moussa — le header admin ne doit PAS être celui du contractor. -->
-@if (isAdminRoute()) {
-  <app-admin-header></app-admin-header>
-} @else {
-  <app-header></app-header>
+@if (!isAuthRoute()) {
+  @if (isAdminRoute()) {
+    <app-admin-header></app-admin-header>
+  } @else {
+    <app-header></app-header>
+  }
 }
 
 <main class="contractor-content">
   <router-outlet></router-outlet>
 </main>
 
-<!-- Footer : uniquement côté contractor. L'espace admin n'a pas de footer. -->
-@if (!isAdminRoute()) {
+<!-- Footer : uniquement côté contractor authentifié. Pas de footer sur les
+     pages d'auth (pré-login) ni dans l'espace admin. -->
+@if (!isAuthRoute() && !isAdminRoute()) {
   <app-footer></app-footer>
 }
