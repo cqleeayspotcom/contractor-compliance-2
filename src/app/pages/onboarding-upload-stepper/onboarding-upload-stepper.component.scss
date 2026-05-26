@@ -1401,6 +1401,45 @@
       color: #f8fafc;
     }
   }
+
+  // État "en cours d'enregistrement" — distinct du disabled simple : on
+  // garde l'allure colorée du bouton primaire, on remplace la flèche par
+  // un spinner BLANC bien visible, et le curseur passe en `progress`.
+  // Override TOUS les styles du `&[disabled]` au-dessus (qui s'appliquent
+  // aussi pendant le loading parce que le button est [disabled]).
+  &--loading,
+  &--loading[disabled] {
+    background: $t-logo-blue !important;
+    color: #fff !important;
+    cursor: progress;
+    box-shadow: 0 6px 18px rgba($t-logo-blue, 0.28),
+                0 2px 4px rgba($t-logo-blue, 0.18);
+    opacity: 0.85;
+
+    mat-icon { color: #fff; }
+  }
+
+  // Spinner blanc bien visible sur le fond bleu du bouton. ::ng-deep
+  // requis car mat-spinner encapsule son SVG dans un shadow-equivalent
+  // que les sélecteurs scopés ne traversent pas.
+  // POURQUOI les overrides de taille : le mat-spinner garde par défaut
+  // un host de 100px×100px même avec [diameter]="22" — du coup le flex
+  // du bouton réserve 100px et le texte se retrouve poussé en-dessous
+  // sur 2 lignes. On contraint le host à 22px et on shrink le SVG interne.
+  .stepper__bank-submit-spinner {
+    width: 22px !important;
+    height: 22px !important;
+    flex: 0 0 22px;
+    display: inline-block;
+
+    ::ng-deep {
+      circle { stroke: #ffffff !important; }
+      svg {
+        width: 22px !important;
+        height: 22px !important;
+      }
+    }
+  }
 }
 
 // Disclaimer fort sous le bandeau "titulaire" — tonalité ambre pour

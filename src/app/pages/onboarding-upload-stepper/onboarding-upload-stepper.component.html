@@ -147,10 +147,11 @@
                   mat-flat-button
                   color="primary"
                   class="stepper__bank-submit"
+                  [class.stepper__bank-submit--loading]="isSavingBankDetails()"
                   [disabled]="!canSubmitBankDetails()">
             @if (isSavingBankDetails()) {
-              <mat-spinner diameter="20" strokeWidth="3"></mat-spinner>
-              <span>On enregistre...</span>
+              <mat-spinner diameter="22" strokeWidth="3" class="stepper__bank-submit-spinner"></mat-spinner>
+              <span>On enregistre et on vérifie…</span>
             } @else {
               <mat-icon>save</mat-icon>
               <span>Enregistrer mes coordonnées</span>
