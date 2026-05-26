@@ -6,11 +6,15 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { unwrapData } from '../core/api-envelope';
 import { invitationCodesCheck } from '../api/fn/signup/invitation-codes-check';
 import { signupCreate } from '../api/fn/signup/signup-create';
+import { signupRequestPin } from '../api/fn/signup/signup-request-pin';
 
 export interface SignupPayload {
   code: string;
   phone: string;
   email: string;
+  // PIN SMS reçu sur le téléphone — preuve de possession. Le frontend a dû
+  // appeler POST /contractor/auth/pin avant pour déclencher l'envoi du SMS.
+  pincode: string;
   // Champs optionnels â€” au signup l'artisan ne saisit que code + phone + email.
   // Le reste est rempli automatiquement par OCR Ã  l'upload des documents
   // (CNI â†’ first/last_name, KBIS â†’ siren/company_name).
@@ -76,12 +80,39 @@ export class ContractorSignupService {
     );
   }
 
+  /**
+   * Étape intermédiaire — déclenche l'envoi du PIN SMS sur le téléphone
+   * saisi ET persiste l'identité dans cc_signup_attempts (audit). À appeler
+   * APRÈS la saisie nom/prénom/téléphone/email, AVANT le step OTP.
+   *
+   * Le backend (ContractorSignupController::requestPinAction) :
+   *   - valide la forme (first/last_name requis)
+   *   - vérifie que le code d'invitation est consommable
+   *   - applique les rate-limits anti-abus SMS (5/code, 3/phone, 10/IP par h)
+   *   - log la tentative en PIN_REQUESTED
+   *   - envoie le SMS via ContractorOauthWrapper::sendSmsPassword
+   */
+  requestPin(payload: {
+    code: string;
+    phone: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    siren?: string;
+    company_name?: string;
+  }): Observable<{ sent: boolean; mock?: boolean }> {
+    return signupRequestPin(this.http, this.apiConfig.rootUrl, {
+      body: payload,
+    }).pipe(unwrapData<{ sent: boolean; mock?: boolean }>());
+  }
+
   signup(payload: SignupPayload): Observable<SignupResponse> {
     return signupCreate(this.http, this.apiConfig.rootUrl, {
       body: {
         code: payload.code,
         phone: payload.phone,
         email: payload.email,
+        pincode: payload.pincode,
         first_name: payload.first_name,
         last_name: payload.last_name,
         siren: payload.siren,

@@ -228,6 +228,42 @@
   color: darken($t-base-green, 4%) !important;
 }
 
+// Texte du CTA principal en blanc sur le fond vert primary — meilleur
+// contraste pour l'artisan BTP qui regarde son écran en plein soleil.
+// Le default mat-flat-button n'imposait pas la couleur du texte de manière
+// fiable selon le thème → on force ici avec `!important` car Angular
+// Material 18+ utilise des CSS variables qu'on ne maîtrise pas finement.
+.signup-form__submit {
+  color: #ffffff !important;
+
+  mat-icon,
+  .signup-form__submit-loading,
+  span {
+    color: #ffffff !important;
+  }
+}
+
+// Icône d'erreur affichée en suffix d'un champ invalide après tentative
+// de soumission (submitAttempted). Même position que .phone-valid-icon,
+// teinte rouge alerte.
+.phone-error-icon {
+  color: #d93025 !important;
+}
+
+// Hint rouge sous un champ invalide après tentative — explicite ce qui manque.
+.signup-form__hint-error {
+  color: #d93025 !important;
+  font-weight: 500;
+}
+
+// Bordure rouge autour du mat-form-field en erreur (CSS variables
+// Material Design 18+, appearance="outline").
+.signup-form__field--invalid {
+  --mdc-outlined-text-field-outline-color: #d93025;
+  --mdc-outlined-text-field-hover-outline-color: #d93025;
+  --mdc-outlined-text-field-focus-outline-color: #d93025;
+}
+
 // La page passe d'étape 1 (1 champ central) à étape 2 (form) → on agrandit
 // le lede sur étape 1 pour ne pas qu'il paraisse vide.
 .signup-page__lede {

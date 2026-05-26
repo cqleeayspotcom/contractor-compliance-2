@@ -5,6 +5,8 @@ export type { AdminAuthRequestPin$Params as AdminAuthRequestPin$Params } from '.
 export { adminAuthRequestPin as adminAuthRequestPin } from './fn/admin-auth/admin-auth-request-pin';
 export type { InvitationCodesCheck$Params as InvitationCodesCheck$Params } from './fn/signup/invitation-codes-check';
 export { invitationCodesCheck as invitationCodesCheck } from './fn/signup/invitation-codes-check';
+export type { SignupRequestPin$Params as SignupRequestPin$Params } from './fn/signup/signup-request-pin';
+export { signupRequestPin as signupRequestPin } from './fn/signup/signup-request-pin';
 export type { SignupCreate$Params as SignupCreate$Params } from './fn/signup/signup-create';
 export { signupCreate as signupCreate } from './fn/signup/signup-create';
 export type { ProfileShow$Params as ProfileShow$Params } from './fn/profile/profile-show';

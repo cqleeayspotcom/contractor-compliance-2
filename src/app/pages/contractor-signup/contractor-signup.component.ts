@@ -19,8 +19,9 @@ import { isValidTuitaPhoneP33, toTuitaPhoneP33 } from '../../utils/phone-normali
 
 const CODE_REGEX = /^[A-HJ-NP-Z2-9]{4}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const PINCODE_REGEX = /^\d{4,8}$/;
 
-type SignupStep = 'code' | 'identity' | 'success';
+type SignupStep = 'code' | 'identity' | 'otp' | 'success';
 
 /**
  * Page d'inscription publique contractor par code d'invitation, en 2 étapes
@@ -57,18 +58,32 @@ export class ContractorSignupComponent {
   private readonly api = inject(ContractorSignupService);
   private readonly router = inject(Router);
 
-  // Étape courante (code → identity → success)
+  // Étape courante (code → identity → otp → success)
   readonly step = signal<SignupStep>('code');
 
   // Form state — minimal pour l'artisan BTP
   readonly code = signal<string>('');
   readonly phoneRaw = signal<string>(''); // ce que l'artisan tape, format libre
   readonly email = signal<string>('');
+  // Prénom et nom captés dès l'étape identité (pas seulement à l'OCR).
+  // POURQUOI : la table d'audit cc_signup_attempts persiste TOUTE tentative,
+  // même abandonnée. En les capturant avant l'envoi du PIN, on garde une
+  // trace exploitable côté admin pour les signups qui n'aboutissent jamais
+  // (cf. ContractorSignupController::logAttempt → SignupAttempt::setIdentity).
+  // L'OCR de la CNI peut ensuite enrichir / corriger ces valeurs.
+  readonly firstName = signal<string>('');
+  readonly lastName = signal<string>('');
+  readonly pincode = signal<string>(''); // PIN reçu par SMS (4-8 chiffres)
 
   // États async
   readonly isVerifyingCode = signal<boolean>(false);
+  readonly isSendingPin = signal<boolean>(false);
   readonly isSubmittingSignup = signal<boolean>(false);
   readonly errorMessage = signal<string | null>(null);
+  // UX : marqueur "le user a tenté de soumettre" pour afficher les erreurs
+  // de champ (sinon les hints rouges apparaissent dès l'ouverture du form
+  // — agressif). On le réinitialise à chaque correction de champ.
+  readonly submitAttempted = signal<boolean>(false);
 
 
   // ── Téléphone : conversion FR → P33 en live ─────────────────────────────
@@ -100,9 +115,36 @@ export class ContractorSignupComponent {
     return value.length > 0 && value.length <= 255 && EMAIL_REGEX.test(value);
   });
 
-  readonly canSubmitIdentity = computed<boolean>(() => {
+  /** Prénom/nom : non vides, max 100 chars (aligne le SignupInputFilter). */
+  readonly isFirstNameValid = computed<boolean>(() => {
+    const v = this.firstName().trim();
+    return v.length > 0 && v.length <= 100;
+  });
+  readonly isLastNameValid = computed<boolean>(() => {
+    const v = this.lastName().trim();
+    return v.length > 0 && v.length <= 100;
+  });
+
+  /**
+   * Le bouton "Recevoir le code par SMS" reste cliquable même si le form
+   * est incomplet — `submitIdentity()` valide et affiche des messages
+   * explicites au clic. Disabled UNIQUEMENT pendant l'envoi en cours pour
+   * éviter le double-submit. Voir feedback Moussa 2026-05-26 (UX :
+   * disabled silencieux = user croit que la page est cassée).
+   */
+  readonly canSubmitIdentity = computed<boolean>(() => !this.isSendingPin());
+
+  /** Vrai si TOUS les champs identité sont valides (utilisé en interne). */
+  readonly isIdentityComplete = computed<boolean>(() =>
+    this.isFirstNameValid() &&
+    this.isLastNameValid() &&
+    this.isPhoneValid() &&
+    this.isEmailValid()
+  );
+
+  readonly canSubmitOtp = computed<boolean>(() => {
     if (this.isSubmittingSignup()) return false;
-    return this.isPhoneValid() && this.isEmailValid();
+    return PINCODE_REGEX.test(this.pincode());
   });
 
   // ── Step 1 : code ────────────────────────────────────────────────────────
@@ -153,29 +195,154 @@ export class ContractorSignupComponent {
     // Tuita au backend.
     this.phoneRaw.set(value);
     this.errorMessage.set(null);
+    this.submitAttempted.set(false);
   }
 
   onEmailInput(value: string): void {
     this.email.set(value);
     this.errorMessage.set(null);
+    this.submitAttempted.set(false);
   }
 
+  onFirstNameInput(value: string): void {
+    // StripTags côté backend, on s'aligne en retirant les chevrons côté UI
+    // pour ne pas laisser un faux sentiment de saisie « riche ».
+    this.firstName.set(value.replace(/[<>]/g, ''));
+    this.errorMessage.set(null);
+    this.submitAttempted.set(false);
+  }
+
+  onLastNameInput(value: string): void {
+    this.lastName.set(value.replace(/[<>]/g, ''));
+    this.errorMessage.set(null);
+    this.submitAttempted.set(false);
+  }
+
+  /**
+   * Étape 2 → 3 : déclenche l'envoi du SMS PIN sur le téléphone saisi ET
+   * persiste l'identité saisie (nom/prénom) en base d'audit AVANT le SMS.
+   * Sans cette preuve de possession, n'importe qui avec un code d'invitation
+   * pouvait squatter le numéro d'un futur contractor (cf.
+   * ContractorSignupController::verifyContractorPin côté backend).
+   *
+   * En passant par notre endpoint `/signup/request-pin` (pas /contractor/auth/pin
+   * direct), on bénéficie en plus :
+   *   - du log SignupAttempt PIN_REQUESTED (audit même en cas d'abandon OTP)
+   *   - des rate-limits anti-abus SMS (5/code, 3/phone, 10/IP par heure)
+   */
   submitIdentity(): void {
-    if (!this.canSubmitIdentity()) return;
+    // Garde-fou anti double-submit (le seul cas où on bloque vraiment).
+    if (this.isSendingPin()) return;
+    // Marquer la tentative pour faire apparaître les indicateurs rouges
+    // sous chaque champ vide ou mal formaté.
+    this.submitAttempted.set(true);
+    if (!this.isIdentityComplete()) {
+      // Message explicite (pas "Erreur, réessaye") pour que l'artisan
+      // BTP comprenne immédiatement quoi corriger.
+      const missing: string[] = [];
+      if (!this.isFirstNameValid()) missing.push('prénom');
+      if (!this.isLastNameValid()) missing.push('nom');
+      if (!this.isPhoneValid()) missing.push('téléphone');
+      if (!this.isEmailValid()) missing.push('email');
+      this.errorMessage.set(
+        missing.length === 1
+          ? `Remplis le champ « ${missing[0]} » avant de continuer.`
+          : `Remplis tous les champs : ${missing.join(', ')}.`,
+      );
+      return;
+    }
+    this.isSendingPin.set(true);
+    this.errorMessage.set(null);
+
+    this.api.requestPin({
+      code: this.code(),
+      phone: this.normalizedPhone(),
+      email: this.email().trim(),
+      first_name: this.firstName().trim(),
+      last_name: this.lastName().trim(),
+    }).subscribe({
+      next: () => {
+        this.isSendingPin.set(false);
+        this.pincode.set('');
+        this.step.set('otp');
+      },
+      error: (err) => {
+        this.isSendingPin.set(false);
+        const code = err?.error?.error?.code as string | undefined;
+        const msg = err?.error?.error?.message as string | undefined;
+        this.errorMessage.set(msg ?? this.fallbackMessageFor(code));
+      },
+    });
+  }
+
+  // ── Step 3 : OTP (PIN SMS) ──────────────────────────────────────────────
+
+  onPincodeInput(value: string): void {
+    // Garde uniquement les chiffres ; max 8 (le backend accepte 4-8).
+    const cleaned = value.replace(/\D/g, '').slice(0, 8);
+    this.pincode.set(cleaned);
+    this.errorMessage.set(null);
+  }
+
+  backToIdentity(): void {
+    this.step.set('identity');
+    this.errorMessage.set(null);
+    this.pincode.set('');
+  }
+
+  /**
+   * Renvoie un nouveau SMS PIN. Repasse par /signup/request-pin pour
+   * conserver les protections (rate-limits + audit). Le cooldown 120s
+   * de ContractorOauthWrapper évite le double-envoi en arrière-plan.
+   */
+  resendPin(): void {
+    if (this.isSendingPin()) return;
+    this.isSendingPin.set(true);
+    this.errorMessage.set(null);
+    this.api.requestPin({
+      code: this.code(),
+      phone: this.normalizedPhone(),
+      email: this.email().trim(),
+      first_name: this.firstName().trim(),
+      last_name: this.lastName().trim(),
+    }).subscribe({
+      next: () => this.isSendingPin.set(false),
+      error: (err) => {
+        this.isSendingPin.set(false);
+        const code = err?.error?.error?.code as string | undefined;
+        const msg = err?.error?.error?.message as string | undefined;
+        this.errorMessage.set(msg ?? this.fallbackMessageFor(code));
+      },
+    });
+  }
+
+  /**
+   * Étape 3 → 4 : signup réel, avec le PIN reçu par SMS comme preuve de
+   * possession du téléphone. Le backend (ContractorSignupController) :
+   *   - vérifie le PIN (lecture cft_contractor_oauth.sms_password, comparaison,
+   *     check expiration 10 min, consommation one-shot)
+   *   - puis seulement consomme le code d'invitation et crée le compte.
+   */
+  submitOtp(): void {
+    if (!this.canSubmitOtp()) return;
     this.isSubmittingSignup.set(true);
     this.errorMessage.set(null);
 
-    // Payload minimal — code + téléphone normalisé + email. Les autres infos
-    // (nom, prénom, SIREN, raison sociale) seront remplies automatiquement
+    // Payload minimal — code + téléphone normalisé + email + PIN. Les autres
+    // infos (nom, prénom, SIREN, raison sociale) seront remplies automatiquement
     // par l'OCR à l'upload des documents pendant l'onboarding.
     this.api.signup({
       code: this.code(),
       phone: this.normalizedPhone(),
       email: this.email().trim(),
-      // Champs optionnels laissés vides côté frontend signup — le backend
-      // accepte. Ils seront enrichis par les uploads ultérieurs.
-      first_name: '',
-      last_name: '',
+      pincode: this.pincode(),
+      // Nom/prénom saisis à l'étape identité — déjà persistés en audit via
+      // /signup/request-pin, on les renvoie ici pour qu'ils soient écrits
+      // sur cc_users (et pas seulement sur cc_signup_attempts).
+      first_name: this.firstName().trim(),
+      last_name: this.lastName().trim(),
+      // SIREN et raison sociale restent vides : remplis par l'OCR du KBIS
+      // lors de l'upload des documents (étape onboarding suivante).
       siren: '',
       company_name: '',
     }).subscribe({
@@ -190,6 +357,15 @@ export class ContractorSignupComponent {
         this.errorMessage.set(msg ?? this.fallbackMessageFor(code));
         if (code === 'INVITATION_CODE_RACE_CONDITION') {
           this.step.set('code');
+        } else if (
+          code === 'SIGNUP_PIN_NOT_REQUESTED' ||
+          code === 'SIGNUP_PIN_EXPIRED'
+        ) {
+          // PIN consommé ou jamais demandé : retour étape identité pour
+          // redéclencher /contractor/auth/pin (sinon l'utilisateur tape un
+          // PIN qui ne sera jamais bon).
+          this.step.set('identity');
+          this.pincode.set('');
         }
       },
     });
@@ -238,6 +414,18 @@ export class ContractorSignupComponent {
         return 'Ce code vient d\'être consommé. Réessaie ou demande-en un autre.';
       case 'CONTRACTOR_PHONE_ALREADY_REGISTERED':
         return 'Ce numéro est déjà associé à un compte Tuita. Connecte-toi via tuita.fr.';
+      case 'SIGNUP_PIN_NOT_REQUESTED':
+        return 'Aucun code SMS n\'a encore été envoyé. Re-clique sur « Recevoir le code ».';
+      case 'SIGNUP_PIN_MISMATCH':
+        return 'Code SMS incorrect. Vérifie le code reçu et réessaie.';
+      case 'SIGNUP_PIN_EXPIRED':
+        return 'Le code SMS a expiré (10 min). Demande un nouveau code.';
+      case 'SIGNUP_RATE_LIMITED':
+        return 'Trop de demandes de code SMS. Réessaie plus tard.';
+      case 'SIGNUP_SMS_SEND_FAILED':
+        return "L'envoi du SMS a échoué. Vérifie le numéro et réessaie.";
+      case 'SIGNUP_VALIDATION_FAILED':
+        return 'Certaines informations sont invalides. Vérifie les champs en rouge.';
       default:
         return 'Une erreur est survenue. Réessaie dans un instant.';
     }

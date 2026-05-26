@@ -9,21 +9,20 @@ import { RequestBuilder } from '../../request-builder';
 
 import { SuccessEnvelope } from '../../models/success-envelope';
 
-export interface SignupCreate$Params {
+export interface SignupRequestPin$Params {
       body: {
 'code': string;
 'phone': string;
 'email': string;
-'pincode': string;
-'first_name'?: string;
-'last_name'?: string;
+'first_name': string;
+'last_name': string;
 'siren'?: string;
 'company_name'?: string;
 }
 }
 
-export function signupCreate(http: HttpClient, rootUrl: string, params: SignupCreate$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
-  const rb = new RequestBuilder(rootUrl, signupCreate.PATH, 'post');
+export function signupRequestPin(http: HttpClient, rootUrl: string, params: SignupRequestPin$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
+  const rb = new RequestBuilder(rootUrl, signupRequestPin.PATH, 'post');
   if (params) {
     rb.body(params.body, 'application/json');
   }
@@ -38,4 +37,4 @@ export function signupCreate(http: HttpClient, rootUrl: string, params: SignupCr
   );
 }
 
-signupCreate.PATH = '/contractor-compliance/signup';
+signupRequestPin.PATH = '/contractor-compliance/signup/request-pin';

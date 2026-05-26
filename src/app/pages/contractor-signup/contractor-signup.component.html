@@ -44,7 +44,8 @@
         }
 
         <button mat-flat-button color="primary" type="submit"
-                class="signup-form__submit tui-attract"
+                class="signup-form__submit"
+                [class.tui-attract]="canVerifyCode()"
                 [class.signup-form__submit--loading]="isVerifyingCode()"
                 [disabled]="!canVerifyCode()">
           @if (isVerifyingCode()) {
@@ -89,13 +90,56 @@
         </div>
 
         <p class="signup-form__intro">
-          Ton numéro de téléphone et ton adresse email - pour créer ton compte
-          et te prévenir quand on te paie. Ton identité et celle de ton
-          entreprise seront récupérées automatiquement quand tu déposeras
-          tes documents.
+          Ton prénom, ton nom, ton numéro et ton email — pour créer ton compte,
+          t'envoyer un code de vérification par SMS, et te prévenir quand on te
+          paie. Ta raison sociale et ton SIREN seront récupérés automatiquement
+          quand tu déposeras tes documents.
         </p>
 
-        <mat-form-field appearance="outline" class="signup-form__full">
+        <mat-form-field appearance="outline" class="signup-form__full"
+                         [class.signup-form__field--invalid]="submitAttempted() && !isFirstNameValid()">
+          <mat-label>Ton prénom</mat-label>
+          <input matInput
+                 type="text"
+                 [value]="firstName()"
+                 (input)="onFirstNameInput($any($event.target).value)"
+                 placeholder="Jean"
+                 autocomplete="given-name"
+                 maxlength="100"
+                 [attr.aria-invalid]="submitAttempted() && !isFirstNameValid() ? 'true' : null">
+          @if (firstName() && isFirstNameValid()) {
+            <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          } @else if (submitAttempted() && !isFirstNameValid()) {
+            <mat-icon matSuffix class="phone-error-icon" aria-hidden="true">error_outline</mat-icon>
+          }
+          @if (submitAttempted() && !isFirstNameValid()) {
+            <mat-hint class="signup-form__hint-error">Ton prénom est obligatoire.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="signup-form__full"
+                         [class.signup-form__field--invalid]="submitAttempted() && !isLastNameValid()">
+          <mat-label>Ton nom</mat-label>
+          <input matInput
+                 type="text"
+                 [value]="lastName()"
+                 (input)="onLastNameInput($any($event.target).value)"
+                 placeholder="Dupont"
+                 autocomplete="family-name"
+                 maxlength="100"
+                 [attr.aria-invalid]="submitAttempted() && !isLastNameValid() ? 'true' : null">
+          @if (lastName() && isLastNameValid()) {
+            <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          } @else if (submitAttempted() && !isLastNameValid()) {
+            <mat-icon matSuffix class="phone-error-icon" aria-hidden="true">error_outline</mat-icon>
+          }
+          @if (submitAttempted() && !isLastNameValid()) {
+            <mat-hint class="signup-form__hint-error">Ton nom est obligatoire.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="signup-form__full"
+                         [class.signup-form__field--invalid]="submitAttempted() && !isPhoneValid()">
           <mat-label>Ton numéro de téléphone</mat-label>
           <input matInput
                  type="tel"
@@ -103,16 +147,24 @@
                  (input)="onPhoneInput($any($event.target).value)"
                  placeholder="06 12 34 56 78"
                  autocomplete="tel"
-                 inputmode="tel">
+                 inputmode="tel"
+                 [attr.aria-invalid]="submitAttempted() && !isPhoneValid() ? 'true' : null">
           @if (phoneRaw() && isPhoneValid()) {
             <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          } @else if (submitAttempted() && !isPhoneValid()) {
+            <mat-icon matSuffix class="phone-error-icon" aria-hidden="true">error_outline</mat-icon>
           }
-          @if (!phoneRaw() || !isPhoneValid()) {
+          @if (submitAttempted() && !isPhoneValid()) {
+            <mat-hint class="signup-form__hint-error">
+              {{ phoneRaw() ? 'Numéro invalide. Format attendu : 06 12 34 56 78.' : 'Ton numéro est obligatoire.' }}
+            </mat-hint>
+          } @else if (!phoneRaw() || !isPhoneValid()) {
             <mat-hint>Ex. 06 12 34 56 78</mat-hint>
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="signup-form__full">
+        <mat-form-field appearance="outline" class="signup-form__full"
+                         [class.signup-form__field--invalid]="submitAttempted() && !isEmailValid()">
           <mat-label>Ton adresse email</mat-label>
           <input matInput
                  type="email"
@@ -120,11 +172,18 @@
                  (input)="onEmailInput($any($event.target).value)"
                  placeholder="jean.dupont@exemple.fr"
                  autocomplete="email"
-                 inputmode="email">
+                 inputmode="email"
+                 [attr.aria-invalid]="submitAttempted() && !isEmailValid() ? 'true' : null">
           @if (email() && isEmailValid()) {
             <mat-icon matSuffix class="phone-valid-icon" aria-hidden="true">check_circle</mat-icon>
+          } @else if (submitAttempted() && !isEmailValid()) {
+            <mat-icon matSuffix class="phone-error-icon" aria-hidden="true">error_outline</mat-icon>
           }
-          @if (!email() || !isEmailValid()) {
+          @if (submitAttempted() && !isEmailValid()) {
+            <mat-hint class="signup-form__hint-error">
+              {{ email() ? 'Adresse email invalide.' : 'Ton email est obligatoire.' }}
+            </mat-hint>
+          } @else if (!email() || !isEmailValid()) {
             <mat-hint>Pour te prévenir quand on te paie et quand un document expire</mat-hint>
           }
         </mat-form-field>
@@ -137,9 +196,79 @@
         }
 
         <button mat-flat-button color="primary" type="submit"
-                class="signup-form__submit tui-attract"
-                [class.signup-form__submit--loading]="isSubmittingSignup()"
+                class="signup-form__submit"
+                [class.tui-attract]="isIdentityComplete() && !isSendingPin()"
+                [class.signup-form__submit--loading]="isSendingPin()"
                 [disabled]="!canSubmitIdentity()">
+          @if (isSendingPin()) {
+            <span class="signup-form__submit-loading">
+              <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
+              <span>Envoi du SMS...</span>
+            </span>
+          } @else {
+            <mat-icon>sms</mat-icon>
+            Recevoir le code par SMS
+          }
+        </button>
+
+        <p class="signup-form__legal">
+          On t'envoie un code à 6 chiffres par SMS sur ce numéro pour vérifier
+          que c'est bien le tien. Tes nom, prénom, SIREN et raison sociale
+          seront extraits de tes documents à l'étape suivante.
+        </p>
+      </form>
+    }
+
+    <!-- ── Étape 3 : Code SMS (OTP) ──────────────────────────────────────── -->
+    @if (step() === 'otp') {
+      <header class="signup-page__header">
+        <h1>Ton code par SMS</h1>
+        <div class="code-confirmed">
+          <mat-icon aria-hidden="true">sms</mat-icon>
+          <span>Code envoyé au <strong>{{ phoneRaw() }}</strong></span>
+          <button type="button" class="code-confirmed__change" (click)="backToIdentity()">
+            Modifier
+          </button>
+        </div>
+      </header>
+
+      <form class="signup-form" (submit)="$event.preventDefault(); submitOtp()">
+        <div class="signup-form__steps" aria-hidden="true">
+          <span class="signup-form__step signup-form__step--done">1. Mon code ✓</span>
+          <span class="signup-form__step signup-form__step--done">2. Mes coordonnées ✓</span>
+          <span class="signup-form__step signup-form__step--active">3. Code SMS</span>
+        </div>
+
+        <div class="signup-form__code-block">
+          <label for="signup-pincode">Saisis le code reçu par SMS</label>
+          <input id="signup-pincode"
+                 type="text"
+                 class="code-input"
+                 autocomplete="one-time-code"
+                 inputmode="numeric"
+                 maxlength="8"
+                 placeholder="1 2 3 4 5 6"
+                 [value]="pincode()"
+                 (input)="onPincodeInput($any($event.target).value)"
+                 (keydown.enter)="$event.preventDefault(); submitOtp()"
+                 aria-describedby="pincode-hint">
+          <p class="code-hint" id="pincode-hint">
+            6 chiffres reçus par SMS. Pas reçu ? Re-demande un code ci-dessous.
+          </p>
+        </div>
+
+        @if (errorMessage()) {
+          <div class="signup-form__error" role="alert">
+            <mat-icon>error_outline</mat-icon>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <button mat-flat-button color="primary" type="submit"
+                class="signup-form__submit"
+                [class.tui-attract]="canSubmitOtp()"
+                [class.signup-form__submit--loading]="isSubmittingSignup()"
+                [disabled]="!canSubmitOtp()">
           @if (isSubmittingSignup()) {
             <span class="signup-form__submit-loading">
               <mat-spinner diameter="22" strokeWidth="3"></mat-spinner>
@@ -151,14 +280,21 @@
           }
         </button>
 
-        <p class="signup-form__legal">
-          Tes nom, prénom, SIREN et raison sociale seront extraits de ta
-          pièce d'identité et de ton extrait d'immatriculation.
-        </p>
+        <button mat-button type="button"
+                class="signup-form__resend"
+                [disabled]="isSendingPin()"
+                (click)="resendPin()">
+          @if (isSendingPin()) {
+            <mat-spinner diameter="16" strokeWidth="3"></mat-spinner>
+            <span>&nbsp;Envoi...</span>
+          } @else {
+            Renvoyer le code SMS
+          }
+        </button>
       </form>
     }
 
-    <!-- ── Étape 3 : Succès ───────────────────────────────────────────────── -->
+    <!-- ── Étape 4 : Succès ───────────────────────────────────────────────── -->
     @if (step() === 'success') {
       <header class="signup-page__header">
         <div class="success-icon" aria-hidden="true">

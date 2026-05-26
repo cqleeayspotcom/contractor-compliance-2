@@ -775,6 +775,36 @@ paths:
                         description: "Présent uniquement quand valid=false."
         default: { $ref: '#/components/responses/JsonError' }
 
+  # Étape intermédiaire : déclenche l'envoi du PIN SMS sur le téléphone saisi
+  # ET log la tentative dans cc_signup_attempts (PIN_REQUESTED) AVANT le SMS.
+  # Le frontend appelle ce endpoint après la saisie de l'identité, puis
+  # appelle /signup avec le pincode reçu pour finaliser la création du compte.
+  /contractor-compliance/signup/request-pin:
+    post:
+      tags: [Signup]
+      operationId: signupRequestPin
+      summary: Envoie le PIN SMS et persiste l'identité saisie (audit).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code, phone, email, first_name, last_name]
+              properties:
+                code: { type: string, pattern: '^[A-Za-z0-9]{4}$' }
+                phone: { type: string }
+                email: { type: string, format: email }
+                first_name: { type: string, minLength: 1, maxLength: 100 }
+                last_name: { type: string, minLength: 1, maxLength: 100 }
+                siren: { type: string }
+                company_name: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/JsonOk' }
+        '201': { $ref: '#/components/responses/JsonOk' }
+        default: { $ref: '#/components/responses/JsonError' }
+
   /contractor-compliance/signup:
     post:
       tags: [Signup]
@@ -787,11 +817,14 @@ paths:
           application/json:
             schema:
               type: object
-              required: [code, phone, email]
+              required: [code, phone, email, pincode]
               properties:
                 code: { type: string, pattern: '^[A-Za-z0-9]{4}$' }
                 phone: { type: string }
                 email: { type: string, format: email }
+                # PIN SMS reçu sur le téléphone — preuve de possession.
+                # Pré-requis : avoir appelé POST /contractor/auth/pin avant.
+                pincode: { type: string, pattern: '^\d{4,8}$' }
                 first_name: { type: string }
                 last_name: { type: string }
                 siren: { type: string }
