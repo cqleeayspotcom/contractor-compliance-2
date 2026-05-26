@@ -61,10 +61,14 @@
     border: 2px solid rgba($t-logo-blue, 0.12);
     transition: transform 180ms ease, background 180ms ease, color 180ms ease;
 
+    // Force mat-icon à hériter la `color` du dot (sinon Material 18+ peut
+    // appliquer son propre `--mat-icon-color` qui annule l'héritage et rend
+    // l'icône invisible — feedback Moussa 2026-05-27).
     mat-icon {
       font-size: 22px;
       width: 22px;
       height: 22px;
+      color: inherit !important;
     }
   }
 
@@ -85,6 +89,8 @@
       background: rgba($t-base-green, 0.18);
       border-color: rgba($t-base-green, 0.55);
       color: darken($t-base-green, 6%);
+
+      mat-icon { color: darken($t-base-green, 6%) !important; }
     }
     .kyc-progress__label {
       color: rgba($t-logo-blue, 0.75);
@@ -102,6 +108,9 @@
       color: #ffffff;
       transform: scale(1.08);
       box-shadow: 0 4px 14px rgba($t-logo-blue, 0.32);
+
+      // Icône blanche bien visible sur le fond bleu plein.
+      mat-icon { color: #ffffff !important; }
     }
     .kyc-progress__label {
       color: $t-logo-blue;
@@ -112,7 +121,12 @@
   // ── Phase future : grise, en attente ──────────────────────────────────
   &__phase--future {
     .kyc-progress__dot {
-      // déjà l'état par défaut
+      // L'état par défaut a un `color: rgba($t-logo-blue, 0.55)` mais le
+      // contraste est trop faible sur le fond très clair → on remonte
+      // l'opacité à 75% pour que l'icône soit bien lisible.
+      color: rgba($t-logo-blue, 0.75);
+
+      mat-icon { color: rgba($t-logo-blue, 0.75) !important; }
     }
   }
 

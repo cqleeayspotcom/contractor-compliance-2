@@ -111,6 +111,7 @@ export class ContractorKycComponent implements OnDestroy {
   });
 
   readonly termsAccepted = signal(false);
+  readonly startingChallenge = signal(false);
   readonly challenge = signal<KycChallenge | null>(null);
   readonly errorMessage = signal<string | null>(null);
   readonly failureReason = signal<string | null>(null);
@@ -261,8 +262,14 @@ export class ContractorKycComponent implements OnDestroy {
   // --- State machine ---
 
   startChallenge(): void {
+    // Garde anti-double-clic : sans ça, un rage-click envoyait 4–5 POST /kyc/challenge
+    // en parallèle, qui saturaient pm.max_children=5 côté PHP-FPM + se battaient sur
+    // le sémaphore GET_LOCK MySQL → 500/timeouts.
+    if (this.startingChallenge()) {
+      return;
+    }
+    this.startingChallenge.set(true);
     this.errorMessage.set(null);
-    this.state.set('idle'); // show loading briefly
 
     this.api.generateChallenge().subscribe({
       next: ch => {
@@ -287,10 +294,12 @@ export class ContractorKycComponent implements OnDestroy {
           this.state.set('qr_code');
           this.startPolling(); // Poll for mobile completion
         }
+        this.startingChallenge.set(false);
       },
       error: (err: any) => {
         this.errorMessage.set(err?.error?.error?.message ?? err?.error?.message ?? 'Impossible de generer le challenge.');
         this.state.set('idle');
+        this.startingChallenge.set(false);
       },
     });
   }

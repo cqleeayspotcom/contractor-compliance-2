@@ -52,7 +52,7 @@ export type { MissionsMeta } from '../api/models/missions-meta';
 /**
  * Timeout HTTP pour les uploads (documents admin + factures freemium).
  *
- * Upload synchrone en prod (hardcode 2026-04-24 â€” cf. backend/config/compliance.php) :
+ * Upload synchrone en prod (hardcode 2026-04-24 — cf. backend/config/compliance.php) :
  * l'endpoint execute l'OCR 2 passes + les regles metier + cross-check mission
  * INLINE dans la requete et retourne 200 OK avec le verdict final. Typique
  * 10-40 s, jusqu'a ~120 s pour un PDF lourd sur connexion mobile 3G chantier.
@@ -81,12 +81,12 @@ export interface ContractorDashboard {
     can_upgrade: boolean;
   };
   /**
-   * CoordonnÃ©es bancaires saisies manuellement par le contractor (cf.
+   * Coordonnées bancaires saisies manuellement par le contractor (cf.
    * `PATCH /contractor-compliance/profile/bank-details`). Remplace l'ancien upload
-   * de RIB qui passait par le pipeline OCR. Toutes les clÃ©s peuvent Ãªtre
-   * null tant que le contractor n'a pas validÃ© son formulaire. Optionnel
-   * dans l'interface pour rester rÃ©trocompatible avec les fixtures de tests
-   * qui prÃ©dÃ©dent l'ajout du champ.
+   * de RIB qui passait par le pipeline OCR. Toutes les clés peuvent être
+   * null tant que le contractor n'a pas validé son formulaire. Optionnel
+   * dans l'interface pour rester rétrocompatible avec les fixtures de tests
+   * qui prédédent l'ajout du champ.
    */
   bank_details?: ContractorBankDetails;
   documents: {
@@ -105,7 +105,7 @@ export interface ContractorDashboard {
      * true si la CNI ou le passeport du contractor est uploade ET VERIFIED.
      * Pre-requis obligatoire pour demarrer la video KYC (le face matching
      * compare la frame video a la photo du visage extraite par l'OCR de la
-     * piece d'identite â€” sans VERIFIED, pas de face photo).
+     * piece d'identite — sans VERIFIED, pas de face photo).
      */
     identity_doc_verified: boolean;
     last_attempt_at: string | null;
@@ -148,16 +148,16 @@ export interface DocumentRequirement {
   purchase_price_eur: number | null;
   document_uuid: string | null;
   /**
-   * `true` pour les documents non exigÃ©s mais qui boostent le score s'ils
-   * sont uploadÃ©s (ex: assurance_decennale). Ces items apparaissent dans
+   * `true` pour les documents non exigés mais qui boostent le score s'ils
+   * sont uploadés (ex: assurance_decennale). Ces items apparaissent dans
    * la liste mais ne comptent pas dans `total_required` / `missing`.
    */
   is_bonus?: boolean;
   /**
-   * `true` quand ce document a Ã©tÃ© auto-crÃ©Ã© Ã  partir d'une RC Pro
-   * `rc_complete` (RC + DÃ©cennale combinÃ©es dans un mÃªme PDF). Utile au
-   * stepper pour afficher Â« Incluse dans votre RC Pro âœ“ Â» au lieu de
-   * Â« AjoutÃ©e âœ“ Â».
+   * `true` quand ce document a été auto-créé à partir d'une RC Pro
+   * `rc_complete` (RC + Décennale combinées dans un même PDF). Utile au
+   * stepper pour afficher « Incluse dans votre RC Pro âœ“ » au lieu de
+   * « Ajoutée âœ“ ».
    */
   derived_from_rc_complete?: boolean;
   /** UUID du document source (la RC Pro) quand `derived_from_rc_complete=true`. */
@@ -169,9 +169,9 @@ export interface ContractorDocument {
   type: string;
   status: string;
   /**
-   * `true` quand ce document est une dÃ©cennale auto-dÃ©rivÃ©e d'une RC Pro
-   * `rc_complete` â€” le PDF est partagÃ© avec la RC source. Le frontend
-   * affiche une mention Â« Incluse dans votre attestation RC Pro Â».
+   * `true` quand ce document est une décennale auto-dérivée d'une RC Pro
+   * `rc_complete` — le PDF est partagé avec la RC source. Le frontend
+   * affiche une mention « Incluse dans votre attestation RC Pro ».
    */
   derived_from_rc_complete?: boolean;
   source_document_uuid?: string | null;
@@ -299,14 +299,14 @@ export class ContractorApiService {
   }
 
   /**
-   * Sauvegarde les coordonnÃ©es bancaires saisies manuellement dans
+   * Sauvegarde les coordonnées bancaires saisies manuellement dans
    * l'onboarding (Titulaire / IBAN / BIC). Le backend valide :
    *  - IBAN FR + checksum mod-97
-   *  - BIC format 8 ou 11 caractÃ¨res
-   *  - Titulaire â‰ˆ identitÃ© contractor (anti-fraude virement vers un tiers).
+   *  - BIC format 8 ou 11 caractères
+   *  - Titulaire â‰ˆ identité contractor (anti-fraude virement vers un tiers).
    *
    * En cas d'erreur, l'API renvoie un 422 avec `errors.account_holder|iban|bic`
-   * â€” l'UI affiche le message du champ correspondant.
+   * — l'UI affiche le message du champ correspondant.
    */
   updateBankDetails(payload: {
     account_holder: string;
@@ -436,9 +436,9 @@ export class ContractorApiService {
   // --- KYC ---
 
   generateChallenge(): Observable<KycChallenge> {
-    // mode=direct : on enregistre la vidÃ©o depuis le mÃªme device (webcam desktop
-    // ou camÃ©ra mobile), pas de QR-scan intermÃ©diaire. Sans ce flag, le backend
-    // considÃ¨re que le desktop doit gÃ©nÃ©rer un QR (is_direct=false) et refuse
+    // mode=direct : on enregistre la vidéo depuis le même device (webcam desktop
+    // ou caméra mobile), pas de QR-scan intermédiaire. Sans ce flag, le backend
+    // considère que le desktop doit générer un QR (is_direct=false) et refuse
     // l'upload direct â†’ "Challenge token invalide".
     return from(
       this.api.invoke(kycChallenge, { body: { mode: 'direct' } }) as Promise<{ data: any }>
@@ -446,21 +446,21 @@ export class ContractorApiService {
       map(res => {
         const d = res.data;
         // Chaque challenge a un label principal + un hint explicite ("votre
-        // gauche" = ta gauche Ã  toi, pas celle de l'observateur) + une icone
-        // Material. Le systÃ¨me de validation MediaPipe Face Mesh est exigeant :
-        // un mouvement timide n'est pas dÃ©tectÃ©, il faut le geste franc.
-        // Consignes ultra courtes, style chantier â€” artisans BTP pressÃ©s, lues
-        // d'un coup d'Å“il sur un mobile ou Ã©cran de bureau. RÃ¨gle : 3 mots max
+        // gauche" = ta gauche à toi, pas celle de l'observateur) + une icone
+        // Material. Le système de validation MediaPipe Face Mesh est exigeant :
+        // un mouvement timide n'est pas détecté, il faut le geste franc.
+        // Consignes ultra courtes, style chantier — artisans BTP pressés, lues
+        // d'un coup d'Å“il sur un mobile ou écran de bureau. Règle : 3 mots max
         // sur le label, une mini-consigne tactique d'une ligne. Pas de prose.
         const challengeMeta: Record<string, { label: string; hint: string; icon: string }> = {
           turn_left: {
-            label: 'TÃªte Ã  gauche',
-            hint: 'Tournez franchement, comme si on vous appelait Ã  votre gauche',
+            label: 'Tête à gauche',
+            hint: 'Tournez franchement, comme si on vous appelait à votre gauche',
             icon: 'keyboard_arrow_left',
           },
           turn_right: {
-            label: 'TÃªte Ã  droite',
-            hint: 'Tournez franchement, comme si on vous appelait Ã  votre droite',
+            label: 'Tête à droite',
+            hint: 'Tournez franchement, comme si on vous appelait à votre droite',
             icon: 'keyboard_arrow_right',
           },
           look_up: {
@@ -474,8 +474,8 @@ export class ContractorApiService {
             icon: 'keyboard_arrow_down',
           },
           nod: {
-            label: 'Hochez la tÃªte',
-            hint: 'Un Â« oui Â» franc : haut, bas',
+            label: 'Hochez la tête',
+            hint: 'Un « oui » franc : haut, bas',
             icon: 'swap_vert',
           },
           smile: {
@@ -490,7 +490,7 @@ export class ContractorApiService {
           },
           open_mouth: {
             label: 'Ouvrez la bouche',
-            hint: 'Grand Â« Ah Â», pas juste entrouvrir',
+            hint: 'Grand « Ah », pas juste entrouvrir',
             icon: 'record_voice_over',
           },
         };
@@ -500,6 +500,8 @@ export class ContractorApiService {
         };
         return {
           ...d,
+          challenge_token: d.challenge_token ?? d.token,
+          session_uuid: d.session_uuid ?? d.kyc_session_uuid,
           video_max_duration_seconds: d.video_max_duration_seconds ?? 10,
           challenges: [
             build(d.challenge, 1),
@@ -557,8 +559,8 @@ export class ContractorApiService {
   /**
    * Souscrit un plan (actuellement `paid` â†’ Tuita Pro 99â‚¬/mois).
    *
-   * Backend renvoie dÃ©sormais `embedded_checkout: { client_secret, publishable_key }`
-   * â€” le frontend ouvre un MatDialog contenant Stripe Embedded Checkout au
+   * Backend renvoie désormais `embedded_checkout: { client_secret, publishable_key }`
+   * — le frontend ouvre un MatDialog contenant Stripe Embedded Checkout au
    * lieu de rediriger vers le hosted-page Stripe.
    */
   subscribe(plan: string): Observable<{

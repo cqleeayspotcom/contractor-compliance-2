@@ -428,7 +428,7 @@ export class AdminContractorService {
   private readonly http = inject(HttpClient);
   private readonly apiConfig = inject(ApiConfiguration);
 
-  /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) Ã  partir d'une rÃ©ponse SDK enveloppÃ©e. */
+  /** Reconstruit `{ data, meta }` (forme `Paginated<T>`) à partir d'une réponse SDK enveloppée. */
   // ATTENTION : les sous-listes contractor (documents, kyc-sessions, invoices,
   // purchases, missions) renvoient le payload sous `data.items` — et NON `data`
   // comme tableau brut (contrairement a la liste principale `indexAction`).

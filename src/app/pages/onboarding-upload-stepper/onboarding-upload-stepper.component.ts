@@ -460,7 +460,7 @@ const STEP_ORDER: StepConfig[] = [
       type: 'assurance_decennale',
       title: 'Décennale BTP',
       hint: 'Couvre tes chantiers 10 ans après livraison. Optionnelle.',
-      badgeHint: 'Booste ton score + badge « Décennale ✓ » visible des donneurs d\'ordre.',
+      badgeHint: 'Booste ton score.',
     },
   },
   {
