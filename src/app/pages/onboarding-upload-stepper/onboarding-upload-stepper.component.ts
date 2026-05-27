@@ -1073,9 +1073,17 @@ export class OnboardingUploadStepperComponent implements OnInit {
     this.rectoFile.set(null);
     this.versoFile.set(null);
 
-    // Préchargement BYTES-ONLY (link prefetch) — n'évalue PAS le script,
-    // ne déclenche PAS la compile WASM. Pas de freeze main thread.
-    this.scanner.prefetchOpencvScript();
+    // FIX-OOM-MOBILE — On NE précharge plus OpenCV ici.
+    // POURQUOI : sur Samsung Internet / WebView Android avec peu de RAM,
+    // déclencher un prefetch de 9 Mo en plus du bundle Angular déjà chargé
+    // provoque un OOM ("Mémoire insuffisante" natif Android) qui bloque le
+    // rendu de l'étape suivante. L'utilisateur n'arrive jamais à prendre
+    // la photo.
+    // Le chargement réel d'OpenCV + jscanify se fait à l'ouverture du dialog
+    // scanner (loadEngine() dans DocumentScannerDialogComponent.ngOnInit),
+    // donc APRÈS la prise photo — ce qui est le moment où on en a vraiment
+    // besoin. Trade-off accepté : +2-3 s "Chargement du scanner…" à la
+    // 1ère ouverture vs flow inutilisable sur mobile.
   }
 
   /**

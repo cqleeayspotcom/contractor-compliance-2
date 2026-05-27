@@ -103,6 +103,19 @@ export class DocumentScannerService {
     // Skip si déjà prefetch ou déjà chargé
     if (document.querySelector('link[data-opencv-prefetch="true"]')) return;
     if ((window as unknown as { cv?: unknown }).cv) return;
+
+    // FIX-OOM-MOBILE — Garde-fou low-memory. Sur appareils < 4 Go RAM
+    // (deviceMemory) ou en mode économie de données (saveData), on
+    // refuse le prefetch 9 Mo : il provoquait des OOM Samsung Internet /
+    // WebView Android qui bloquaient le rendu de l'étape suivante. Le
+    // chargement à la demande dans le dialog scanner reste fonctionnel.
+    const nav = navigator as Navigator & {
+      deviceMemory?: number;
+      connection?: { saveData?: boolean };
+    };
+    if (typeof nav.deviceMemory === 'number' && nav.deviceMemory < 4) return;
+    if (nav.connection?.saveData === true) return;
+
     const link = document.createElement('link');
     link.rel = 'prefetch';
     link.as = 'script';
