@@ -13,22 +13,16 @@
     <div class="center-card intro-card">
       <img src="/assets/logos/logo-tuita.svg" alt="Tuita" class="intro-logo" />
       <h2>Vérification d'identité</h2>
-      <p class="intro-subtitle">Pour valider votre identité, nous allons vous demander d'effectuer 2 mouvements face à la caméra.</p>
+      <p class="intro-subtitle">2 mouvements à effectuer face à la caméra (4 sec chacun).</p>
 
       <div class="intro-steps">
         <div class="intro-step">
           <div class="intro-step-number">1</div>
-          <div class="intro-step-content">
-            <strong>{{ challenge1Label() }}</strong>
-            <span>Suivez l'instruction pendant 4 secondes</span>
-          </div>
+          <strong>{{ challenge1Label() }}</strong>
         </div>
         <div class="intro-step">
           <div class="intro-step-number">2</div>
-          <div class="intro-step-content">
-            <strong>{{ challenge2Label() }}</strong>
-            <span>Suivez l'instruction pendant 4 secondes</span>
-          </div>
+          <strong>{{ challenge2Label() }}</strong>
         </div>
       </div>
 
@@ -39,18 +33,17 @@
         </div>
         <div class="intro-tip">
           <mat-icon>face</mat-icon>
-          <span>Visage bien visible</span>
+          <span>Visage visible</span>
         </div>
         <div class="intro-tip">
           <mat-icon>stay_current_portrait</mat-icon>
-          <span>Tenez le téléphone stable</span>
+          <span>Téléphone stable</span>
         </div>
       </div>
 
-
       <button mat-flat-button class="cta-btn intro-cta" (click)="startVerification()">
         <mat-icon>videocam</mat-icon>
-        Commencer la vérification
+        Commencer
       </button>
     </div>
   }

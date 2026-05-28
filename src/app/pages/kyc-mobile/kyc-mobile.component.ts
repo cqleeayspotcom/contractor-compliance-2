@@ -179,10 +179,36 @@ export class KycMobileComponent implements OnInit, OnDestroy {
   // ── Camera ─────────────────────────────────────────────────────────────────
 
   private openCamera(): void {
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false,
-    }).then(stream => {
+    // POURQUOI cette garde explicite avant l'appel à getUserMedia :
+    //   Sur HTTP (ex. l'IP de dev `http://34.34.169.47`), le navigateur ne
+    //   considère PAS la page comme "secure context" → `navigator.mediaDevices`
+    //   est `undefined` et accéder à `.getUserMedia(...)` jette un TypeError
+    //   SYNCHRONE qui n'est PAS attrapé par le `.catch()` du Promise plus bas.
+    //   Résultat sans cette garde : clic sur "Commencer la vérification" →
+    //   l'exception remonte dans la zone Angular, le composant reste bloqué
+    //   sur l'écran d'intro, aucun message d'erreur affiché → "rien ne se passe".
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      this.setError(
+        'La caméra ne peut être ouverte qu\'en HTTPS. Ouvre cette page en https://… (ou via localhost en dev) pour autoriser la caméra.',
+        false,
+      );
+      return;
+    }
+
+    let promise: Promise<MediaStream>;
+    try {
+      promise = navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      });
+    } catch (err: any) {
+      // Filet de sécurité au cas où une implémentation exotique lèverait
+      // encore une exception synchrone malgré la garde ci-dessus.
+      this.setError('Impossible d\'accéder à la caméra : ' + (err?.message ?? String(err)), true);
+      return;
+    }
+
+    promise.then(stream => {
       this.stream = stream;
       this.step.set('challenge_1');
       setTimeout(() => {

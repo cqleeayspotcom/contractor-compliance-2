@@ -308,53 +308,58 @@
   background: #F75C03;
 }
 
-/* ── Écran d'introduction (palette Tuita stricte) ── */
+/* ── Écran d'introduction (palette Tuita stricte) ──
+ *
+ * Contraintes mobile : tout doit tenir dans un viewport ~600px (S22 portrait
+ * moins barres système). On compresse drastiquement les espaces pour que le
+ * CTA « Commencer » soit visible SANS scroller. */
 .intro-card {
   background: #fff;
   color: #073148;
   max-width: 400px;
-  padding: 2rem 1.5rem 1.5rem;
+  padding: 1.25rem 1.25rem 1.25rem;
+  gap: .75rem;             // surcharge le gap par défaut du .center-card
   box-shadow: 0 8px 32px rgba(7, 49, 72, 0.08);
 }
 
 .intro-logo {
-  height: 36px;
-  /* Pas de filter ici : on prend la version couleur officielle du logo,
-   * on n'inverse plus pour fond sombre. */
+  height: 28px;
 }
 
 .intro-card h2 {
   color: #073148;
-  font-size: 1.4rem;
-  margin: .25rem 0 0;
+  font-size: 1.2rem;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .intro-subtitle {
   color: rgba(7, 49, 72, 0.7) !important;
-  font-size: .9rem;
-  line-height: 1.4;
+  font-size: .85rem;
+  line-height: 1.35;
+  margin: 0;
 }
 
 .intro-steps {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: .75rem;
+  gap: .5rem;
 }
 
 .intro-step {
   display: flex;
-  align-items: flex-start;
-  gap: .75rem;
+  align-items: center;
+  gap: .6rem;
   background: #F1F3F8;
-  border-radius: 12px;
-  padding: .75rem 1rem;
+  border-radius: 10px;
+  padding: .55rem .75rem;
 }
 
 .intro-step-number {
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
   border-radius: 50%;
   background: #04A777;
   color: #fff;
@@ -362,50 +367,42 @@
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: .85rem;
-}
-
-.intro-step-content {
-  display: flex;
-  flex-direction: column;
-  gap: .15rem;
-}
-
-.intro-step-content strong {
-  font-size: .95rem;
-  color: #073148;
-}
-
-.intro-step-content span {
   font-size: .8rem;
-  color: rgba(7, 49, 72, 0.6);
+}
+
+.intro-step strong {
+  font-size: .9rem;
+  color: #073148;
+  line-height: 1.25;
+  text-align: left;
 }
 
 .intro-tips {
   display: flex;
   justify-content: center;
-  gap: 1.25rem;
-  margin: .25rem 0;
+  gap: 1rem;
+  margin: 0;
 }
 
 .intro-tip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .3rem;
+  gap: .2rem;
 }
 
 .intro-tip mat-icon {
   color: #04A777;
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .intro-tip span {
-  font-size: .7rem;
+  font-size: .68rem;
   color: rgba(7, 49, 72, 0.65);
   text-align: center;
+  line-height: 1.15;
 }
 
 .intro-cta {

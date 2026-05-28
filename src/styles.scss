@@ -9,8 +9,13 @@
 // jamais en sombre lorsque l'OS de l'utilisateur l'est. Aucun écran de l'app
 // n'a vocation à être en dark mode : la charte Tuita est exclusivement claire
 // (fond grey-high #F1F3F8, texte prussian-blue #073148, accent green #04A777).
-:root {
-  color-scheme: light only;
+// Syntaxe CSS correcte : `only` AVANT le mot-clé. `light only` est invalide
+// et ignoré par les navigateurs → Samsung Internet continuait alors à forcer
+// son dark mode malgré la déclaration.
+:root,
+html,
+body {
+  color-scheme: only light;
 }
 
 html, body {
