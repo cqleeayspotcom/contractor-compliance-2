@@ -49,7 +49,8 @@ import {
   OnboardingVideoDialogData,
 } from '../../components/onboarding-video-dialog/onboarding-video-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, interval, Subscription } from 'rxjs';
+import { switchMap, takeWhile } from 'rxjs/operators';
 
 /**
  * Limite stricte côté backend = 10 MB (nginx `client_max_body_size`). On
@@ -726,6 +727,14 @@ export class OnboardingUploadStepperComponent implements OnInit {
    * clic pastille) ou si le composant est détruit avant l'expiration.
    */
   private advanceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  /**
+   * Subscriptions actives de polling de verdict OCR (une par target :
+   * primary / secondary). On les stoppe au démarrage d'un nouveau polling
+   * sur le même target (cas d'un re-upload après erreur) et à la destruction
+   * du composant.
+   */
+  private verdictPollingSubs: Map<'primary' | 'secondary', Subscription> = new Map();
 
   /**
    * Index du dernier step pour lequel l'auto-open de la vidéo a été déclenché.
@@ -1617,13 +1626,31 @@ export class OnboardingUploadStepperComponent implements OnInit {
           this.session.refreshDashboard();
         } else {
           // verdict.type === 'pending' : OCR en cours / revue manuelle.
-          // L'artisan voit le banner verdict + on refresh le dashboard pour
-          // que l'étape se mette à jour quand le worker aura traité.
+          // POURQUOI on polle activement : l'upload est async côté backend
+          // (publish AMQP → worker shell-daemon → ProcessOcrJob), donc le
+          // verdict immédiat est presque toujours 'pending'. Le worker met
+          // 500ms à 5s pour terminer (selon charge OCR Mistral). Sans
+          // polling, l'artisan reste bloqué sur "OCR en cours…" jusqu'à un
+          // refresh manuel. Avec polling, le verdict bascule en
+          // verified/rejected dans les ~2-10s qui suivent l'upload.
           this.snack.open(verdict.message, '', {
             duration: 4000,
             panelClass: ['tuita-snackbar'],
           });
           this.session.refreshDashboard();
+
+          // Extraction défensive du UUID du doc : la shape de la réponse peut
+          // varier (`data.document.uuid`, `data.uuid`, `uuid` racine selon
+          // l'endpoint sous-jacent). Si on ne trouve pas, on skip le polling
+          // (fallback comportement legacy).
+          const rd = r?.data as { document?: { uuid?: string }; uuid?: string } | undefined;
+          const docUuid =
+            rd?.document?.uuid ??
+            rd?.uuid ??
+            (r as { uuid?: string })?.uuid;
+          if (docUuid) {
+            this.startVerdictPolling(docUuid, setVerdict, target);
+          }
         }
       },
       error: (err: unknown) => {
@@ -1636,6 +1663,114 @@ export class OnboardingUploadStepperComponent implements OnInit {
         });
       },
     });
+  }
+
+  /**
+   * Polling actif du verdict OCR/KYC d'un document que l'upload a renvoyé
+   * en état `pending`. Utilisé pour TOUS les types de documents (CNI,
+   * passeport, KBIS, URSSAF AVCS, RC Pro, Décennale, RIB, attestation
+   * fiscale, etc.) — la méthode `dispatchUploadCall` est le point unique
+   * d'entrée pour ces uploads.
+   *
+   * POURQUOI ce polling existe :
+   * Le backend traite l'OCR de façon ASYNCHRONE (publish AMQP → worker
+   * `shell-daemon` → `ProcessOcrJob`). L'upload HTTP renvoie un verdict
+   * 'pending' presque toujours, puis le worker met 500ms-10s pour produire
+   * le verdict final (verified / rejected / low_confidence / superseded).
+   * Sans polling, l'artisan reste bloqué sur "OCR en cours…" et doit
+   * refresh manuellement la page — UX cassée.
+   *
+   * Stratégie :
+   * - Poll toutes les 2 s via {@link ContractorApiService.getDocumentStatus}
+   * - Stop dès qu'on a un verdict terminal (verified / rejected / info)
+   * - Timeout dur à 30 s (~15 ticks) — au-delà, on reste sur 'pending' et
+   *   on informe l'artisan que ça prend plus longtemps que d'habitude
+   * - Une subscription par target (primary / secondary) ; un re-upload
+   *   stoppe la subscription précédente avant d'en démarrer une nouvelle
+   * - Cleanup automatique à la destruction du composant
+   */
+  private startVerdictPolling(
+    docUuid: string,
+    setVerdict: typeof this.lastVerdict | typeof this.secondaryVerdict,
+    target: 'primary' | 'secondary',
+  ): void {
+    // Stoppe un éventuel polling précédent sur le même target (re-upload).
+    this.verdictPollingSubs.get(target)?.unsubscribe();
+
+    const POLL_INTERVAL_MS = 2000;
+    const MAX_TICKS = 15; // 15 × 2 s = 30 s
+    let tick = 0;
+
+    const sub = interval(POLL_INTERVAL_MS)
+      .pipe(
+        takeWhile(() => tick++ < MAX_TICKS),
+        switchMap(() => this.api.getDocumentStatus(docUuid)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (data: unknown) => {
+          // Shape attendue : { status, failure_reason?, failure_detail? }
+          // (renvoyée par getDocumentStatus). Même garde défensive que
+          // pour la réponse upload : on tolère plusieurs niveaux.
+          const d = data as {
+            status?: string;
+            failure_detail?: string;
+            failure_reason?: string;
+            document?: { status?: string; failure_detail?: string; failure_reason?: string };
+          } | null;
+          const status = d?.document?.status ?? d?.status;
+          const detail = d?.document?.failure_detail ?? d?.failure_detail;
+          const reason = d?.document?.failure_reason ?? d?.failure_reason;
+          if (!status) return;
+          const verdict = interpretUploadStatus(status, detail, reason);
+          if (verdict.type === 'pending') {
+            // Encore en cours, on continue à poll.
+            return;
+          }
+          // Verdict terminal : on met à jour, stop polling, refresh dashboard.
+          setVerdict.set(verdict);
+          this.verdictPollingSubs.get(target)?.unsubscribe();
+          this.verdictPollingSubs.delete(target);
+          this.session.refreshDashboard();
+
+          if (verdict.type === 'verified') {
+            this.snack.open('✓ Document validé.', '', {
+              duration: 2500,
+              panelClass: ['tuita-snackbar', 'snack-success'],
+            });
+            // Auto-advance UNIQUEMENT pour le bloc principal et si pas de
+            // secondaire non résolu (même logique que dans dispatchUploadCall).
+            if (target === 'primary') {
+              const step = this.currentStep();
+              const hasUnresolvedSecondary =
+                !!step?.config.secondary && !this.secondaryDone();
+              if (!hasUnresolvedSecondary) {
+                this.cancelPendingAdvance();
+                this.advanceTimer = setTimeout(() => {
+                  this.advanceTimer = null;
+                  this.advance();
+                }, 1500);
+              }
+            }
+          } else if (verdict.type === 'rejected') {
+            this.snack.open(verdict.message, 'OK', {
+              duration: 8000,
+              panelClass: ['tuita-snackbar', 'snack-error'],
+            });
+          }
+        },
+        error: () => {
+          // Erreur réseau ponctuelle : on laisse le polling continuer
+          // (les ticks suivants peuvent réussir). Pas de cleanup ici.
+        },
+      });
+
+    this.verdictPollingSubs.set(target, sub);
+
+    // Cleanup à la destruction du composant (filet de sécurité ; le
+    // takeUntilDestroyed dans la pipeline le fait déjà, mais on est
+    // explicite pour le cas re-upload sans destruction).
+    this.destroyRef.onDestroy(() => sub.unsubscribe());
   }
 
   // ---------------------------------------------------------------------------
