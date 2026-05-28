@@ -11,7 +11,7 @@
   <!-- ── Écran d'introduction ────────────────────────── -->
   @if (step() === 'intro') {
     <div class="center-card intro-card">
-      <img src="/assets/tuita-logo.svg" alt="Tuita" class="intro-logo" />
+      <img src="/assets/logos/logo-tuita.svg" alt="Tuita" class="intro-logo" />
       <h2>Vérification d'identité</h2>
       <p class="intro-subtitle">Pour valider votre identité, nous allons vous demander d'effectuer 2 mouvements face à la caméra.</p>
 
@@ -19,15 +19,15 @@
         <div class="intro-step">
           <div class="intro-step-number">1</div>
           <div class="intro-step-content">
-            <strong>{{ currentLabel() }}</strong>
+            <strong>{{ challenge1Label() }}</strong>
             <span>Suivez l'instruction pendant 4 secondes</span>
           </div>
         </div>
         <div class="intro-step">
           <div class="intro-step-number">2</div>
           <div class="intro-step-content">
-            <strong>Second mouvement</strong>
-            <span>Une nouvelle instruction sera affichée</span>
+            <strong>{{ challenge2Label() }}</strong>
+            <span>Suivez l'instruction pendant 4 secondes</span>
           </div>
         </div>
       </div>
@@ -71,7 +71,7 @@
 
       <!-- Overlay haut : logo + pill challenge -->
       <div class="overlay-top">
-        <img src="/assets/tuita-logo.svg" alt="Tuita" class="logo" />
+        <img src="/assets/logos/logo-tuita-white.svg" alt="Tuita" class="logo" />
 
         <!-- Indicateur étape -->
         <div class="step-dots">

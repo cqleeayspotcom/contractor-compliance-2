@@ -17,7 +17,7 @@ import { kycMobileValidateToken } from '../api/fn/kyc-mobile/kyc-mobile-validate
 import { kycMobileSubmitVideo } from '../api/fn/kyc-mobile/kyc-mobile-submit-video';
 import { kycMobileChallenges } from '../api/fn/kyc-mobile/kyc-mobile-challenges';
 
-export type KycChallenge = 'turn_left' | 'turn_right' | 'blink' | 'smile';
+export type KycChallenge = 'turn_left' | 'turn_right' | 'look_up' | 'look_down' | 'blink' | 'smile' | 'nod' | 'open_mouth';
 
 /** Inline session shape returned by start/poll/submit endpoints. */
 export interface KycSessionResponse {
@@ -153,9 +153,20 @@ export class KycService {
   // Public mobile endpoints (no auth — called from the mobile page)
   // ---------------------------------------------------------------------------
 
-  /** Validate a QR code token and retrieve the challenge (public). */
+  /**
+   * Valide un token QR et récupère les 2 challenges biométriques (public).
+   *
+   * POURQUOI on appelle `kycMobileChallenges` et non `kycMobileValidateToken` :
+   * côté backend, `GET /contractor-compliance/kyc/mobile/{token}` rend un
+   * formulaire HTML (viewAction legacy mobile), pas du JSON — la SPA mobile
+   * parserait du `<!doctype …>` comme JSON et tomberait sur "Unexpected
+   * token '<'". Le seul GET JSON qui retourne challenges + expires_at sans
+   * consommer le token est `…/{token}/challenges` (challengesAction).
+   * `kycMobileValidateToken` est conservé dans le SDK pour compat mais
+   * inutilisable depuis Angular tel quel.
+   */
   validateMobileToken(token: string): Observable<KycMobileTokenResponse> {
-    return from(this.api.invoke(kycMobileValidateToken, { token })).pipe(
+    return from(this.api.invoke(kycMobileChallenges, { token })).pipe(
       map(r => (r as any)?.data as KycMobileTokenResponse)
     );
   }

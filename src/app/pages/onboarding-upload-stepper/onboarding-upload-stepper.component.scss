@@ -47,6 +47,20 @@
 // Halo pulsant orange pour les dots du stepper dont le doc expire bientôt
 // ou est déjà expiré — capte l'œil au premier coup d'œil pour qu'un artisan
 // arrivant sur le stepper voie immédiatement quelle pièce renouveler.
+// Pulse "regarde ici" sur le bloc bonus (décennale) quand l'artisan répond
+// "Oui j'en ai une" au dialog de confirmation au clic Suivant. Halo bleu
+// + léger scale pour capter l'œil sans agressivité (low-literacy).
+@keyframes stepper-secondary-attract {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba($t-logo-blue, 0.45);
+  }
+  50% {
+    transform: scale(1.015);
+    box-shadow: 0 0 0 14px rgba($t-logo-blue, 0);
+  }
+}
+
 @keyframes stepper-dot-attention {
   0%, 100% {
     box-shadow: 0 0 0 0 rgba($t-base-orange, 0.55);
@@ -1163,6 +1177,12 @@
       background: rgba(46, 125, 50, 0.06);
       border-style: solid;
       border-color: rgba(46, 125, 50, 0.3);
+    }
+
+    &--attract {
+      border-style: solid;
+      border-color: rgba($t-logo-blue, 0.7);
+      animation: stepper-secondary-attract 1.2s ease-in-out 3;
     }
 
     &-divider {

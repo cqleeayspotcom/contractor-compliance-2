@@ -3,6 +3,21 @@
 // Import the Tuita Angular Material theme
 @use './styles/theme';
 
+// ── Palette Tuita imposée — pas de thème système ──────────────────────────
+// On force `color-scheme: light` globalement pour que les contrôles natifs du
+// navigateur (inputs, scrollbars, autofill, date pickers, etc.) ne basculent
+// jamais en sombre lorsque l'OS de l'utilisateur l'est. Aucun écran de l'app
+// n'a vocation à être en dark mode : la charte Tuita est exclusivement claire
+// (fond grey-high #F1F3F8, texte prussian-blue #073148, accent green #04A777).
+:root {
+  color-scheme: light only;
+}
+
+html, body {
+  background-color: #F1F3F8;
+  color: #073148;
+}
+
 // ── Guidage visuel global (low-literacy artisans BTP) ──────────────────────
 // Classe utilitaire `.tui-attract` à coller sur n'importe quel CTA principal
 // pour pousser l'œil de l'artisan vers l'action suivante.

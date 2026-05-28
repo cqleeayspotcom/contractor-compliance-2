@@ -618,7 +618,8 @@
            ────────────────────────────────────────────────────────────── -->
       @if (step.config.secondary; as sec) {
         <div class="stepper__secondary"
-             [class.stepper__secondary--done]="secondaryDone()">
+             [class.stepper__secondary--done]="secondaryDone()"
+             [class.stepper__secondary--attract]="secondaryAttract()">
           <div class="stepper__secondary-divider" aria-hidden="true"></div>
 
           <header class="stepper__secondary-header">

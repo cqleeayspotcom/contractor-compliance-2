@@ -184,53 +184,6 @@
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .page-header {
-    background-color: #1A202C;
-    border-bottom-color: #2D3748;
-
-    &-back {
-      color: #ffffff;
-      border-color: #4A5568;
-
-      &:hover {
-        background-color: #2D3748;
-        border-color: #718096;
-      }
-
-      &:active {
-        background-color: #4A5568;
-      }
-
-      &:focus {
-        outline-color: #073148;
-      }
-    }
-
-    &-breadcrumb-link {
-      color: #4DB6AC;
-
-      &:hover {
-        color: #4DB6AC;
-      }
-    }
-
-    &-breadcrumb-label,
-    &-breadcrumb-item-current {
-      color: #9CA3AF;
-    }
-
-    &-title {
-      color: #ffffff;
-    }
-
-    &-subtitle {
-      color: #9CA3AF;
-    }
-  }
-}
-
 /* Print styles */
 @media print {
   .page-header {

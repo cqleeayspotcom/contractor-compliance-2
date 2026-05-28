@@ -109,21 +109,3 @@
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .loading-spinner-overlay {
-    background-color: rgba(7, 49, 72, 0.95);
-  }
-
-  .loading-spinner {
-    &-circle {
-      stroke: #04A777; /* Tuita green in dark mode */
-    }
-
-    &-message {
-      &-text {
-        color: #ffffff;
-      }
-    }
-  }
-}

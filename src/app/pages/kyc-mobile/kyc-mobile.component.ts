@@ -28,23 +28,35 @@ type Step =
 const CHALLENGE_LABELS: Record<KycChallenge, string> = {
   turn_left:  'Tournez la tête vers VOTRE gauche',
   turn_right: 'Tournez la tête vers VOTRE droite',
+  look_up:    'Regardez vers le haut',
+  look_down:  'Regardez vers le bas',
+  nod:        'Hochez la tête (oui)',
   blink:      'Fermez les yeux 1 seconde puis rouvrez',
   smile:      'Souriez franchement (montrez les dents)',
+  open_mouth: 'Ouvrez grand la bouche',
 };
 
 // Hint court affiché sous le label principal (pas trop long pour mobile)
 const CHALLENGE_HINTS: Record<KycChallenge, string> = {
   turn_left:  'Gardez les épaules face caméra, tournez votre tête 30° à gauche',
   turn_right: 'Gardez les épaules face caméra, tournez votre tête 30° à droite',
+  look_up:    'Levez bien le menton vers le plafond',
+  look_down:  'Baissez bien le menton vers vos pieds',
+  nod:        'Un « oui » franc : haut, bas',
   blink:      'Fermez franchement les paupières - pas juste un regard baissé',
   smile:      'Un sourire timide n\'est pas détecté',
+  open_mouth: 'Grand « Ah », pas juste entrouvrir',
 };
 
 const CHALLENGE_ICONS: Record<KycChallenge, string> = {
   turn_left:  'keyboard_arrow_left',
   turn_right: 'keyboard_arrow_right',
+  look_up:    'keyboard_arrow_up',
+  look_down:  'keyboard_arrow_down',
+  nod:        'swap_vert',
   blink:      'visibility',
   smile:      'sentiment_very_satisfied',
+  open_mouth: 'record_voice_over',
 };
 
 /**
@@ -102,6 +114,12 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     CHALLENGE_LABELS[this.isChallenge2Step() ? this.challenge2 : this.challenge1]
     ?? 'Regardez la caméra'
   );
+
+  /** Labels/icônes des 2 gestes — affichés en aperçu sur l'écran d'intro. */
+  challenge1Label = computed(() => CHALLENGE_LABELS[this.challenge1] ?? 'Premier mouvement');
+  challenge2Label = computed(() => CHALLENGE_LABELS[this.challenge2] ?? 'Second mouvement');
+  challenge1Icon = computed(() => CHALLENGE_ICONS[this.challenge1] ?? 'face');
+  challenge2Icon = computed(() => CHALLENGE_ICONS[this.challenge2] ?? 'face');
 
   currentHint = computed(() =>
     CHALLENGE_HINTS[this.isChallenge2Step() ? this.challenge2 : this.challenge1]

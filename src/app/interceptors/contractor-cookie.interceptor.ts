@@ -76,10 +76,16 @@ function isOnSelfServedAuthPage(): boolean {
   // /admin/login a sa propre logique d'auth (OAuth2 Bearer, pas cookie) —
   // un 401 ici doit rester local au composant (snackbar PIN invalide),
   // pas déclencher un bounce vers la page de login contractor.
+  // /kyc/mobile/:token = page publique par capability (token 48 hex dans
+  // l'URL). L'utilisateur arrive depuis un QR sur un device SANS cookie ;
+  // un 401 issu d'un fetch concurrent (ex: APP_INITIALIZER) ne doit pas
+  // bouncer sur /login, sinon le scan QR aboutit toujours sur l'écran de
+  // connexion alors que l'auth est portée par l'URL elle-même.
   return (
     path.startsWith('/login') ||
     path.startsWith('/signup') ||
-    path.startsWith('/admin/login')
+    path.startsWith('/admin/login') ||
+    path.startsWith('/kyc/mobile/')
   );
 }
 

@@ -57,6 +57,14 @@ function initContractorSession() {
   if (!flags.isContractorComplianceEnabled()) {
     return Promise.resolve();
   }
+  // Skip sur les pages publiques par capability (QR mobile KYC) :
+  // l'utilisateur arrive sur un mobile SANS cookie __contractor_ssid, le
+  // token 48 hex dans l'URL tient lieu d'auth. Charger /dashboard ici
+  // déclencherait un 401 que l'interceptor traduit en redirect /login,
+  // alors que la page est censée s'afficher sans login.
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/kyc/mobile/')) {
+    return Promise.resolve();
+  }
   return firstValueFrom(session.loadDashboard()).catch(() => {});
 }
 

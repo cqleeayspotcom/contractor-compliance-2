@@ -1,17 +1,38 @@
+/* Palette Tuita imposée (pas de thème système, ni dark ni light) :
+ *   - Fond appli  : #F1F3F8 (t-back-grey-high)
+ *   - Texte       : #073148 (t-text-black, prussian blue)
+ *   - Accent      : #04A777 (t-base-green, brand)
+ *   - Erreur      : #F75C03 (t-base-orange)
+ * Le mode "noir" est réservé EXCLUSIVEMENT au plein écran caméra (.camera-page)
+ * où il faut un fond sombre pour le confort visuel pendant l'enregistrement. */
+/* `.page` ne doit PAS être `position:fixed` + `align-items:center` quand la
+ * carte d'intro est plus haute que le viewport (mobile + barre d'URL + barre
+ * système Android) : le centrage flex pousse le bas de la carte HORS écran
+ * (sous la barre de navigation système) et le bouton « Commencer la vérification »
+ * devient intappable même s'il a l'air visible. On utilise `min-height: 100dvh`
+ * + flux normal scrollable pour que tout le contenu reste atteignable. */
 .page {
-  position: fixed;
-  inset: 0;
-  background: #000;
+  min-height: 100dvh;
+  background: #F1F3F8;
+  color: #073148;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
+  /* Respecte les zones réservées au système (gesture bar Android, encoche iOS). */
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0));
+  padding-top: max(1rem, env(safe-area-inset-top, 0));
+  box-sizing: border-box;
 }
 
-/* ── Caméra plein écran ── */
+/* Le plein-écran caméra reprend le mode "fixed inset 0" — pas de scroll
+ * pendant l'enregistrement, la vidéo doit occuper tout l'écran. */
 .camera-page {
-  position: relative;
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
+  background: #000;
 }
 
 .camera {
@@ -278,36 +299,38 @@
   height: 52px;
   font-size: 1.05rem;
   font-weight: 600;
-  background: #1976d2;
+  background: #04A777;
   color: #fff;
   border-radius: 12px;
 }
 
 .cta-stop {
-  background: #e53935;
+  background: #F75C03;
 }
 
-/* ── Écran d'introduction ── */
+/* ── Écran d'introduction (palette Tuita stricte) ── */
 .intro-card {
-  background: #111;
-  color: #fff;
+  background: #fff;
+  color: #073148;
   max-width: 400px;
   padding: 2rem 1.5rem 1.5rem;
+  box-shadow: 0 8px 32px rgba(7, 49, 72, 0.08);
 }
 
 .intro-logo {
   height: 36px;
-  filter: brightness(0) invert(1);
+  /* Pas de filter ici : on prend la version couleur officielle du logo,
+   * on n'inverse plus pour fond sombre. */
 }
 
 .intro-card h2 {
-  color: #fff;
+  color: #073148;
   font-size: 1.4rem;
   margin: .25rem 0 0;
 }
 
 .intro-subtitle {
-  color: rgba(255,255,255,.7) !important;
+  color: rgba(7, 49, 72, 0.7) !important;
   font-size: .9rem;
   line-height: 1.4;
 }
@@ -323,7 +346,7 @@
   display: flex;
   align-items: flex-start;
   gap: .75rem;
-  background: rgba(255,255,255,.08);
+  background: #F1F3F8;
   border-radius: 12px;
   padding: .75rem 1rem;
 }
@@ -333,7 +356,7 @@
   height: 28px;
   min-width: 28px;
   border-radius: 50%;
-  background: #1976d2;
+  background: #04A777;
   color: #fff;
   display: flex;
   align-items: center;
@@ -350,12 +373,12 @@
 
 .intro-step-content strong {
   font-size: .95rem;
-  color: #fff;
+  color: #073148;
 }
 
 .intro-step-content span {
   font-size: .8rem;
-  color: rgba(255,255,255,.55);
+  color: rgba(7, 49, 72, 0.6);
 }
 
 .intro-tips {
@@ -373,7 +396,7 @@
 }
 
 .intro-tip mat-icon {
-  color: rgba(255,193,7,.9);
+  color: #04A777;
   font-size: 24px;
   width: 24px;
   height: 24px;
@@ -381,7 +404,7 @@
 
 .intro-tip span {
   font-size: .7rem;
-  color: rgba(255,255,255,.6);
+  color: rgba(7, 49, 72, 0.65);
   text-align: center;
 }
 
@@ -405,18 +428,19 @@
 
 .center-card p {
   margin: 0;
-  color: #444;
+  color: #073148;
   font-size: .95rem;
 }
 
 .center-card h2 {
   margin: 0;
   font-size: 1.3rem;
+  color: #073148;
 }
 
 .small {
   font-size: .8rem;
-  color: #888;
+  color: rgba(7, 49, 72, 0.55);
 }
 
 .big-icon {
@@ -426,18 +450,18 @@
 }
 
 .success .big-icon {
-  color: #2e7d32;
+  color: #04A777;
 }
 
 .error .big-icon {
-  color: #c62828;
+  color: #F75C03;
 }
 
 .success h2 {
-  color: #2e7d32;
+  color: #04A777;
 }
 
 .error p {
-  color: #c62828;
+  color: #F75C03;
   font-weight: 600;
 }

@@ -119,9 +119,8 @@ export class KycProgressBarComponent {
    */
   readonly subtext = computed<string | null>(() => {
     const s = this.state();
-    if (s === 'processing') {
-      return 'Analyse en cours - peut prendre jusqu\'à 10 minutes.';
-    }
+    // Sur `processing`, le contenu principal de la page (carte "Analyse en cours")
+    // affiche déjà le détail + la durée estimée → on évite le doublon ici.
     if (s === 'polling_stalled') {
       return 'Toujours en cours - pas besoin de fermer la page.';
     }

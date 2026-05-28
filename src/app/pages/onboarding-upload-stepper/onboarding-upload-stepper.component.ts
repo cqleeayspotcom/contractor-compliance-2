@@ -48,6 +48,7 @@ import {
   OnboardingVideoDialogComponent,
   OnboardingVideoDialogData,
 } from '../../components/onboarding-video-dialog/onboarding-video-dialog.component';
+import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
 import { firstValueFrom, interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
@@ -591,6 +592,15 @@ export class OnboardingUploadStepperComponent implements OnInit {
 
   /** Upload en cours sur le bloc secondaire (distinct du principal). */
   readonly isUploadingSecondary = signal<boolean>(false);
+
+  /**
+   * Animation "regarde ici" sur le bloc décennale, déclenchée quand l'artisan
+   * clique « Suivant » sur le step assurances avec la RC Pro validée mais sans
+   * décennale, et répond "Oui j'en ai une" au dialog de confirmation. Le pulse
+   * dure ~4 s puis se coupe automatiquement — sinon il distrait pour rien.
+   */
+  readonly secondaryAttract = signal<boolean>(false);
+  private secondaryAttractTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Status du document secondaire calculé depuis le dashboard (ex: décennale
@@ -2052,7 +2062,82 @@ export class OnboardingUploadStepperComponent implements OnInit {
     }
   }
 
+  /**
+   * Demande à l'artisan s'il a une garantie décennale (ou autre doc bonus du
+   * step courant). Selon la réponse :
+   *   - "Oui" → on déclenche le pulse d'attraction sur la dropzone bonus et
+   *     on scroll dedans, sans changer d'étape. L'artisan upload puis
+   *     re-clique Suivant.
+   *   - "Non" → on marque ce type comme skippé pour la session (évite de
+   *     re-poser la question au prochain clic Suivant) puis on avance.
+   */
+  private askAboutSecondaryThenAdvance(secondaryType: string): void {
+    ConfirmationDialogComponent.open(this.dialog, {
+      title: 'As-tu une garantie décennale ?',
+      message:
+        'Si oui, ajoute-la maintenant — ça débloque les missions gros œuvre. Sinon, tu peux passer.',
+      confirmText: 'Oui, j\'en ai une',
+      cancelText: 'Non, passer',
+      type: 'info',
+      icon: 'engineering',
+    }).subscribe((hasOne) => {
+      if (hasOne) {
+        this.triggerSecondaryAttract();
+      } else {
+        const next = new Set(this.skippedTypes());
+        next.add(secondaryType);
+        this.skippedTypes.set(next);
+        this.persistSkipped(next);
+        this.advance();
+      }
+    });
+  }
+
+  /**
+   * Active l'animation pulse sur le bloc secondaire pendant ~4 s et scroll
+   * dedans. Coupe une animation précédente en cours pour repartir d'un cycle
+   * propre à chaque déclenchement.
+   */
+  private triggerSecondaryAttract(): void {
+    if (this.secondaryAttractTimer !== null) {
+      clearTimeout(this.secondaryAttractTimer);
+    }
+    this.secondaryAttract.set(true);
+    // Scroll en douceur vers la dropzone bonus pour qu'elle soit visible
+    // sans que l'artisan ait à chercher.
+    setTimeout(() => {
+      const el = document.querySelector('.stepper__secondary');
+      if (el && 'scrollIntoView' in el) {
+        (el as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+    this.secondaryAttractTimer = setTimeout(() => {
+      this.secondaryAttract.set(false);
+      this.secondaryAttractTimer = null;
+    }, 4000);
+  }
+
   next(): void {
+    const step = this.currentStep();
+
+    // Étape avec bloc bonus (RC Pro + décennale) : la RC est validée mais
+    // la décennale n'a pas été ajoutée. Avant d'avancer, on demande
+    // EXPLICITEMENT à l'artisan s'il a une décennale — sinon il rate le
+    // badge "Décennale ✓" qui débloque les missions gros œuvre.
+    //   - "Oui" → on ne change PAS d'étape, on attire l'œil sur la dropzone
+    //     décennale avec un pulse + scroll (low-literacy : guidage visuel).
+    //   - "Non" → skip enregistré (cf. skippedTypes) puis advance.
+    if (
+      step
+      && step.done
+      && step.config.secondary
+      && !this.secondaryDone()
+      && !this.skippedTypes().has(step.config.secondary.type)
+    ) {
+      this.askAboutSecondaryThenAdvance(step.config.secondary.type);
+      return;
+    }
+
     // Garde anti-bypass silencieux : si l'étape courante n'est PAS validée
     // (pas de doc uploadé / pas de RIB sauvegardé) ET pas encore skippée
     // explicitement, on refuse d'avancer en silence. L'artisan doit choisir :
@@ -2062,7 +2147,6 @@ export class OnboardingUploadStepperComponent implements OnInit {
     // Sans cette garde, un clic « Suivant » faisait avancer silencieusement
     // sans tracer le skip — l'artisan se retrouvait à la fin du stepper avec
     // une compliance KO sans comprendre pourquoi.
-    const step = this.currentStep();
     if (step && !step.done && !this.skippedTypes().has(step.config.type)) {
       const docKind = step.config.type === 'cni'
         ? 'ta pièce d\'identité'
@@ -2216,6 +2300,11 @@ export class OnboardingUploadStepperComponent implements OnInit {
     this.versoFile.set(null);
     this.secondaryVerdict.set(null);
     this.isUploadingSecondary.set(false);
+    this.secondaryAttract.set(false);
+    if (this.secondaryAttractTimer !== null) {
+      clearTimeout(this.secondaryAttractTimer);
+      this.secondaryAttractTimer = null;
+    }
     this.replaceMode.set(false);
     this.identityVariant.set(null);
     // Bank form : on garde la valeur saisie (l'artisan peut revenir en

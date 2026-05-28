@@ -108,11 +108,13 @@ describe('KycProgressBarComponent', () => {
   });
 
   describe('sous-texte de réassurance', () => {
-    it('affiche un message dédié pendant uploading / processing / polling_stalled', () => {
+    it('affiche un message dédié pendant uploading / polling_stalled (pas sur processing : la carte principale parle déjà du délai)', () => {
       setState('uploading');
       expect(cmp.subtext()).toContain('envoie');
       setState('processing');
-      expect(cmp.subtext()).toContain('10 minutes');
+      // Pas de sous-texte sur processing — la carte « Analyse en cours »
+      // affiche déjà l'estimation (≈ 2 min, jusqu'à 10 min).
+      expect(cmp.subtext()).toBeNull();
       setState('polling_stalled');
       expect(cmp.subtext()).toContain('Toujours');
     });

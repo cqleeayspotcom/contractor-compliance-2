@@ -115,7 +115,7 @@
 
     <!-- ========== DESKTOP → QR CODE ========== -->
     @if (state() === 'qr_code') {
-      <div class="kyc-hero">
+      <div class="kyc-hero kyc-hero--qr">
         <button type="button"
                 class="help-btn"
                 aria-label="Aide"
@@ -123,37 +123,55 @@
           <mat-icon>help_outline</mat-icon>
         </button>
 
-        <div class="hero-icon-circle hero-icon-circle--info">
-          <mat-icon class="hero-icon">qr_code_2</mat-icon>
-        </div>
+        <header class="qr-head">
+          <h1>Scannez avec votre téléphone</h1>
+          <p class="hero-subtitle">
+            La caméra de votre téléphone est nécessaire pour la vérification
+          </p>
+        </header>
 
-        <h1>Scannez avec votre téléphone</h1>
-        <p class="hero-subtitle">
-          La vérification d'identité nécessite la caméra de votre téléphone
-        </p>
-
-        <div class="qr-container">
+        <div class="qr-frame" aria-label="QR code à scanner">
+          <span class="qr-corner qr-corner--tl" aria-hidden="true"></span>
+          <span class="qr-corner qr-corner--tr" aria-hidden="true"></span>
+          <span class="qr-corner qr-corner--bl" aria-hidden="true"></span>
+          <span class="qr-corner qr-corner--br" aria-hidden="true"></span>
           <qrcode
             [qrdata]="mobileKycUrl()"
-            [width]="200"
+            [width]="180"
             [errorCorrectionLevel]="'M'"
-            [margin]="2"
+            [margin]="1"
             alt="QR Code KYC mobile"
             class="qr-image">
           </qrcode>
         </div>
 
-        <p class="qr-hint">
-          Ouvrez l'appareil photo de votre téléphone et scannez le QR code ci-dessus
-        </p>
+        <ol class="qr-steps">
+          <li>
+            <span class="qr-steps__num">1</span>
+            <mat-icon aria-hidden="true">photo_camera</mat-icon>
+            <span class="qr-steps__text">Ouvrez l'appareil photo de votre téléphone</span>
+          </li>
+          <li>
+            <span class="qr-steps__num">2</span>
+            <mat-icon aria-hidden="true">qr_code_scanner</mat-icon>
+            <span class="qr-steps__text">Visez le QR code ci-dessus</span>
+          </li>
+          <li>
+            <span class="qr-steps__num">3</span>
+            <mat-icon aria-hidden="true">open_in_new</mat-icon>
+            <span class="qr-steps__text">Touchez le lien qui apparaît</span>
+          </li>
+        </ol>
 
-        <div class="qr-waiting">
-          <mat-spinner diameter="20"></mat-spinner>
-          <span>En attente de la vérification sur votre téléphone...</span>
+        <div class="qr-waiting" role="status" aria-live="polite">
+          <span class="qr-waiting__pulse" aria-hidden="true"></span>
+          <mat-spinner diameter="16"></mat-spinner>
+          <span>En attente de votre téléphone…</span>
         </div>
 
         <button mat-button class="kyc-secondary-btn" (click)="forceDesktopMode()">
-          Je veux utiliser la caméra de mon PC
+          <mat-icon>desktop_windows</mat-icon>
+          Utiliser la caméra de mon PC
         </button>
       </div>
     }
@@ -303,7 +321,7 @@
         </div>
         <h1>Analyse en cours...</h1>
         <div class="processing-steps">
-          <div class="processing-step" [class.processing-step--active]="true">
+          <div class="processing-step processing-step--active">
             <mat-icon>check_circle</mat-icon>
             <span>Vidéo reçue</span>
           </div>
@@ -316,13 +334,12 @@
             <span>Comparaison avec votre pièce d'identité</span>
           </div>
         </div>
-        <p class="hero-subtitle">Cela peut prendre quelques instants...</p>
 
         <div class="processing-warning">
           <mat-icon>schedule</mat-icon>
           <div class="processing-warning__text">
-            <strong>Environ 2 minutes</strong>
-            <span>Ne fermez pas cette page - le résultat s'affichera automatiquement ici. En cas de forte affluence, l'analyse peut prendre quelques minutes.</span>
+            <strong>Environ 2 minutes (jusqu'à 10 en cas de forte affluence)</strong>
+            <span>Ne fermez pas cette page - le résultat s'affichera automatiquement ici dès qu'il est prêt.</span>
           </div>
         </div>
       </div>

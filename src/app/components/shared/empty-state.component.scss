@@ -136,31 +136,6 @@
   }
 }
 
-/* Dark mode support (optional) */
-@media (prefers-color-scheme: dark) {
-  .empty-state {
-    &-title {
-      color: #ffffff;
-    }
-
-    &-description {
-      color: #9CA3AF;
-    }
-
-    &-action {
-      background-color: #04A777; /* Tuita green in dark mode */
-
-      &:hover {
-        background-color: #05C090; /* Lighter green */
-      }
-
-      &:focus {
-        outline-color: #04A777;
-      }
-    }
-  }
-}
-
 /* Subtle animation for icon appearance */
 @keyframes fadeInScale {
   from {
