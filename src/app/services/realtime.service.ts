@@ -17,10 +17,9 @@ import { Injectable } from '@angular/core';
 import { Observable, Subject, EMPTY } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
-import { environment } from '../../environments/environment';
-
 // import Echo from 'laravel-echo';
 // import Pusher from 'pusher-js';
+// import { environment } from '../../environments/environment'; // utilise par la branche WS commentee ci-dessous
 
 /**
  * Payload d'un event `.document.status_changed` broadcast par le backend
@@ -81,9 +80,7 @@ export class RealtimeService {
    */
   connect(channelId: number | string | null | undefined): void {
     if (channelId === null || channelId === undefined || channelId === '') {
-      // Pas d'ID → pas de WS. Le polling HTTP prend le relais.
-      // eslint-disable-next-line no-console
-      console.debug('[Realtime] no channelId, skipping WS (polling fallback)');
+      // Pas d'ID → pas de WS. Le polling HTTP prend le relais (no-op silencieux).
       return;
     }
 
@@ -97,46 +94,16 @@ export class RealtimeService {
       this.disconnect();
     }
 
-    try {
-      // -----------------------------------------------------------------
-      // Activation réelle une fois `laravel-echo` + `pusher-js` installés :
-      // -----------------------------------------------------------------
-      // (window as any).Pusher = Pusher;
-      //
-      // this.echo = new Echo({
-      //   broadcaster: 'reverb',
-      //   key: environment.reverbKey,
-      //   wsHost: environment.reverbHost,
-      //   wsPort: environment.reverbPort,
-      //   wssPort: environment.reverbPort,
-      //   forceTLS: environment.reverbScheme === 'https',
-      //   enabledTransports: ['ws', 'wss'],
-      //   authEndpoint: `${environment.apiUrl}/contractor/broadcasting/auth`,
-      //   auth: {
-      //     headers: { 'X-Requested-With': 'XMLHttpRequest' },
-      //   },
-      // });
-      //
-      // this.echo
-      //   .private(targetChannel)
-      //   .listen('.document.status_changed', (payload: DocumentStatusEvent) => {
-      //     this.documentStatus$.next(payload);
-      //   })
-      //   .listen('.invoice.status_changed', (payload: InvoiceStatusEvent) => {
-      //     this.invoiceStatus$.next(payload);
-      //   });
-
-      this.channelName = targetChannel;
-      // eslint-disable-next-line no-console
-      console.debug(
-        `[Realtime] WS désactivé (laravel-echo non installé) — channel cible : ${targetChannel}`,
-      );
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      console.warn('[Realtime] connexion WS impossible, fallback polling HTTP', err);
-      this.echo = null;
-      this.channelName = null;
-    }
+    // -----------------------------------------------------------------
+    // Activation réelle une fois `laravel-echo` + `pusher-js` installés
+    // (cf. commentaires en tête de fichier). Tant que les packages sont
+    // absents, ce service reste un NO-OP SILENCIEUX : la connexion n'est
+    // jamais établie et les Subjects ci-dessous n'émettent jamais. Tous
+    // les composants consommateurs reposent sur le polling HTTP comme
+    // source de vérité — c'est le contrat documenté. Ne PAS ajouter de
+    // console.log/warn ici, ils saturaient la DevTools en staging.
+    // -----------------------------------------------------------------
+    this.channelName = targetChannel;
   }
 
   /**
