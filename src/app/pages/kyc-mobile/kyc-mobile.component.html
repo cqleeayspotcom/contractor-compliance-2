@@ -42,9 +42,9 @@
       </div>
 
       <button mat-flat-button class="cta-btn intro-cta"
-              [disabled]="openingCamera"
+              [disabled]="openingCamera()"
               (click)="startVerification()">
-        @if (openingCamera) {
+        @if (openingCamera()) {
           <mat-spinner diameter="20"></mat-spinner>
           Ouverture caméra…
         } @else {
