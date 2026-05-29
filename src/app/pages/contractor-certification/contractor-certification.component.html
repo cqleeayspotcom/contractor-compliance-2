@@ -74,6 +74,22 @@
             Repondez correctement aux {{ totalQuestions }} questions pour obtenir votre certification TUITA
           }
         </p>
+        <!-- Compteur temps écoulé + numéro de tentative. POURQUOI exposé
+             côté UI : l'artisan visualise sa cadence (utile sur QCM de 24
+             questions ouvert sur 2 jours) et le BO peut corréler temps
+             passé + score quand un échec semble douteux. -->
+        @if (elapsedLabel()) {
+          <div class="quiz-meta" aria-live="polite">
+            <span class="quiz-meta__item">
+              <mat-icon aria-hidden="true">timer</mat-icon>
+              <span>Temps : {{ elapsedLabel() }}</span>
+            </span>
+            <span class="quiz-meta__item">
+              <mat-icon aria-hidden="true">refresh</mat-icon>
+              <span>Tentative n°{{ attempt() }}</span>
+            </span>
+          </div>
+        }
       </div>
 
       @for (q of allQuestions; track q.id) {
@@ -196,16 +212,28 @@
           <p class="result-message">
             Vous êtes désormais certifié TUITA. Vous pouvez intervenir sur les missions.
           </p>
-          @if (nextAction() && nextAction() !== 'none') {
-            <app-onboarding-next-step-cta [nextAction]="nextAction()" class="cert-next-step"/>
-            <button mat-button class="cert-secondary-link" (click)="goToDashboard()">
-              Retour au tableau de bord
-            </button>
-          } @else {
-            <button mat-flat-button color="primary" class="btn-dashboard" (click)="goToDashboard()">
-              Retour au tableau de bord
-            </button>
-          }
+          <!-- POURQUOI on n'utilise plus `<app-onboarding-next-step-cta>` ici :
+               sur cette card on VIENT de valider le QCM, et le backend met
+               quelques centaines de ms à recalculer `next_action`. Pendant ce
+               délai (et parfois bien après si le dashboard n'a pas été
+               rechargé), `nextAction()` vaut encore `complete_certification`
+               → le CTA proposait à l'artisan de « refaire le test » qu'il
+               vient de réussir avec 24/24. Bug visible aux yeux du métier.
+
+               Côté UX, la suite logique après certification = aller voir les
+               missions débloquées, pas le tableau de bord vide. On affiche
+               donc deux CTA fixes (Voir les missions / Retour tableau de
+               bord) sans aucune dépendance à nextAction. -->
+          <button mat-flat-button
+                  color="primary"
+                  class="btn-dashboard"
+                  (click)="goToMissions()">
+            <mat-icon>work_outline</mat-icon>
+            Voir les missions
+          </button>
+          <button mat-button class="cert-secondary-link" (click)="goToDashboard()">
+            Retour au tableau de bord
+          </button>
         </mat-card-content>
       </mat-card>
     </div>

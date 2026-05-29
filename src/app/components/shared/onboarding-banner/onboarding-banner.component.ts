@@ -102,11 +102,41 @@ export class OnboardingBannerComponent implements OnInit, OnDestroy {
         // `playing` posé en optimiste pour éviter un flash de l'overlay
         // « Lancer la vidéo » entre la fin du décompte et l'event (play).
         this.playing.set(true);
-        void this.bannerVideo()?.nativeElement.play();
+        this.tryPlay(this.bannerVideo()?.nativeElement);
       } else {
         this.countdown.set(current - 1);
       }
     }, 1000);
+  }
+
+  /**
+   * Lance la vidéo en gérant proprement le rejet de `play()`.
+   *
+   * POURQUOI ce wrapper : `HTMLMediaElement.play()` retourne une Promise
+   * qui REJECTE avec NotAllowedError quand le navigateur bloque l'autoplay
+   * (pas de gesture utilisateur préalable, politique stricte Safari iOS,
+   * Samsung Internet en mode "économie de données", etc.). Sans `.catch`,
+   * la rejection remonte en `Uncaught (in promise)` dans la console prod
+   * — visible côté Sentry mais surtout cassant l'UX : l'utilisateur croit
+   * la vidéo lancée (playing.set(true) optimiste) alors qu'elle est en
+   * pause silencieuse.
+   *
+   * Fix : on remet `playing` à false sur rejet → l'overlay « Lancer la
+   * vidéo » réapparaît, l'artisan tape pour lancer manuellement (clic =
+   * gesture utilisateur, autorise le play()).
+   */
+  private tryPlay(video: HTMLVideoElement | undefined): void {
+    if (!video) return;
+    const p = video.play();
+    if (p && typeof p.catch === 'function') {
+      p.catch(() => {
+        // Le navigateur a refusé l'autoplay. Pas un bug à logger — c'est
+        // le comportement attendu d'une politique d'économie d'énergie ou
+        // d'un Safari iOS strict. On rend la main à l'utilisateur via
+        // l'overlay manuel (cf. template @else if (!playing())).
+        this.playing.set(false);
+      });
+    }
   }
 
   /**
@@ -128,7 +158,7 @@ export class OnboardingBannerComponent implements OnInit, OnDestroy {
   /** Lance la vidéo manuellement (après un Stop ou une pause). */
   playVideo(video: HTMLVideoElement): void {
     this.playing.set(true);
-    void video.play();
+    this.tryPlay(video);
   }
 
   /** Relance la vidéo depuis le début (bouton « Revoir »). */
@@ -136,7 +166,7 @@ export class OnboardingBannerComponent implements OnInit, OnDestroy {
     video.currentTime = 0;
     this.playing.set(true);
     this.videoEnded.set(false);
-    void video.play();
+    this.tryPlay(video);
   }
 
   /**
@@ -145,7 +175,7 @@ export class OnboardingBannerComponent implements OnInit, OnDestroy {
    */
   toggleVideoPlayback(video: HTMLVideoElement): void {
     if (video.paused || video.ended) {
-      void video.play();
+      this.tryPlay(video);
     } else {
       video.pause();
     }

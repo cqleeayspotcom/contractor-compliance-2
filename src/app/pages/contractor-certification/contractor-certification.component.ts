@@ -4,7 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EMPTY, Subject, Subscription, interval } from 'rxjs';
-import { catchError, switchMap } from 'rxjs/operators';
+import { catchError, switchMap, debounceTime, filter } from 'rxjs/operators';
 
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
@@ -339,6 +339,25 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
   // l'uuid de l'attempt existant (idempotent).
   private attemptUuid: string | null = null;
   private heartbeatSub?: Subscription;
+  /** Timestamp (ms) du début de la tentative côté serveur — utilisé pour
+   *  afficher le temps écoulé dans le QCM. Fixé au retour de
+   *  `startCertification()`, jamais réinitialisé pendant l'attempt. */
+  private startedAtMs: number | null = null;
+
+  /** Tick 1s pour rafraîchir le compteur de temps affiché. Recalculé à
+   *  partir de `startedAtMs` à chaque tick — pas de dérive cumulative. */
+  readonly nowMs = signal(Date.now());
+
+  /** Temps écoulé depuis le début de la tentative, formaté `mm:ss`.
+   *  Affiché en haut du QCM pour que le contractor sache combien de temps
+   *  il a déjà passé (et le BO ait une stat exploitable). */
+  readonly elapsedLabel = computed(() => {
+    if (this.startedAtMs === null) return '';
+    const sec = Math.max(0, Math.floor((this.nowMs() - this.startedAtMs) / 1000));
+    const mm = Math.floor(sec / 60).toString().padStart(2, '0');
+    const ss = (sec % 60).toString().padStart(2, '0');
+    return `${mm}:${ss}`;
+  });
 
   /**
    * Sauvegarde debouncée du brouillon. Chaque clic sur une réponse pousse
@@ -421,6 +440,46 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    // GUARD CERTIF DEJA OBTENUE :
+    //   Sans ce check, l'arrivee sur /certification declenchait directement
+    //   POST /certification/start, qui repond depuis le 2026-05-29 par
+    //   409 ALREADY_CERTIFIED quand session.certified_at est non-null
+    //   (cf. ContractorCertificationController::doQcmStart). Le 409 etait
+    //   surface par le `error:` du startCertification ci-dessous sous forme
+    //   de toast rouge "Impossible de demarrer le QCM" — completement faux
+    //   et angoissant pour un contractor deja certifie qui ne fait que
+    //   re-visiter la page.
+    //   On lit donc d'abord /certification/status (GET, sans effet de bord)
+    //   et si completed=true on bascule directement sur la card succes,
+    //   sans appeler /start. Sinon on enchaine sur le flow normal.
+    this.api.getCertificationStatus().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: status => {
+        if (status?.completed) {
+          // Affiche la card de succes sans creer de nouvelle tentative.
+          // quizScore / quizPassed alimentent le template result-card.
+          this.quizScore.set(typeof status.score === 'number' ? status.score : TOTAL_QUESTIONS);
+          this.quizPassed.set(true);
+          this.currentStep.set('result');
+          return;
+        }
+        this.bootstrapAttempt();
+      },
+      error: () => {
+        // Status indisponible (reseau, 5xx) : on tente quand meme le start
+        // pour ne pas bloquer un contractor qui n'est PAS certifie a cause
+        // d'une coupure transitoire. Si la cause est un vrai 409 derriere,
+        // le start le surfacera comme avant — strictement pas pire.
+        this.bootstrapAttempt();
+      },
+    });
+  }
+
+  /**
+   * Initialise l'attempt QCM cote back + wiring (heartbeat, draft save,
+   * compteur de temps). Appele depuis ngOnInit UNIQUEMENT quand le
+   * contractor n'est pas deja certifie (voir guard ci-dessus).
+   */
+  private bootstrapAttempt(): void {
     // Démarre l'attempt côté back (idempotent — retourne l'uuid existant si actif).
     // Si `started_at` est ancien (> 60s), c'est qu'on reprend un attempt
     // précédemment démarré (rafraîchissement, retour de chantier après pause).
@@ -430,6 +489,12 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
       next: res => {
         this.attemptUuid = res.attempt_uuid;
         this.attempt.set(res.attempt_number);
+        // Timestamp de démarrage côté serveur — alimente le compteur
+        // `elapsedLabel` et donne au BO une stat exploitable. Si parsing
+        // de `started_at` rate (format imprévu), fallback Date.now() pour
+        // ne pas afficher NaN à l'utilisateur.
+        const parsedStart = Date.parse(res.started_at);
+        this.startedAtMs = Number.isFinite(parsedStart) ? parsedStart : Date.now();
 
         // Restaure le brouillon serveur : si le contractor a commencé à
         // répondre puis a fermé l'onglet / changé de device, ses réponses
@@ -443,7 +508,7 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
           this.snack.open(
             'Reprise de ta tentative - tes réponses précédentes sont restaurées.',
             '',
-            { duration: 4000, panelClass: ['snackbar-info'] },
+            { duration: 4000, panelClass: ['tuita-snackbar', 'snack-info'] },
           );
         }
         // POURQUOI on ne fire PLUS de toast « Reprise » quand il n'y a aucun
@@ -468,15 +533,46 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
         this.snack.open(
           'Impossible de démarrer le QCM. Vérifie ta connexion et rafraîchis la page.',
           'Fermer',
-          { duration: 8000, panelClass: ['snackbar-error'] },
+          { duration: 8000, panelClass: ['tuita-snackbar', 'snack-error'] },
         );
       },
     });
 
-    // Pas de save-draft serveur côté Tuita (le backend `submit` final fait
-    // foi). Les réponses restent dans le signal `answers()` côté composant ;
-    // le `Subject<void>` `partialSave$` n'a plus de subscriber mais reste
-    // déclaré pour ne pas casser les `.next()` côté UI (no-op silencieux).
+    // ── Brouillon serveur ───────────────────────────────────────────────
+    // POURQUOI on re-câble le save-draft : sans persistence serveur, un
+    // refresh / un crash navigateur / un changement de device perdait
+    // les 24 réponses. Le backend expose `PATCH /certification/answers`
+    // depuis 2026-05-24 et `startCertification` lit `partial_answers` au
+    // retour — c'est l'écho de ce PATCH. On debounce 1,2s pour ne pas
+    // spammer l'API quand l'artisan clique en rafale (parcours rapide).
+    this.partialSave$.pipe(
+      takeUntilDestroyed(this.destroyRef),
+      debounceTime(1200),
+      filter(() => this.attemptUuid !== null),
+      switchMap(() => {
+        const uuid = this.attemptUuid!;
+        // Stringify les clés numériques pour le contrat backend
+        // (Record<string,string>). Filtre les valeurs invalides (defensif).
+        const ans = this.answers();
+        const payload: Record<string, string> = {};
+        for (const [k, v] of Object.entries(ans)) {
+          if (v === 'A' || v === 'B' || v === 'C') payload[k] = v;
+        }
+        return this.api.saveCertificationAnswers(uuid, payload).pipe(
+          // Fail-soft : un échec PATCH n'interrompt PAS le QCM (les réponses
+          // restent en signal local). Le prochain selectAnswer relancera.
+          catchError(() => EMPTY),
+        );
+      }),
+    ).subscribe();
+
+    // ── Compteur de temps ──────────────────────────────────────────────
+    // Tick 1s pour rafraîchir `elapsedLabel`. Recalculé depuis startedAtMs
+    // à chaque tick — pas de dérive cumulative (un onglet en background
+    // peut throttle le setInterval sans fausser le résultat).
+    interval(1000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.nowMs.set(Date.now());
+    });
   }
 
   /** Convertit le payload serveur (clés string) en Record<number, string>. */
@@ -558,6 +654,9 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
     if (this.showUnanswered() && this.allAnswered()) {
       this.showUnanswered.set(false);
     }
+    // Désarme la soumission incomplète : si l'artisan corrige son oubli, on
+    // n'a plus à le pénaliser au prochain clic Valider (cf. submitQuiz).
+    this.incompleteSubmitArmed = false;
 
     // Persist le brouillon côté serveur (debouncé) pour permettre la reprise.
     this.partialSave$.next();
@@ -615,22 +714,56 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
     return QUIZ_QUESTIONS.filter(q => ans[q.id] === undefined).length;
   }
 
+  /** Tracking du 1er Valider-incomplet : pour distinguer "j'ai cliqué par
+   *  erreur, montre-moi ce qui manque" du "je veux soumettre quand même".
+   *  Reset à chaque selectAnswer pour laisser une 2e chance après une
+   *  réponse oubliée corrigée. */
+  private incompleteSubmitArmed = false;
+
   submitQuiz(): void {
     if (this.submitting()) return;
 
-    // If not all answered, highlight unanswered and scroll to first one
+    const ans = this.answers();
+
+    // Cas incomplet — DEUX comportements :
+    //   1er clic : on highlight + scroll vers la question manquante (UX
+    //              actuelle) ET on arme le flag « si tu reclic, je submit
+    //              quand même ». Pas d'attempt comptabilisé encore.
+    //   2e clic (même set incomplet) : on submit pour de vrai → le
+    //              backend marque l'attempt comme `completed_at` + passed=false
+    //              → le compteur de tentative bump côté DB → le contractor
+    //              ne peut plus boucler indéfiniment en ouvrant/fermant.
+    //
+    // POURQUOI ce double-clic : un simple submit aveugle au 1er clic ferait
+    // perdre l'attempt à un artisan qui a juste raté son dernier scroll.
+    // À l'inverse, un submit qui REFUSE de partir laisse le contractor
+    // « tester gratuitement » en cliquant Valider après chaque réponse —
+    // pas de coût, pas de pression. Le double-clic est le compromis :
+    // tu peux corriger, mais si tu insistes, ça compte.
     if (!this.allAnswered()) {
-      this.showUnanswered.set(true);
-      const ans = this.answers();
-      const firstUnanswered = QUIZ_QUESTIONS.find(q => ans[q.id] === undefined);
-      if (firstUnanswered) {
-        const el = document.getElementById('question-' + firstUnanswered.id);
-        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!this.incompleteSubmitArmed) {
+        this.incompleteSubmitArmed = true;
+        this.showUnanswered.set(true);
+        const firstUnanswered = QUIZ_QUESTIONS.find(q => ans[q.id] === undefined);
+        if (firstUnanswered) {
+          const el = document.getElementById('question-' + firstUnanswered.id);
+          el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        const missing = QUIZ_QUESTIONS.length - Object.keys(ans).length;
+        this.snack.open(
+          `Il te manque ${missing} réponse${missing > 1 ? 's' : ''}. ` +
+            `Reclique sur « Valider » pour soumettre quand même — la tentative sera comptabilisée comme un échec.`,
+          'Compris',
+          { duration: 9000, panelClass: ['tuita-snackbar', 'snack-warn'] },
+        );
+        return;
       }
-      return;
+      // 2e clic : on tombe dans le flux normal qui va calculer le score et
+      // submit. Les réponses manquantes resteront simplement absentes —
+      // le backend les traite comme erronées et `passed=false` est garanti
+      // (impossible d'avoir 24/24 avec des réponses manquantes).
     }
 
-    const ans = this.answers();
     let totalCorrect = 0;
     QUIZ_QUESTIONS.forEach(q => {
       if (ans[q.id] === q.correctAnswer) totalCorrect++;
@@ -662,8 +795,35 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
         },
       });
     } else {
-      // Some wrong — show review with explanations
-      this.currentStep.set('review');
+      // Some wrong — on marque l'attempt comme terminé/échoué côté serveur
+      // AVANT d'afficher la review. Sans ce complete, le brouillon resterait
+      // « actif » et `attempt_count` ne bumperait jamais → le compteur «
+      // Tentative N°2 » affiché en haut de page mentirait, et le BO ne
+      // verrait jamais l'échec.
+      const attemptId = this.attemptUuid;
+      if (attemptId) {
+        this.submitting.set(true);
+        this.api.completeCertification(attemptId, ans).subscribe({
+          next: () => {
+            this.submitting.set(false);
+            this.heartbeatSub?.unsubscribe();
+            this.currentStep.set('review');
+            // Reset l'armement pour la prochaine tentative (post-review →
+            // retryAll() relance un nouvel attempt).
+            this.incompleteSubmitArmed = false;
+          },
+          error: () => {
+            this.submitting.set(false);
+            // Fail-soft : on montre quand même la review pour ne pas piéger
+            // l'artisan sur le QCM. Le retry recréera un attempt.
+            this.currentStep.set('review');
+            this.incompleteSubmitArmed = false;
+          },
+        });
+      } else {
+        this.currentStep.set('review');
+        this.incompleteSubmitArmed = false;
+      }
     }
   }
 
@@ -686,6 +846,8 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
       next: res => {
         this.attemptUuid = res.attempt_uuid;
         this.attempt.set(res.attempt_number);
+        const parsedStart = Date.parse(res.started_at);
+        this.startedAtMs = Number.isFinite(parsedStart) ? parsedStart : Date.now();
         // Brouillon serveur vide pour une nouvelle tentative — on s'assure
         // que le signal local repart aussi de zéro même si le start renvoie
         // un attempt préexistant avec des réponses (cas edge : double-clic).
@@ -700,7 +862,7 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
         this.snack.open(
           'Impossible de relancer le QCM. Réessaie dans quelques instants.',
           'Fermer',
-          { duration: 8000, panelClass: ['snackbar-error'] },
+          { duration: 8000, panelClass: ['tuita-snackbar', 'snack-error'] },
         );
       },
     });
@@ -708,5 +870,15 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
 
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  /**
+   * CTA principal de la card succès certification : on pousse vers les
+   * missions disponibles plutôt que vers le dashboard, parce que c'est
+   * exactement ce que la certification vient de débloquer. Le bouton
+   * « Retour au tableau de bord » reste accessible en secondaire.
+   */
+  goToMissions(): void {
+    this.router.navigate(['/missions']);
   }
 }

@@ -838,7 +838,7 @@ export class ContractorDocumentsComponent implements OnInit, OnDestroy {
         // (not_found / closed / name_mismatch / lookup_unavailable). Sans
         // snackbar le contractor risque de ne rien remarquer — on rend l'erreur
         // bloquante pendant 8 s pour qu'il ait le temps de la lire.
-        this.snack.open(message, 'OK', { duration: 8000, panelClass: 'snackbar-error' });
+        this.snack.open(message, 'OK', { duration: 8000, panelClass: ['tuita-snackbar', 'snack-error'] });
       },
     });
   }

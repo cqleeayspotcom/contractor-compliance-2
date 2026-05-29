@@ -995,3 +995,91 @@ mat-hint {
     background-color: rgba(255, 255, 255, 0.15) !important;
   }
 }
+
+// Variante INFO — bleu prussian Tuita. Pour les messages non-critiques de
+// type « reprise de tentative », « brouillon restauré », guidage UX.
+// POURQUOI ajout 2026-05-29 : la page /certification appelait avec des
+// panelClass non définies (snackbar-info, snackbar-warning) → MatSnackBar
+// tombait sur le fond gris transparent par défaut, illisible sur la palette
+// Tuita light. Cf. visuel utilisateur (toast à peine visible en haut).
+.mat-mdc-snack-bar-container.snack-info {
+  --mdc-snackbar-container-color: transparent;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #ffffff;
+  margin: 0 auto 28px !important;
+
+  .mdc-snackbar__surface {
+    background: linear-gradient(135deg, #073148 0%, #052639 100%) !important;
+    background-color: #073148 !important;
+    border-left: none !important;
+    box-shadow:
+      0 12px 32px rgba(7, 49, 72, 0.32),
+      0 4px 12px rgba(7, 49, 72, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+    border-radius: 14px !important;
+    min-width: 340px;
+    max-width: 560px;
+    padding: 14px 22px !important;
+  }
+
+  .mdc-snackbar__label,
+  .mat-mdc-snack-bar-label {
+    color: #ffffff !important;
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: -0.005em;
+    line-height: 1.45 !important;
+    padding: 0 8px !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .mat-mdc-button.mat-mdc-snack-bar-action,
+  .mat-mdc-snack-bar-action .mdc-button__label {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+}
+
+// Variante WARN — orange Tuita atténué (jaune-orange). Pour les avertissements
+// qui ne sont pas des erreurs : « tu as 5 réponses manquantes, reclique pour
+// valider quand même ». Distinct du snack-error (qui signale un vrai problème
+// bloquant).
+.mat-mdc-snack-bar-container.snack-warn {
+  --mdc-snackbar-container-color: transparent;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  --mat-snack-bar-button-color: #ffffff;
+  margin: 0 auto 28px !important;
+
+  .mdc-snackbar__surface {
+    background: linear-gradient(135deg, #E5A100 0%, #C68A00 100%) !important;
+    background-color: #E5A100 !important;
+    border-left: none !important;
+    box-shadow:
+      0 12px 32px rgba(229, 161, 0, 0.34),
+      0 4px 12px rgba(7, 49, 72, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+    border-radius: 14px !important;
+    min-width: 340px;
+    max-width: 560px;
+    padding: 14px 22px !important;
+  }
+
+  .mdc-snackbar__label,
+  .mat-mdc-snack-bar-label {
+    color: #ffffff !important;
+    font-family: 'M PLUS Rounded 1c', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: -0.005em;
+    line-height: 1.45 !important;
+    padding: 0 8px !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .mat-mdc-button.mat-mdc-snack-bar-action,
+  .mat-mdc-snack-bar-action .mdc-button__label {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+  }
+}

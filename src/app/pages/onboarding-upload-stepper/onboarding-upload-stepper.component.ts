@@ -1268,25 +1268,21 @@ export class OnboardingUploadStepperComponent implements OnInit {
             it.days_until_expiry <= 30,
         );
         if (this.allDone() && !hasExpiringSoon) {
-          // Tous les documents sont validés. Deux cas :
-          //   1. Le KYC vidéo n'est pas encore approuvé → on enchaîne sur /kyc
-          //      (cas onboarding initial : docs OK, identité à faire ensuite).
-          //   2. Le KYC est déjà approved → l'artisan est entièrement à jour,
-          //      le router-link "Mes documents" du dashboard l'a juste amené
-          //      ici pour gérer ses pièces. Pas de raison de le téléporter
-          //      vers /kyc déjà validé. On le renvoie sur le dashboard avec
-          //      un mot rassurant.
-          const kycStatus = this.dashboard()?.kyc?.status;
-          if (kycStatus === 'approved') {
-            // Pas de snackbar ici : ouvrir un toast en plein cycle de routing
-            // (synchrone, juste avant `router.navigate`) déclenche un
-            // ExpressionChangedAfterItHasBeenCheckedError sur le
-            // `MatSnackBarContainer`. La navigation vers /dashboard suffit
-            // comme confirmation visuelle pour l'artisan.
-            void this.router.navigate(['/dashboard']);
-            return;
-          }
-          void this.router.navigate(['/kyc']);
+          // Tous les documents sont validés et rien n'expire bientôt. Le
+          // stepper n'a rien à proposer à l'artisan ici → on le renvoie
+          // sur la page liste `/documents` qui sert de hub : consultation,
+          // remplacement par doc, achat extrait INPI si besoin, et le
+          // parcours-stepper en haut le pousse naturellement vers la
+          // suite (KYC ou certification) selon son état d'avancement.
+          //
+          // POURQUOI on ne route PLUS sur /kyc directement (changement
+          // 2026-05-29) : un artisan qui clique « Gérer » sur la tuile
+          // « Mes documents » du dashboard veut consulter ses pièces, pas
+          // se faire téléporter dans le KYC. L'ancien comportement
+          // (`kycStatus !== 'approved'` → /kyc) cassait ce cas.
+          // L'enchaînement vers /kyc reste possible via le parcours-stepper
+          // ou la bannière onboarding du dashboard — chemins explicites.
+          void this.router.navigate(['/documents']);
           return;
         }
         const firstPending = this.steps().findIndex((s) => !s.done && !s.skipped);
