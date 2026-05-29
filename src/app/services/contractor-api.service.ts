@@ -195,6 +195,7 @@ export interface KycChallenge {
   challenge: string;
   challenge_2: string;
   challenges: { order: number; action: string; label: string; hint?: string; icon?: string }[];
+  /** ISO 8601 — expiration du jeton mobile (QR), utilisé pour la régénération préventive. */
   expires_at: string;
   expires_in: number;
   device_type: string;
@@ -209,6 +210,8 @@ export interface KycStatus {
   failure_reason?: string | null;
   failure_detail?: string | null;
   debug?: KycDebugPayload | null;
+  /** Vrai quand le mobile a scanné le QR mais n'a pas encore soumis la vidéo. */
+  phone_connected?: boolean;
 }
 
 export interface KycDebugPayload {
@@ -530,7 +533,7 @@ export class ContractorApiService {
       // observé après un 401 intercepté qui résout en undefined côté SDK),
       // on synthétise un statut neutre `pending` plutôt que de propager
       // `undefined` au subscriber qui crasherait sur `status.status`.
-      map((res) => (res?.data ?? { status: 'pending' } as KycStatus))
+      map((res) => (res?.data ?? { status: 'pending', phone_connected: false } as KycStatus))
     );
   }
 

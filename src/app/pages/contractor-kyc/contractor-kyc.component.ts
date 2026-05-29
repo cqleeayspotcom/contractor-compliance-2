@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal, OnDestroy, ViewChild, ElementRef, effect } from '@angular/core';
+import { Component, ChangeDetectionStrategy, DestroyRef, inject, signal, computed, OnDestroy, ViewChild, ElementRef, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -17,10 +17,12 @@ import { KycRedoConfirmDialogComponent } from './kyc-redo-confirm-dialog.compone
 import { ContractorApiService, KycChallenge, KycDebugPayload } from '../../services/contractor-api.service';
 import { OnboardingNextStepCtaComponent } from '../../components/shared/onboarding-next-step-cta/onboarding-next-step-cta.component';
 import { KycProgressBarComponent } from '../../components/shared/kyc-progress-bar/kyc-progress-bar.component';
+import { ParcoursStepperComponent } from '../../components/shared/parcours-stepper/parcours-stepper.component';
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { RefreshService } from '../../services/refresh.service';
+import { decideNextKycState, shouldRegenerateQr, KycPollState } from './kyc-poll-state';
 
-type KycState = 'verified_recap' | 'idle' | 'qr_code' | 'challenge_ready' | 'countdown' | 'recording' | 'uploading' | 'processing' | 'polling_stalled' | 'approved' | 'rejected';
+type KycState = 'verified_recap' | 'idle' | 'qr_code' | 'phone_connected' | 'challenge_ready' | 'countdown' | 'recording' | 'uploading' | 'processing' | 'polling_stalled' | 'approved' | 'rejected' | 'qr_expired';
 
 @Component({
   selector: 'app-contractor-kyc',
@@ -36,6 +38,7 @@ type KycState = 'verified_recap' | 'idle' | 'qr_code' | 'challenge_ready' | 'cou
     QRCodeComponent,
     OnboardingNextStepCtaComponent,
     KycProgressBarComponent,
+    ParcoursStepperComponent,
   ],
   templateUrl: './contractor-kyc.component.html',
   styleUrl: './contractor-kyc.component.scss',
@@ -81,14 +84,22 @@ export class ContractorKycComponent implements OnDestroy {
   });
 
   /**
-   * Desactive le bouton "Rafraichir" du header pendant les etats actifs :
-   * countdown / recording / uploading / processing. Refresh pendant ces
-   * etapes detruirait la session camera + l'upload en cours.
+   * `true` pendant les états actifs de la session KYC (countdown, recording,
+   * uploading, processing). Sert à deux verrouillages UX :
+   *   1. `kycBusyEffect` → désactive le bouton Rafraîchir du header (refresh
+   *      tuerait la session caméra + l'upload en cours).
+   *   2. Template → désactive le mini-stepper parcours en haut de page : un
+   *      clic accidentel sur la pastille « Docs » ou « Certif. » naviguerait
+   *      hors de /kyc et détruirait la vidéo enregistrée. Cf. binding
+   *      [disabled] sur <app-parcours-stepper>.
    */
-  private readonly kycBusyEffect = effect(() => {
+  readonly kycBusy = computed(() => {
     const s = this.state();
-    const busy = s === 'countdown' || s === 'recording' || s === 'uploading' || s === 'processing';
-    this.refreshBus.setBusy('kyc-session', busy);
+    return s === 'countdown' || s === 'recording' || s === 'uploading' || s === 'processing';
+  });
+
+  private readonly kycBusyEffect = effect(() => {
+    this.refreshBus.setBusy('kyc-session', this.kycBusy());
   });
 
   /** Prochaine étape d'onboarding manquante — null tant que non chargée. */
@@ -126,6 +137,11 @@ export class ContractorKycComponent implements OnDestroy {
   private recordedChunks: Blob[] = [];
   private recordingTimer: ReturnType<typeof setInterval> | null = null;
   private pollingTimer: ReturnType<typeof setInterval> | null = null;
+  private qrRegenTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Échéance d'expiration du jeton mobile courant (ms epoch), pour la régénération préventive. */
+  private qrExpiresAtMs = 0;
+  /** Marge avant expiration où l'on régénère (absorbe le décalage d'horloge client/serveur). */
+  private readonly QR_REGEN_MARGIN_MS = 30_000;
   // Canvas + animation frame utilisés pour enregistrer un flux MIROIRÉ
   // (cohérent avec l'affichage utilisateur). Sans cela, MediaRecorder
   // capturerait le flux brut caméra (non miroiré) alors que le contractor
@@ -144,10 +160,18 @@ export class ContractorKycComponent implements OnDestroy {
    */
   readonly mobileKycUrl = signal('');
 
-  /** Construit l'URL mobile à partir du token capability. */
-  private generateQrCode(token: string): void {
+  /** Dernier `phone_connected` connu (mis à jour à chaque poll). */
+  private lastPhoneConnected = false;
+
+  /** Construit l'URL mobile + arme la régénération préventive du QR. */
+  private generateQrCode(token: string, expiresAt?: string): void {
     const baseUrl = window.location.origin;
     this.mobileKycUrl.set(`${baseUrl}/kyc/mobile/${token}`);
+    // Date.parse renvoie NaN sur une date malformée : on retombe sur 0 pour
+    // que armQrRegen no-ope (sinon setTimeout(fn, NaN) se déclenche aussitôt).
+    const parsed = expiresAt ? Date.parse(expiresAt) : 0;
+    this.qrExpiresAtMs = Number.isNaN(parsed) ? 0 : parsed;
+    this.armQrRegen();
   }
 
   /** Current challenge index (0 ou 1) selon position dans la vidéo */
@@ -285,12 +309,12 @@ export class ContractorKycComponent implements OnDestroy {
           this.state.set('challenge_ready');
         } else if (desktopMode === 'auto') {
           // Auto: QR on desktop, camera on mobile
-          this.generateQrCode(ch.challenge_token);
+          this.generateQrCode(ch.challenge_token, ch.expires_at);
           this.state.set('qr_code');
           this.startPolling();
         } else {
           // Default: qr_code → show QR for mobile scan
-          this.generateQrCode(ch.challenge_token);
+          this.generateQrCode(ch.challenge_token, ch.expires_at);
           this.state.set('qr_code');
           this.startPolling(); // Poll for mobile completion
         }
@@ -507,7 +531,7 @@ export class ContractorKycComponent implements OnDestroy {
     //    le throttling/suspension du timer pendant l'arrière-plan.
     this.visibilityHandler = () => {
       const s = this.state();
-      const pollingStates: KycState[] = ['processing', 'qr_code'];
+      const pollingStates: KycState[] = ['processing', 'qr_code', 'phone_connected'];
       if (document.visibilityState === 'visible' && pollingStates.includes(s)) {
         this.acquireWakeLock(); // certains navigateurs libèrent le lock au backgrounding
         this.pollNow();
@@ -526,9 +550,14 @@ export class ContractorKycComponent implements OnDestroy {
     this.pollingTimer = setTimeout(() => {
       // Timeout doux : on N'affiche PAS un faux rejet — le job peut encore finir.
       // On bascule en polling_stalled avec bouton "Vérifier maintenant".
-      // Le seuil dépend de l'écran : QR (en attente du mobile) tolère beaucoup plus
-      // longtemps que processing (analyse en cours, ≤ 10 min annoncées au user).
-      const ceiling = this.state() === 'qr_code'
+      // Le seuil dépend de l'écran : tant qu'on ATTEND LE MOBILE (QR affiché OU
+      // téléphone connecté en train de filmer), on tolère beaucoup plus longtemps
+      // que processing (analyse en cours, ≤ 10 min annoncées au user). Sans
+      // `phone_connected` ici, un scan tardif (≈9e min) basculerait en
+      // polling_stalled en plein filmage — alors que le backend a justement
+      // prolongé le jeton (refreshExpiry) pour ce cas.
+      const waitingForPhone = this.state() === 'qr_code' || this.state() === 'phone_connected';
+      const ceiling = waitingForPhone
         ? this.MAX_POLL_DURATION_QR
         : this.MAX_POLL_DURATION_PROCESSING;
       if (Date.now() - this.pollStartedAt > ceiling) {
@@ -539,32 +568,43 @@ export class ContractorKycComponent implements OnDestroy {
 
       this.api.getKycStatus().subscribe({
         next: status => {
-          // Garde défensive : si une réponse malformée (envelope vide, 401
-          // intercepté résolu en undefined, etc.) arrive ici, on retombe sur
-          // un poll suivant au lieu de crasher sur `status.status`.
-          if (!status || typeof status.status !== 'string') {
-            this.pollCount++;
-            this.schedulePoll();
-            return;
-          }
-          if (status.status === 'approved') {
+          this.lastPhoneConnected = status.phone_connected ?? false;
+
+          const next = decideNextKycState({
+            serverStatus: status.status ?? null,
+            phoneConnected: this.lastPhoneConnected,
+            currentState: this.state() as KycPollState,
+          });
+
+          if (next === 'approved') {
             this.stopPolling();
             this.state.set('approved');
             this.session.refreshDashboard();
-          } else if (status.status === 'rejected') {
+          } else if (next === 'rejected') {
             this.stopPolling();
             this.failureReason.set(this.translateFailure(status));
             this.failureCode.set(status.failure_reason ?? null);
             this.failureDetail.set(status.failure_detail ?? null);
             this.failureDebug.set(status.debug ?? null);
             this.state.set('rejected');
-          } else if (this.state() === 'qr_code' && status.status === 'processing') {
-            // Le mobile a soumis sa vidéo → l'analyse a démarré côté serveur.
-            // Bascule le PC sur l'écran "Analyse en cours" (avec warning 10 min,
-            // animation, etc.) et reset le timer pour appliquer le timeout court.
+          } else if (next === 'qr_expired') {
+            // Filet : le jeton est mort sans avoir été régénéré à temps.
+            this.stopPolling();
+            this.state.set('qr_expired');
+          } else if (next === 'processing') {
+            // Le mobile a soumis sa vidéo → analyse démarrée. Reset du timer
+            // pour appliquer le timeout court (processing ≤ 12 min).
+            this.cancelQrRegen();
             this.pollStartedAt = Date.now();
             this.pollCount = 0;
             this.state.set('processing');
+            this.schedulePoll();
+          } else if (next === 'phone_connected') {
+            // Le QR a été scanné : on quitte « en attente » pour « téléphone
+            // connecté ». Le QR n'est plus utile, on coupe sa régénération.
+            this.cancelQrRegen();
+            this.state.set('phone_connected');
+            this.pollCount++;
             this.schedulePoll();
           } else {
             this.pollCount++;
@@ -572,8 +612,6 @@ export class ContractorKycComponent implements OnDestroy {
           }
         },
         error: () => {
-          // Erreur réseau — retry sans interrompre, le mobile peut perdre brièvement
-          // la connexion en passant Wi-Fi/4G.
           this.pollCount++;
           this.schedulePoll();
         },
@@ -599,6 +637,69 @@ export class ContractorKycComponent implements OnDestroy {
     } else {
       this.pollNow();
     }
+  }
+
+  /**
+   * Arme un timer qui régénère le QR ~30 s avant son expiration, SAUF si le
+   * téléphone a déjà scanné (cf. shouldRegenerateQr). Sans expires_at connu,
+   * on ne fait rien (le filet `expired` côté polling prend le relais).
+   */
+  private armQrRegen(): void {
+    this.cancelQrRegen();
+    if (this.qrExpiresAtMs <= 0) {
+      return;
+    }
+    const delay = Math.max(5_000, this.qrExpiresAtMs - Date.now() - this.QR_REGEN_MARGIN_MS);
+    this.qrRegenTimer = setTimeout(() => {
+      if (shouldRegenerateQr({ currentState: this.state() as KycPollState, phoneConnected: this.lastPhoneConnected })) {
+        this.regenerateQr();
+      }
+    }, delay);
+  }
+
+  private cancelQrRegen(): void {
+    if (this.qrRegenTimer !== null) {
+      clearTimeout(this.qrRegenTimer);
+      this.qrRegenTimer = null;
+    }
+  }
+
+  /**
+   * Demande un nouveau jeton (le backend invalide l'ancien via
+   * invalidatePreviousForSession) et remplace l'URL du QR en silence.
+   *
+   * Échec réseau : tant qu'il reste de la marge avant expiration, on laisse le
+   * timer retenter (armQrRegen replanifie à ~5 s puisqu'on est déjà près de
+   * l'échéance). Si le jeton est mort sans qu'on ait pu le renouveler, on
+   * bascule sur l'écran de récupération manuelle `qr_expired` plutôt que de
+   * laisser un QR inutilisable affiché.
+   */
+  private regenerateQr(): void {
+    this.api.generateChallenge().subscribe({
+      next: ch => {
+        this.challenge.set(ch);
+        this.generateQrCode(ch.challenge_token, ch.expires_at);
+      },
+      error: () => {
+        // Le QR reste scannable jusqu'à son expiration réelle : on ne baisse
+        // les bras (qr_expired) que s'il est vraiment mort. Avant ça, armQrRegen
+        // replanifie un retry court (~5 s, plancher du delai).
+        const dead = this.qrExpiresAtMs > 0 && Date.now() >= this.qrExpiresAtMs;
+        if (dead) {
+          this.stopPolling();
+          this.state.set('qr_expired');
+        } else {
+          this.armQrRegen();
+        }
+      },
+    });
+  }
+
+  /** Bouton « Générer un nouveau QR » de l'écran qr_expired. */
+  regenerateQrManually(): void {
+    this.state.set('qr_code');
+    this.regenerateQr();
+    this.startPolling();
   }
 
   private async acquireWakeLock(): Promise<void> {
@@ -807,6 +908,7 @@ export class ContractorKycComponent implements OnDestroy {
   }
 
   private stopPolling(): void {
+    this.cancelQrRegen();
     if (this.pollingTimer !== null) {
       clearTimeout(this.pollingTimer);
       this.pollingTimer = null;

@@ -1,4 +1,12 @@
 <div class="page">
+  <!-- Mini-stepper du parcours global (Documents → Identité → Certification).
+       Permet de revenir sur l'étape 1 (Documents) depuis ici sans repasser par
+       le dashboard. Phase courante = 2 (Identité).
+       [disabled]=true pendant un enregistrement actif (countdown/recording/
+       uploading/processing) : un clic accidentel sur « Docs » ou « Certif. »
+       détruirait la session caméra et l'artisan perdrait sa vidéo. -->
+  <app-parcours-stepper [currentPhase]="2" [disabled]="kycBusy()"></app-parcours-stepper>
+
   <div class="kyc-card">
 
     <!-- Barre de progression 3 phases (Filme-toi / Envoi / Vérification).
@@ -172,6 +180,40 @@
         <button mat-button class="kyc-secondary-btn" (click)="forceDesktopMode()">
           <mat-icon>desktop_windows</mat-icon>
           Utiliser la caméra de mon PC
+        </button>
+      </div>
+    }
+
+    <!-- ========== PHONE CONNECTED (QR scanné, le mobile enregistre) ========== -->
+    <!-- Le QR a été scanné : le téléphone filme. Le PC attend, le polling continue.
+         La barre de progression globale (<app-kyc-progress-bar> en haut de la carte)
+         couvre déjà cet état — comme pour qr_code, on ne la duplique PAS ici. -->
+    @if (state() === 'phone_connected') {
+      <div class="kyc-hero kyc-stage--phone-connected">
+        <div class="qr-waiting qr-waiting--connected" role="status" aria-live="polite">
+          <span class="qr-waiting__pulse qr-waiting__pulse--connected" aria-hidden="true"></span>
+          <span class="qr-waiting__label">📱 Téléphone connecté — enregistrement en cours…</span>
+        </div>
+        <p class="hero-subtitle">
+          Continue sur ton téléphone : filme-toi en suivant les consignes.
+          Cet écran se mettra à jour tout seul.
+        </p>
+      </div>
+    }
+
+    <!-- ========== QR EXPIRED (jeton mobile périmé, régénération manuelle) ========== -->
+    @if (state() === 'qr_expired') {
+      <div class="kyc-hero kyc-stage--qr-expired">
+        <h1>Ce QR code a expiré</h1>
+        <p class="hero-subtitle">
+          Pas d'inquiétude — génère un nouveau QR code et rescanne-le avec ton téléphone.
+        </p>
+        <button mat-raised-button
+                color="primary"
+                class="kyc-cta tui-attract"
+                (click)="regenerateQrManually()">
+          <mat-icon>qr_code_2</mat-icon>
+          Générer un nouveau QR
         </button>
       </div>
     }

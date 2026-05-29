@@ -16,6 +16,7 @@ export type KycFlowState =
   | 'verified_recap'
   | 'idle'
   | 'qr_code'
+  | 'phone_connected'
   | 'challenge_ready'
   | 'countdown'
   | 'recording'
@@ -23,7 +24,8 @@ export type KycFlowState =
   | 'processing'
   | 'polling_stalled'
   | 'approved'
-  | 'rejected';
+  | 'rejected'
+  | 'qr_expired';
 
 /**
  * Phases visibles dans la barre de progression. On collapse les 9 états de la
@@ -40,8 +42,12 @@ const STATE_TO_PHASE: Record<KycFlowState, Phase | null> = {
   approved: null,
   rejected: null,
 
-  // Phase 1 : préparer + filmer.
+  // Phase 1 : préparer + filmer. phone_connected = le mobile a scanné et
+  // filme en ce moment ; qr_expired = le QR est mort, on en regénère un —
+  // dans les deux cas on est toujours à l'étape « Filme-toi ».
   qr_code: 0,
+  phone_connected: 0,
+  qr_expired: 0,
   challenge_ready: 0,
   countdown: 0,
   recording: 0,
