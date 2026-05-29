@@ -751,6 +751,15 @@ export class ContractorKycComponent implements OnDestroy {
     this.router.navigateByUrl('/dashboard');
   }
 
+  /**
+   * Enchaîne sur la phase 3 du parcours après KYC validé. La page
+   * /certification a ses propres gardes (déjà certifié → recap, première
+   * tentative → intro) — on n'a rien à savoir ici.
+   */
+  goToCertification(): void {
+    this.router.navigateByUrl('/certification');
+  }
+
   // --- Helpers ---
 
   private translateFailure(status: any): string {

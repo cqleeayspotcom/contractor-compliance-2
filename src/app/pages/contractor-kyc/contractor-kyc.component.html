@@ -40,9 +40,21 @@
           accepter des missions sans relancer la vérification.
         </p>
 
+        <!-- CTA primaire : enchaîner sur la certification — c'est la phase 3
+             du parcours (Docs → Identité → Certif.) affichée par le stepper
+             juste au-dessus. Sans ce bouton, l'artisan arrivant sur ce recap
+             ne savait pas qu'il fallait passer au QCM pour finaliser
+             l'onboarding et restait coincé sur le dashboard. -->
         <button mat-raised-button
                 color="primary"
                 class="kyc-cta"
+                (click)="goToCertification()">
+          <mat-icon>school</mat-icon>
+          Passer à la certification
+        </button>
+
+        <button type="button"
+                class="kyc-cta-secondary"
                 (click)="goToDashboard()">
           Retour au tableau de bord
         </button>
