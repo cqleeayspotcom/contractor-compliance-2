@@ -139,6 +139,78 @@ export class ContractorDocumentsComponent implements OnInit, OnDestroy {
     this.fileInputRef?.nativeElement.click();
   }
 
+  /**
+   * Fallback « Remplacer » pour les types de doc SANS étape dans le stepper
+   * (statuts, qualibat, qualifelec, rge, attestation_regularite_*, assurance_do,
+   * pv_ag, invoice, other). On ouvre simplement le file picker global — le
+   * nouvel upload sera classé par OCR puis remplacera l'ancien côté backend
+   * (logique de dédoublonnage par type + ré-évaluation). Pas besoin de logique
+   * de suppression côté frontend.
+   */
+  triggerReplaceUpload(_doc: unknown): void {
+    this.triggerUpload();
+  }
+
+  /**
+   * Mappe le type backend d'un document (ex: `passport`, `extrait_inpi`) vers
+   * son type d'ÉTAPE canonique côté stepper d'onboarding (`cni`, `kbis`).
+   *
+   * POURQUOI cette indirection : le backend stocke le type ATOMIQUE uploadé
+   * (extrait_inpi vs kbis vs avis_sirene, ou passport vs cni) alors que le
+   * stepper a un seul step « identité » et un seul step « justificatif
+   * d'immatriculation » qui regroupent leurs variantes. Sans ce mapping, un
+   * deep-link `?replace=passport` raterait la step `cni`.
+   *
+   * Source : `IDENTITY_VARIANTS` + `IMMATRICULATION_VARIANTS` dans
+   * `onboarding-upload-stepper.component.ts`. À garder synchronisé si une
+   * variante est ajoutée côté stepper.
+   */
+  stepTypeForDoc(docType: string | null | undefined): string | null {
+    const t = (docType ?? '').toLowerCase();
+    // Identité : tous routent vers la step `cni` qui sert de point d'entrée
+    // pour les 3 variantes officielles (CNI, passeport, titre de séjour).
+    if (
+      t === 'cni' ||
+      t === 'passport' || t === 'passeport' ||
+      t === 'titre_de_sejour' || t === 'titre_sejour'
+    ) {
+      return 'cni';
+    }
+    // Justificatif d'immatriculation : les 3 formats légaux (Kbis ancien,
+    // extrait INPI nouveau RNE, avis SIRENE INSEE) sont aliasés sur la step
+    // `kbis` qui propose le picker à 3 cartes.
+    if (
+      t === 'kbis' || t === 'extrait_inpi' ||
+      t === 'avis_sirene' || t === 'avis_situation_insee'
+    ) {
+      return 'kbis';
+    }
+    // URSSAF + alias historique de la table DOCUMENT_TYPE_ALIASES côté backend.
+    if (t === 'urssaf' || t === 'attestation_urssaf') {
+      return 'urssaf';
+    }
+    // RC Pro + alias + décennale (secondary à droite de la step rc — cf.
+    // STEP_ORDER.secondary). Le stepper auto-révèle la dropzone secondary
+    // quand replaceMode est actif.
+    if (
+      t === 'rc' || t === 'assurance_rc' || t === 'assurance_rc_pro' ||
+      t === 'assurance_decennale' || t === 'decennale'
+    ) {
+      return 'rc';
+    }
+    if (t === 'rib') {
+      return 'rib';
+    }
+    // Types reconnus côté backend mais SANS step dans le stepper d'onboarding :
+    //   statuts, pv_ag, attestation_regularite_fiscale,
+    //   attestation_regularite_sociale, assurance_do, qualibat, qualifelec,
+    //   rge, invoice, other.
+    // On retourne `null` : le template HIDE le bouton « Remplacer » plutôt
+    // que de router vers une step arbitraire. L'artisan utilisera la gestion
+    // classique de /documents (re-upload via dropzone globale ou suppression).
+    return null;
+  }
+
   /** Seuil (jours) en deçà duquel on alerte qu'un document va expirer. */
   private static readonly EXPIRY_WARN_DAYS = 30;
 
@@ -166,11 +238,28 @@ export class ContractorDocumentsComponent implements OnInit, OnDestroy {
    * sont pas dans `documents()` car aucun Document n'a encore été créé.
    */
   readonly missingRequirements = computed<DocumentRequirement[]>(() => {
-    // Tri : obligatoires d'abord (`is_bonus` falsy), bonus optionnels ensuite.
-    // Évite que la décennale (optionnelle) ne pollue la liste des pièces
-    // vraiment manquantes pour la conformité.
+    // POURQUOI on déduplique par LABEL VISIBLE et non par `type` backend :
+    //   Certains types techniques distincts mappent vers le même libellé
+    //   utilisateur (cf. typeLabel : `kbis`, `extrait_inpi` et `avis_sirene`
+    //   → tous « Justificatif d'immatriculation »). Le dashboard renvoie
+    //   souvent un requirement `kbis` en `missing` alors que le contractor
+    //   a déjà un document `extrait_inpi` vérifié → l'artisan voit la même
+    //   pièce en double : « Manquant » en haut, « Vérifié » en bas.
+    //   On filtre côté frontend : si AU MOINS un document vérifié partage
+    //   le même libellé qu'un requirement manquant, ce requirement n'est
+    //   pas vraiment manquant pour l'utilisateur.
+    const verifiedLabels = new Set(
+      this.documents()
+        .filter((d) => d.status === 'verified' || d.status === 'verified_fresh')
+        .map((d) => this.typeLabel(d.type)),
+    );
+
     return this.requirements()
       .filter((r) => r.status === 'missing' || r.status === 'incomplete')
+      .filter((r) => !verifiedLabels.has(this.typeLabel(r.type)))
+      // Tri : obligatoires d'abord (`is_bonus` falsy), bonus optionnels ensuite.
+      // Évite que la décennale (optionnelle) ne pollue la liste des pièces
+      // vraiment manquantes pour la conformité.
       .sort((a, b) => Number(a.is_bonus ?? false) - Number(b.is_bonus ?? false));
   });
 

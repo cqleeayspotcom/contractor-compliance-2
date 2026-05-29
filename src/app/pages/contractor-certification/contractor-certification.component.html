@@ -1,5 +1,10 @@
 <div class="certification-page">
-  <!-- Progress bar -->
+  <!-- Mini-stepper du parcours global (Documents → Identité → Certification).
+       Phase courante = 3. Permet à l'artisan de revenir sur Documents ou
+       Identité sans repasser par le dashboard. -->
+  <app-parcours-stepper [currentPhase]="3"></app-parcours-stepper>
+
+  <!-- Progress bar (interne à la certification : Vidéo → QCM → Résultat) -->
   <div class="progress-section">
     <p class="step-label">{{ stepLabel() }}</p>
     <mat-progress-bar mode="determinate" [value]="progressPercent()"></mat-progress-bar>

@@ -1,0 +1,191 @@
+/* Mini-stepper du parcours (3 phases : Documents → Identité → Certification).
+ *
+ * Palette Tuita exclusive :
+ *   - Brand green  : #04A777  (past / active)
+ *   - Prussian blue: #073148  (texte)
+ *   - Grey-high    : #F1F3F8  (fond inactif / connecteur)
+ *   - Grey-mid     : rgba(7, 49, 72, 0.35) (icônes lock / labels future)
+ *
+ * Mobile-first : pas de scroll horizontal, tout tient à partir de 320px.
+ * Sur desktop, plus d'air autour des phases et taille des pastilles légèrement
+ * augmentée. */
+
+.parcours-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 1rem;
+  padding: 0.75rem 0.5rem 0;
+  transition: opacity 0.2s ease;
+}
+
+/* État verrouillé — pendant un enregistrement vidéo KYC actif. Aucune
+ * pastille n'est cliquable (toutes forcées en 'future' côté TS), on ajoute
+ * un léger voile visuel pour signaler que la navigation est temporairement
+ * indisponible sans cacher le « tu es là » de la phase active. */
+.parcours-stepper--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+
+  // Même les pastilles 'past' théoriques sont rendues comme 'future' côté
+  // TS — donc plus aucun <a> n'apparaît. Mais on désactive aussi pointer
+  // au cas où un sélecteur descendant ré-active des liens en CSS.
+  * { pointer-events: none !important; }
+}
+
+.parcours-stepper__phase {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  flex: 0 0 auto;
+  min-width: 64px;
+  text-decoration: none;
+  color: #073148;
+  font-family: inherit;
+  transition: transform 0.15s ease;
+
+  &:focus-visible {
+    outline: 2px solid #04A777;
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+}
+
+/* Lien (phase past) — feedback visuel au survol/tap pour signaler que c'est
+ * cliquable. Sans ça, l'artisan ne devine pas que la pastille verte est en
+ * fait un lien retour. */
+a.parcours-stepper__phase {
+  cursor: pointer;
+
+  &:hover .parcours-stepper__dot,
+  &:active .parcours-stepper__dot {
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(4, 167, 119, 0.35);
+  }
+
+  &:hover .parcours-stepper__label {
+    text-decoration: underline;
+  }
+}
+
+.parcours-stepper__dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #F1F3F8;
+  color: rgba(7, 49, 72, 0.45);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.15s ease,
+              box-shadow 0.2s ease;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.parcours-stepper__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* État past : pastille verte avec ✓, label vert. */
+.parcours-stepper__phase--past {
+  .parcours-stepper__dot {
+    background: #04A777;
+    color: #fff;
+  }
+  .parcours-stepper__label {
+    color: #04A777;
+  }
+}
+
+/* État active : pastille verte pleine, label foncé, légèrement plus grosse
+ * pour signaler « tu es ici ». */
+.parcours-stepper__phase--active {
+  .parcours-stepper__dot {
+    background: #04A777;
+    color: #fff;
+    transform: scale(1.1);
+    box-shadow: 0 4px 14px rgba(4, 167, 119, 0.4);
+  }
+  .parcours-stepper__label {
+    color: #073148;
+    font-weight: 700;
+  }
+}
+
+/* État future : grisé, cadenas. Non-interactif (pointer-events: none au cas
+ * où un sélecteur descendant ré-active le pointer). */
+.parcours-stepper__phase--future {
+  pointer-events: none;
+  cursor: not-allowed;
+
+  .parcours-stepper__dot {
+    background: #F1F3F8;
+    color: rgba(7, 49, 72, 0.35);
+  }
+  .parcours-stepper__label {
+    color: rgba(7, 49, 72, 0.4);
+  }
+}
+
+/* Connecteur horizontal entre 2 phases. `--done` quand la phase à gauche est
+ * passée, ce qui produit une ligne verte continue côté gauche de la barre. */
+.parcours-stepper__connector {
+  flex: 1 1 0;
+  height: 2px;
+  background: rgba(7, 49, 72, 0.12);
+  margin: 17px 0.5rem 0;  /* centre verticalement sur la pastille (18px = moitié de 36) */
+  min-width: 12px;
+  max-width: 60px;
+  border-radius: 1px;
+  transition: background 0.2s ease;
+
+  &--done {
+    background: #04A777;
+  }
+}
+
+/* Desktop : labels en taille un peu plus confortable. */
+@media (min-width: 768px) {
+  .parcours-stepper {
+    padding: 1rem 1rem 0.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .parcours-stepper__phase {
+    min-width: 96px;
+  }
+
+  .parcours-stepper__dot {
+    width: 40px;
+    height: 40px;
+
+    mat-icon {
+      font-size: 22px;
+      width: 22px;
+      height: 22px;
+    }
+  }
+
+  .parcours-stepper__label {
+    font-size: 0.85rem;
+  }
+
+  .parcours-stepper__connector {
+    margin-top: 19px;
+    max-width: 100px;
+  }
+}

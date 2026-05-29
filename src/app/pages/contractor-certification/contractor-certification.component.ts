@@ -17,6 +17,7 @@ import { ContractorApiService } from '../../services/contractor-api.service';
 import { ContractorSessionService } from '../../services/contractor-session.service';
 import { RefreshService } from '../../services/refresh.service';
 import { OnboardingNextStepCtaComponent } from '../../components/shared/onboarding-next-step-cta/onboarding-next-step-cta.component';
+import { ParcoursStepperComponent } from '../../components/shared/parcours-stepper/parcours-stepper.component';
 
 /**
  * Chapitres cliquables de la vidéo de formation. Les timecodes sont
@@ -319,6 +320,7 @@ const TOTAL_QUESTIONS = QUIZ_QUESTIONS.length;
     MatProgressBarModule,
     MatSnackBarModule,
     OnboardingNextStepCtaComponent,
+    ParcoursStepperComponent,
   ],
   templateUrl: './contractor-certification.component.html',
   styleUrl: './contractor-certification.component.scss',
@@ -443,16 +445,15 @@ export class ContractorCertificationComponent implements OnInit, OnDestroy {
             '',
             { duration: 4000, panelClass: ['snackbar-info'] },
           );
-        } else {
-          const startedAtMs = Date.parse(res.started_at);
-          if (Number.isFinite(startedAtMs) && Date.now() - startedAtMs > 60_000) {
-            this.snack.open(
-              'Reprise de ta tentative - tu continues là où tu en étais.',
-              '',
-              { duration: 4000, panelClass: ['snackbar-info'] },
-            );
-          }
         }
+        // POURQUOI on ne fire PLUS de toast « Reprise » quand il n'y a aucun
+        // brouillon : le simple fait d'arriver sur /certification crée un
+        // QcmAttempt côté backend (idempotent via `startCertification()`). Au
+        // 2e chargement de la page, `started_at` est > 60s mais le contractor
+        // n'a RIEN « repris » — il n'a fait que naviguer. Le toast affolait
+        // sans raison (« je n'ai jamais cliqué Commencer, pourquoi on me dit
+        // que je reprends ?? »). On garde uniquement le toast utile, celui
+        // qui signale la restauration de réponses réellement saisies.
 
         this.startHeartbeat();
       },

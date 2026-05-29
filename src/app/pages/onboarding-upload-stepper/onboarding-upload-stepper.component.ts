@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -24,6 +24,7 @@ import {
   ContractorApiService,
   ContractorBankDetails,
   ContractorDashboard,
+  ContractorDocument,
   DocumentRequirement,
 } from '../../services/contractor-api.service';
 import { IdentityFileFusionService } from '../../services/identity-file-fusion.service';
@@ -49,7 +50,8 @@ import {
   OnboardingVideoDialogData,
 } from '../../components/onboarding-video-dialog/onboarding-video-dialog.component';
 import { ConfirmationDialogComponent } from '../../components/shared/confirmation-dialog.component';
-import { MatDialog } from '@angular/material/dialog';
+import { ParcoursStepperComponent } from '../../components/shared/parcours-stepper/parcours-stepper.component';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { firstValueFrom, interval, Subscription } from 'rxjs';
 import { switchMap, takeWhile } from 'rxjs/operators';
 
@@ -534,6 +536,7 @@ interface StepView {
     MatInputModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
+    ParcoursStepperComponent,
   ],
   templateUrl: './onboarding-upload-stepper.component.html',
   styleUrl: './onboarding-upload-stepper.component.scss',
@@ -544,6 +547,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
   private readonly api = inject(ContractorApiService);
   private readonly fusion = inject(IdentityFileFusionService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   private readonly snack = inject(MatSnackBar);
   private readonly dialog = inject(MatDialog);
   private readonly destroyRef = inject(DestroyRef);
@@ -560,6 +564,20 @@ export class OnboardingUploadStepperComponent implements OnInit {
   readonly dashboard = toSignal<ContractorDashboard | null>(this.session.dashboard$, {
     initialValue: null,
   });
+
+  /**
+   * Cache local de la liste complète des documents du contractor (avec
+   * `verification_result.extracted_data`). Chargée en init via
+   * `getDocuments()`. POURQUOI on en a besoin alors que le dashboard suffit
+   * pour le reste : le SIREN extrait par OCR (depuis un kbis/INPI/avis SIRENE
+   * précédemment uploadé ou acheté) vit sur le ContractorDocument complet —
+   * pas sur la DocumentRequirement light renvoyée dans le dashboard. Pour un
+   * rachat, l'artisan a TOUJOURS un doc d'immatriculation antérieur : on
+   * récupère son SIREN extrait pour pré-remplir le purchase et éviter une
+   * boîte de dialogue inutile. Cf. `bestKnownSiren()` ci-dessous (même logique
+   * que `knownSiren` côté contractor-documents).
+   */
+  readonly verifiedDocs = signal<ContractorDocument[]>([]);
 
   /** Index de l'étape courante (0..STEP_ORDER.length). */
   readonly currentIndex = signal<number>(0);
@@ -762,8 +780,35 @@ export class OnboardingUploadStepperComponent implements OnInit {
    */
   private readonly watchedVideoTypes = this.loadWatchedVideoTypes();
 
+  /**
+   * Refs des dialogs ouverts par ce composant (vidéo onboarding + variantes).
+   * POURQUOI on les track : MatDialog est un service global → un dialog
+   * ouvert avec `disableClose: true` ne se ferme PAS automatiquement quand
+   * le composant qui l'a ouvert est détruit. Si l'artisan navigue de
+   * `/onboarding` vers `/kyc` alors qu'un auto-open vient de pousser la
+   * vidéo « Étape 1 sur 5 - Ta pièce d'identité », le popup persiste
+   * par-dessus la page /kyc (bug observé). On stocke chaque ref et on les
+   * ferme toutes dans `onDestroy`.
+   */
+  private readonly openDialogRefs = new Set<MatDialogRef<unknown>>();
+
+  private trackDialog<T, R>(ref: MatDialogRef<T, R>): MatDialogRef<T, R> {
+    this.openDialogRefs.add(ref as MatDialogRef<unknown>);
+    ref.afterClosed().subscribe(() => this.openDialogRefs.delete(ref as MatDialogRef<unknown>));
+    return ref;
+  }
+
   constructor() {
-    this.destroyRef.onDestroy(() => this.cancelPendingAdvance());
+    this.destroyRef.onDestroy(() => {
+      this.cancelPendingAdvance();
+      // Ferme tous les dialogs encore ouverts à la destruction du composant
+      // (ex: navigation /onboarding → /kyc avec un onboarding-video-dialog
+      // resté affiché par-dessus la nouvelle page).
+      for (const ref of this.openDialogRefs) {
+        try { ref.close(); } catch { /* déjà fermé entre-temps */ }
+      }
+      this.openDialogRefs.clear();
+    });
 
     // Auto-open du dialog vidéo à la première entrée sur un step donné. Si
     // l'artisan a déjà fermé cette vidéo une fois (state persisté en
@@ -799,7 +844,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
       forceWatch,
       helpLink: step.config.helpLink,
     };
-    const ref = this.dialog.open<
+    const ref = this.trackDialog(this.dialog.open<
       OnboardingVideoDialogComponent,
       OnboardingVideoDialogData
     >(OnboardingVideoDialogComponent, {
@@ -813,7 +858,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
       disableClose: true,
       autoFocus: false,
       restoreFocus: true,
-    });
+    }));
     // Une fois la vidéo fermée (lecture finie, sortie de secours × ou bouton
     // « J'ai compris »), on retient que l'artisan l'a vue → plus d'auto-open
     // sur ce step. Le bouton « Revoir la vidéo » reste son seul moyen de la
@@ -1136,6 +1181,15 @@ export class OnboardingUploadStepperComponent implements OnInit {
     // pendant qu'un setInterval tourne (navigation, hot reload, etc.).
     this.destroyRef.onDestroy(() => this.stopPurchasePolling());
 
+    // Charge la liste complète des documents pour pouvoir scanner le SIREN
+    // extrait par OCR (utilisé par `bestKnownSiren()` au moment du clic
+    // « Récupérer l'officiel »). Fail-soft : si l'appel échoue, le purchase
+    // retombera sur le dialog avec saisie manuelle du SIREN — pas bloquant.
+    this.api.getDocuments().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (res) => this.verifiedDocs.set(res.data ?? []),
+      error: () => { /* fail-soft, géré par fallback dialog */ },
+    });
+
     // Resume : à l'ARRIVÉE UNIQUEMENT, jump à la première étape non-faite
     // (en sautant celles déjà skippées cette session). Si tout est validé,
     // on enchaîne direct sur le KYC.
@@ -1144,12 +1198,64 @@ export class OnboardingUploadStepperComponent implements OnInit {
     // déclenche `refreshDashboard()` → nouvelle émission → si on
     // re-positionnait `currentIndex` ici, l'artisan qui upload sur l'étape 3
     // serait téléporté sur l'étape 1 dès qu'un rejet revient.
+    // `?replace=<step-type>` — deep-link de remplacement explicite, posé par
+    // le bouton « Remplacer » de la liste /documents. Quand présent :
+    //   1. On positionne le stepper directement sur cette étape (scanner
+    //      jscanify + redressement OpenCV dispo, contrairement au file picker
+    //      brut de `triggerUpload()` côté liste — critique sur mobile pour
+    //      CNI / passeport / kbis papier).
+    //   2. On BYPASSE l'auto-redirect `allDone() → /kyc|/dashboard`, sinon
+    //      un artisan déjà à jour qui veut juste écraser un doc se ferait
+    //      téléporter hors de l'écran qu'il vient de demander.
+    //   3. Si le type demandé n'existe pas comme step racine (cas
+    //      `assurance_decennale` qui est un `secondary` de la step `rc`),
+    //      on fallback sur la step parente plutôt que de redirect vers /kyc.
+    const requestedReplaceType = (this.route.snapshot.queryParamMap.get('replace') ?? '').trim();
+
     let resumed = false;
     this.session.dashboard$
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe(() => {
         if (resumed || !this.dashboard()) return;
         resumed = true;
+
+        // Cas explicit-replace : on saute toute la logique d'auto-position
+        // pour viser la step demandée. Le mode replace doit TOUJOURS être
+        // honoré — jamais de redirect /kyc tant qu'on est venu depuis
+        // /documents avec l'intention explicite d'écraser une pièce.
+        if (requestedReplaceType !== '') {
+          // Recherche 1 : type racine d'une step (cas standard cni, kbis,
+          // urssaf, rc, rib).
+          let replaceIdx = this.steps().findIndex(
+            (s) => s.config.type === requestedReplaceType,
+          );
+          // Recherche 2 : type d'un `secondary` à l'intérieur d'une step
+          // (cas assurance_decennale → step rc). On positionne sur la step
+          // PARENTE qui affiche déjà la dropzone secondary à droite.
+          if (replaceIdx === -1) {
+            replaceIdx = this.steps().findIndex(
+              (s) => s.config.secondary?.type === requestedReplaceType,
+            );
+          }
+          if (replaceIdx !== -1) {
+            this.currentIndex.set(replaceIdx);
+            // Active `replaceMode` direct : sans ça, l'artisan arrivant via
+            // « Remplacer ce document » verrait le verdict « Document déjà
+            // validé » avec un bouton « Remplacer ce document » à recliquer
+            // (1 clic + 1 message inutiles, l'intention est déjà exprimée).
+            // Cet auto-activation est l'équivalent template-side d'un
+            // toggleReplaceMode() au mount sur la step ciblée.
+            this.replaceMode.set(true);
+            return;
+          }
+          // Type vraiment introuvable (forge URL ou config désynchronisée) —
+          // on log mais on RESTE sur le stepper plutôt que de redirect en
+          // boucle vers /kyc. Position sur la 1re étape par défaut.
+          console.warn('[stepper] ?replace= type inconnu, fallback step 0 :', requestedReplaceType);
+          this.currentIndex.set(0);
+          return;
+        }
+
         // Si au moins un doc verified expire dans les 30 j, on NE redirige
         // pas — l'artisan vient justement renouveler une pièce. Le stepper
         // doit rester ouvert pour qu'il puisse re-uploader la version à jour.
@@ -1437,7 +1543,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
    *   - `null` si l'utilisateur a cliqué « reprendre la photo »
    */
   private async runScanner(file: File, label: string): Promise<File | null> {
-    const ref = this.dialog.open<
+    const ref = this.trackDialog(this.dialog.open<
       DocumentScannerDialogComponent,
       DocumentScannerDialogData,
       DocumentScannerDialogResult
@@ -1448,7 +1554,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
       width: '95vw',
       disableClose: true,
       autoFocus: false,
-    });
+    }));
     const result = await firstValueFrom(ref.afterClosed());
     if (!result || result === 'cancel') return null;
     if (result === 'fallback') return file;
@@ -1813,20 +1919,86 @@ export class OnboardingUploadStepperComponent implements OnInit {
 
   /**
    * Bouton "Récupérer l'officiel — 9,99 €" sur l'étape immatriculation.
-   * Réutilise le dialog d'achat existant qui gère SIREN + Stripe Checkout.
+   *
+   * Comportement :
+   *   - SIREN déjà connu en session → bypass total du dialog, on lance
+   *     directement le Stripe Checkout pour un extrait INPI. Zéro friction,
+   *     zéro choix utilisateur, zéro source d'erreur (mauvais type sélectionné).
+   *   - SIREN inconnu → on ouvre le dialog qui demande UNIQUEMENT le SIREN
+   *     (le dialog est déjà INPI-only côté template — plus aucun picker
+   *     Kbis/INPI/SIRENE depuis 2026-04).
+   *
+   * POURQUOI on force `extrait_inpi` partout :
+   *   Depuis le passage RNE (INPI) au 1er janvier 2023, l'extrait INPI couvre
+   *   100 % des formes juridiques françaises (sociétés SARL/SAS/SCI, EI,
+   *   auto-entrepreneurs, micro-entreprises, professions libérales). Plus
+   *   aucune raison de proposer un choix Kbis vs INPI vs avis SIRENE à
+   *   l'achat — c'est toujours INPI. Le picker à 3 cartes existait à
+   *   l'origine pour identifier visuellement un papier DÉJÀ DÉTENU (cas
+   *   upload manuel), pas pour un achat neuf.
    */
+  /**
+   * Source SIREN par ordre de priorité (même algo que `knownSiren` côté
+   * contractor-documents.component pour rester cohérent) :
+   *   1. Session contractor (fourni par tuita.fr au login ou signup)
+   *   2. SIREN extrait par OCR d'un doc VERIFIED (kbis, INPI, URSSAF…)
+   *      → critique pour le RACHAT : l'artisan a un INPI antérieur, on
+   *        évite de lui redemander une info qu'on a déjà.
+   *   3. SIRET extrait par OCR (9 premiers chiffres = SIREN).
+   *   4. null → fallback dialog avec saisie manuelle.
+   *
+   * Retourne un bloc de 9 chiffres validé, ou null.
+   */
+  private bestKnownSiren(): string | null {
+    const fromSession = this.dashboard()?.contractor?.siren;
+    if (fromSession) {
+      const clean = fromSession.replace(/\D/g, '');
+      if (/^\d{9}$/.test(clean)) return clean;
+    }
+    for (const doc of this.verifiedDocs()) {
+      if ((doc.status ?? '').toString() !== 'verified') continue;
+      const vr = doc.verification_result as { extracted_data?: Record<string, unknown> } | null;
+      const data = vr?.extracted_data;
+      if (!data) continue;
+      const rawSiren = data['siren'];
+      if (typeof rawSiren === 'string') {
+        const clean = rawSiren.replace(/\D/g, '');
+        if (/^\d{9}$/.test(clean)) return clean;
+      }
+      const rawSiret = data['siret'];
+      if (typeof rawSiret === 'string') {
+        const clean = rawSiret.replace(/\D/g, '');
+        if (/^\d{14}$/.test(clean)) return clean.slice(0, 9);
+      }
+    }
+    return null;
+  }
+
   openPurchase(): void {
     const step = this.currentStep();
     if (!step) return;
-    const sessionSiren = this.dashboard()?.contractor?.siren ?? null;
 
-    const ref = this.dialog.open<
+    // Fast path : SIREN déjà connu (session OU OCR d'un doc antérieur).
+    // Sans le scan OCR, un rachat sans SIREN session forçait le dialog
+    // alors qu'on AVAIT l'info — frustration garantie.
+    const knownSiren = this.bestKnownSiren();
+    if (knownSiren) {
+      this.runPurchase('extrait_inpi', knownSiren);
+      return;
+    }
+
+    // Slow path : SIREN manquant → mini-dialog pour le saisir. Le dialog est
+    // INPI-only côté template (cf. document-quick-actions-dialog.html : un
+    // seul bouton `purchase('extrait_inpi')`), donc tout résultat 'purchase'
+    // est garanti extrait_inpi. On garde le mapping défensif au cas où le
+    // dialog évoluerait, mais on N'utilise PAS result.docType pour décider.
+    const ref = this.trackDialog(this.dialog.open<
       DocumentQuickActionsDialogComponent,
       QuickActionsDialogData,
       QuickActionsResult
     >(DocumentQuickActionsDialogComponent, {
       data: {
-        siren: sessionSiren,
+        siren: null,
         existingDoc: null,
       },
       width: '760px',
@@ -1835,10 +2007,12 @@ export class OnboardingUploadStepperComponent implements OnInit {
       restoreFocus: true,
       disableClose: true,
       panelClass: 'quick-actions-dialog-panel',
-    });
+    }));
     ref.afterClosed().subscribe((result) => {
       if (result?.action === 'purchase') {
-        this.runPurchase(result.docType, result.siren);
+        // On IGNORE result.docType — on force extrait_inpi systématiquement
+        // (forme juridique universelle depuis RNE 2023).
+        this.runPurchase('extrait_inpi', result.siren);
       }
     });
   }
@@ -1896,7 +2070,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
       kbis: 'KBIS',
       avis_sirene: 'Avis SIRENE',
     };
-    const ref = this.dialog.open<
+    const ref = this.trackDialog(this.dialog.open<
       StripeEmbeddedCheckoutDialogComponent,
       StripeEmbeddedCheckoutDialogData,
       StripeEmbeddedCheckoutDialogResult
@@ -1912,7 +2086,7 @@ export class OnboardingUploadStepperComponent implements OnInit {
         title: `Paiement sécurisé - ${labels[docType]}`,
         subtitle: 'Confirmez votre achat pour lancer la délivrance du document officiel.',
       },
-    });
+    }));
     ref.afterClosed().subscribe((result) => {
       if (result?.status === 'complete') {
         // L'ancien verdict OCR (souvent `kbis_not_original` sur un upload
@@ -2165,6 +2339,27 @@ export class OnboardingUploadStepperComponent implements OnInit {
   }
 
   private advance(): void {
+    // Mode `?replace=<type>` : l'artisan est venu UNIQUEMENT pour remplacer
+    // un document précis depuis /documents. Sans ce shortcut, advance()
+    // l'aurait fait défiler dans les steps suivants (tous done) avant de
+    // l'envoyer sur /kyc ou /dashboard — comportement désorientant (« j'ai
+    // remplacé ma CNI, pourquoi je suis sur la step kbis ? »). On le ramène
+    // direct sur /documents où il a démarré.
+    //
+    // POURQUOI on relit le queryParam ici plutôt que via un signal :
+    //   route.snapshot reste figé sur la valeur du dernier navigate, donc
+    //   relire ici garantit qu'on agit sur l'intention initiale et pas sur
+    //   un état stale si un dot-click intermédiaire a changé l'index.
+    const replaceMode = this.route.snapshot.queryParamMap.get('replace');
+    if (replaceMode && replaceMode.trim() !== '') {
+      this.snack.open('✓ Document remplacé.', '', {
+        duration: 2500,
+        panelClass: ['tuita-snackbar', 'snack-success'],
+      });
+      void this.router.navigate(['/documents']);
+      return;
+    }
+
     const i = this.currentIndex();
     const total = STEP_ORDER.length;
     if (i + 1 >= total) {

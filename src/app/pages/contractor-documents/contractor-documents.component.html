@@ -112,8 +112,16 @@
            2. SIREN inconnu → carte avec champ de saisie SIREN inline. Pas de
               modal surprise au clic — l'artisan voit dès le départ ce qu'on
               attend de lui et le bouton reste désactivé tant que le SIREN
-              n'est pas valide (9 chiffres). -->
-    @if (hasKnownSiren()) {
+              n'est pas valide (9 chiffres).
+
+         POURQUOI on masque le CTA quand un justificatif est déjà vérifié :
+           Pousser l'achat 9,99 € d'un extrait INPI à un artisan qui a déjà
+           un KBIS / extrait INPI / avis SIRENE validé crée une redondance
+           visuelle (cf. retour utilisateur du 2026-05-29). On retombe sur
+           le CTA dès qu'un renouvellement est nécessaire (statut expired
+           ou suppression du doc) — `currentImmatriculationDoc()` repassera
+           à null. -->
+    @if (!currentImmatriculationDoc() && hasKnownSiren()) {
       <button type="button"
               class="purchase-cta"
               [disabled]="isUploading()"
@@ -140,7 +148,7 @@
           <mat-icon class="purchase-cta__cta-arrow">arrow_forward</mat-icon>
         </span>
       </button>
-    } @else {
+    } @else if (!currentImmatriculationDoc()) {
       <div class="purchase-cta purchase-cta--needs-siren" role="group"
            aria-label="Récupérer mon justificatif d'immatriculation - SIREN requis">
         <div class="purchase-cta__icon" aria-hidden="true">
@@ -593,6 +601,42 @@
                         (click)="downloadListDoc($event, doc)">
                   <mat-icon>download</mat-icon>
                 </button>
+                <!-- Bouton discret « Remplacer » sur les docs validés.
+                     POURQUOI on route vers le stepper plutôt que d'ouvrir un
+                     file picker brut :
+                       - Le stepper a le scanner jscanify + OpenCV (recadrage
+                         + redressement automatique) — indispensable sur
+                         mobile pour CNI / passeport / kbis papier photographié.
+                       - C'est le composant guidé éprouvé pour l'upload :
+                         vidéo d'aide, vérification du verdict, gestion des
+                         rejets OCR avec messages clairs.
+                     Le query param `?replace=<stepType>` positionne le stepper
+                     directement sur la bonne étape ET bypass son auto-redirect
+                     `allDone → /kyc` (cf. logique dans ngOnInit du stepper).
+                     Garde : si le type de doc n'a pas d'étape dédiée dans le
+                     stepper (statuts, qualibat, rge, attestation_regularite_*,
+                     etc.), on tombe en fallback file picker pour éviter une
+                     URL `?replace=null` qui retomberait sur la step CNI. -->
+                @if (stepTypeForDoc(doc.detected_type ?? doc.type); as repType) {
+                  <a mat-icon-button
+                     class="doc-card__replace"
+                     matTooltip="Remplacer ce document"
+                     aria-label="Remplacer ce document"
+                     [routerLink]="['/documents/upload']"
+                     [queryParams]="{ replace: repType }">
+                    <mat-icon>edit</mat-icon>
+                  </a>
+                } @else {
+                  <button mat-icon-button
+                          type="button"
+                          class="doc-card__replace"
+                          matTooltip="Remplacer ce document"
+                          aria-label="Remplacer ce document"
+                          [disabled]="isUploading()"
+                          (click)="triggerReplaceUpload(doc)">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                }
                 @if (isExpiringSoon(doc) && isPurchasableDocType(doc.type)) {
                   <button mat-stroked-button
                           color="primary"

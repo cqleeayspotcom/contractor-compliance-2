@@ -1,0 +1,44 @@
+<nav class="parcours-stepper"
+     [class.parcours-stepper--disabled]="disabled()"
+     [attr.aria-label]="disabled() ? 'Étapes du parcours (navigation verrouillée pendant l\'enregistrement)' : 'Étapes du parcours'"
+     [attr.title]="disabled() ? 'Navigation verrouillée pendant l\'enregistrement vidéo — termine ou annule pour revenir en arrière' : null">
+  @for (p of phases(); track p.index; let last = $last) {
+    @if (p.status === 'future') {
+      <!-- Phase verrouillée : <span>, pas <a>, donc pas tappable. -->
+      <span class="parcours-stepper__phase parcours-stepper__phase--future"
+            [attr.aria-disabled]="true"
+            [attr.title]="p.label + ' — disponible plus tard'">
+        <span class="parcours-stepper__dot">
+          <mat-icon>lock</mat-icon>
+        </span>
+        <span class="parcours-stepper__label">{{ p.shortLabel }}</span>
+      </span>
+    } @else if (p.status === 'active') {
+      <!-- Phase courante : pas de navigation (on est déjà ici). -->
+      <span class="parcours-stepper__phase parcours-stepper__phase--active"
+            [attr.aria-current]="'step'"
+            [attr.title]="p.label">
+        <span class="parcours-stepper__dot">
+          <mat-icon>{{ p.icon }}</mat-icon>
+        </span>
+        <span class="parcours-stepper__label">{{ p.shortLabel }}</span>
+      </span>
+    } @else {
+      <!-- Phase passée : lien router → permet de revenir en arrière. -->
+      <a class="parcours-stepper__phase parcours-stepper__phase--past"
+         [routerLink]="p.route"
+         [attr.title]="'Revenir à : ' + p.label">
+        <span class="parcours-stepper__dot">
+          <mat-icon>check</mat-icon>
+        </span>
+        <span class="parcours-stepper__label">{{ p.shortLabel }}</span>
+      </a>
+    }
+
+    @if (!last) {
+      <span class="parcours-stepper__connector"
+            [class.parcours-stepper__connector--done]="p.status === 'past'"
+            aria-hidden="true"></span>
+    }
+  }
+</nav>

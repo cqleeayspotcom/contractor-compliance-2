@@ -1,4 +1,9 @@
 @if (currentStep(); as step) {
+  <!-- Mini-stepper du parcours global (Documents → Identité → Certification).
+       Placé HORS de la <section.stepper> pour rester collé au top de page,
+       indépendant de la progression interne aux documents. Phase courante = 1. -->
+  <app-parcours-stepper [currentPhase]="1"></app-parcours-stepper>
+
   <section class="stepper">
 
     <!-- Vidéo : présentée en dialog plein-largeur à l'entrée sur le step
