@@ -10,7 +10,7 @@ export const environment = {
   apiUrl: '', // Routes complètes en relatif (/contractor-compliance/...)
   /** Backend Tuita prod — servi sur le même domaine via reverse proxy. */
   tuitaBackendUrl: '',
-  frontendUrl: 'https://your-domain.com',
+  frontendUrl: 'https://staging.tuita.fr',
   stripe: {
     publishableKey: 'pk_live_your_stripe_key_here'
   },
