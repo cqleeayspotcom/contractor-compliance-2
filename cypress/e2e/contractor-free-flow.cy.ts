@@ -1,11 +1,11 @@
-﻿/// <reference types="cypress" />
+/// <reference types="cypress" />
 
 /**
- * FLOW PLAN GRATUIT â€” Upload factures, rejet, correction, souscription
+ * FLOW PLAN GRATUIT — Upload factures, rejet, correction, souscription
  *
  * Teste le parcours d'un artisan en plan Gratuit :
  *  - Upload manuel de facture (drag & drop, formulaire)
- *  - Facture rejetee â†’ correction
+ *  - Facture rejetée → correction
  *  - Filtres par statut
  *  - Banner "Passez au plan Pro"
  *  - Souscription Stripe
@@ -14,13 +14,13 @@
 
 const PAUSE = 3000;
 
-describe('Plan Gratuit â€” Flow factures et souscription', () => {
+describe('Plan Gratuit — Flow factures et souscription', () => {
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // FACTURES FREE â€” Upload manuel
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════
+  // FACTURES FREE — Upload manuel
+  // ═══════════════════════════════════════════════
 
-  describe('Factures â€” upload manuel', () => {
+  describe('Factures — upload manuel', () => {
 
     beforeEach(() => {
       cy.mockContractorApi({
@@ -77,11 +77,11 @@ describe('Plan Gratuit â€” Flow factures et souscription', () => {
     });
   });
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // FACTURES FREE â€” Rejet et correction
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════
+  // FACTURES FREE — Rejet et correction
+  // ═══════════════════════════════════════════════
 
-  describe('Factures â€” rejet et correction', () => {
+  describe('Factures — rejet et correction', () => {
 
     beforeEach(() => {
       cy.mockContractorApi({
@@ -168,11 +168,11 @@ describe('Plan Gratuit â€” Flow factures et souscription', () => {
     });
   });
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // MISSIONS FREE â€” Factures manquantes
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════
+  // MISSIONS FREE — Factures manquantes
+  // ═══════════════════════════════════════════════
 
-  describe('Missions â€” offres et detail intervention', () => {
+  describe('Missions — offres et detail intervention', () => {
 
     beforeEach(() => {
       cy.mockContractorApi({
@@ -193,7 +193,7 @@ describe('Plan Gratuit â€” Flow factures et souscription', () => {
       cy.wait(PAUSE);
     });
 
-    it('ouvre le detail d\'une intervention â†’ "Envoyer ma facture"', () => {
+    it('ouvre le detail d\'une intervention → "Envoyer ma facture"', () => {
       cy.visit('/interventions/MIS-2026-043');
       cy.wait('@getMissionDetail');
 
@@ -201,7 +201,7 @@ describe('Plan Gratuit â€” Flow factures et souscription', () => {
       cy.contains('Facture manquante').should('be.visible');
       cy.contains('Envoyer ma facture').should('be.visible');
 
-      // Clique â†’ redirige vers /invoices
+      // Clique → redirige vers /invoices
       cy.contains('Envoyer ma facture').click();
       cy.url().should('include', '/invoices');
       cy.url().should('include', 'mission_ref=');
@@ -210,11 +210,11 @@ describe('Plan Gratuit â€” Flow factures et souscription', () => {
     });
   });
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  // BILLING FREE â€” Souscription
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ═══════════════════════════════════════════════
+  // BILLING FREE — Souscription
+  // ═══════════════════════════════════════════════
 
-  describe('Billing â€” souscription plan Pro', () => {
+  describe('Billing — souscription plan Pro', () => {
 
     beforeEach(() => {
       cy.mockContractorApi({

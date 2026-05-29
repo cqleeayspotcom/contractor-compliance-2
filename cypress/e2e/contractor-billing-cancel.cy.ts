@@ -1,12 +1,12 @@
 ﻿/// <reference types="cypress" />
 
 /**
- * BILLING â€” Resiliation plan Pro, historique paiements, erreurs
+ * BILLING — Resiliation plan Pro, historique paiements, erreurs
  */
 
 const PAUSE = 3000;
 
-describe('Billing â€” resiliation et historique', () => {
+describe('Billing — resiliation et historique', () => {
 
   describe('Resiliation du plan Pro', () => {
 

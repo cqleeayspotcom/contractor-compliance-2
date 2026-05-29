@@ -1,14 +1,14 @@
 ﻿/// <reference types="cypress" />
 
 /**
- * GESTION D'ERREURS â€” 401 redirect, 500 graceful, network error, 429 rate limit
+ * GESTION D'ERREURS — 401 redirect, 500 graceful, network error, 429 rate limit
  *
  * Teste que l'app ne crash jamais, meme quand le backend est en panne.
  */
 
 const PAUSE = 3000;
 
-describe('Gestion erreurs â€” resilience frontend', () => {
+describe('Gestion erreurs — resilience frontend', () => {
 
   it('401 sur dashboard redirige vers login (cookie expire)', () => {
     cy.intercept('GET', '/contractor-compliance/dashboard', {
@@ -19,7 +19,7 @@ describe('Gestion erreurs â€” resilience frontend', () => {
     cy.visit('/dashboard');
     cy.wait('@dashboardUnauth');
 
-    // Le cookie interceptor redirige â€” en dev il reload /dashboard
+    // Le cookie interceptor redirige — en dev il reload /dashboard
     // L'important c'est que l'app ne crash pas
     cy.wait(PAUSE);
   });
@@ -72,7 +72,7 @@ describe('Gestion erreurs â€” resilience frontend', () => {
     cy.wait(PAUSE);
   });
 
-  it('erreur reseau simulee (status 0) â€” l\'app survit', () => {
+  it('erreur reseau simulee (status 0) — l\'app survit', () => {
     cy.mockContractorApi();
     cy.intercept('GET', '/contractor-compliance/invoices*', {
       forceNetworkError: true,

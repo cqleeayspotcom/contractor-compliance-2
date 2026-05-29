@@ -17,7 +17,7 @@ export interface SignupPayload {
   pincode: string;
   // Champs optionnels — au signup l'artisan ne saisit que code + phone + email.
   // Le reste est rempli automatiquement par OCR à l'upload des documents
-  // (CNI â†’ first/last_name, KBIS â†’ siren/company_name).
+  // (CNI → first/last_name, KBIS → siren/company_name).
   first_name?: string;
   last_name?: string;
   siren?: string;

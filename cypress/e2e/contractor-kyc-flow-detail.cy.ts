@@ -1,12 +1,12 @@
 ﻿/// <reference types="cypress" />
 
 /**
- * KYC FLOW DETAILLE â€” Termes, challenge, polling, echecs biometriques
+ * KYC FLOW DETAILLE — Termes, challenge, polling, echecs biometriques
  */
 
 const PAUSE = 3000;
 
-describe('KYC â€” flow detaille', () => {
+describe('KYC — flow detaille', () => {
 
   beforeEach(() => {
     cy.mockContractorApi();
@@ -121,7 +121,7 @@ describe('KYC â€” flow detaille', () => {
     cy.wait(PAUSE);
   });
 
-  it('KYC en "processing" â€” le contractor attend', () => {
+  it('KYC en "processing" — le contractor attend', () => {
     cy.intercept('GET', '/contractor-compliance/kyc/status', {
       statusCode: 200,
       body: {

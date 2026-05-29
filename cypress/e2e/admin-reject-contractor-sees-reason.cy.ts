@@ -1,28 +1,28 @@
 ﻿/// <reference types="cypress" />
 
 /**
- * PARCOURS COMPLET REJET â†’ CONTRACTOR VOIT LE MOTIF â†’ CORRECTION
+ * PARCOURS COMPLET REJET → CONTRACTOR VOIT LE MOTIF → CORRECTION
  *
  * Ce que l'artisan voit quand l'admin rejete son document :
  *
  *  1. L'admin rejete la RC Pro de PIERRE MARTIN
- *     â†’ motif : "Document illisible - scan de mauvaise qualite..."
+ *     → motif : "Document illisible - scan de mauvaise qualite..."
  *
  *  2. Le contractor PIERRE MARTIN se connecte
- *     â†’ Dashboard affiche le rejet
- *     â†’ Page document affiche le motif EXACT de l'admin
- *     â†’ Bouton "Renvoyer un document"
+ *     → Dashboard affiche le rejet
+ *     → Page document affiche le motif EXACT de l'admin
+ *     → Bouton "Renvoyer un document"
  *
  *  3. Le contractor re-uploade un nouveau scan
  *
- *  4. Apres verification â†’ document approuve
+ *  4. Apres verification → document approuve
  */
 
 const PAUSE = 3000;
 
-describe('Rejet admin â†’ le contractor voit le motif exact', () => {
+describe('Rejet admin → le contractor voit le motif exact', () => {
 
-  it('Etape 1 â€” Le contractor voit "Document refuse" avec le motif de l\'admin', () => {
+  it('Etape 1 — Le contractor voit "Document refuse" avec le motif de l\'admin', () => {
     cy.mockContractorApi();
 
     // Override le statut du document pour montrer le rejet
@@ -58,7 +58,7 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
     cy.wait(PAUSE);
   });
 
-  it('Etape 2 â€” Le contractor clique "Renvoyer" et uploade un nouveau scan', () => {
+  it('Etape 2 — Le contractor clique "Renvoyer" et uploade un nouveau scan', () => {
     cy.mockContractorApi();
 
     cy.intercept('GET', '/contractor-compliance/documents/*', {
@@ -68,14 +68,14 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
     cy.visit('/documents/doc-rc-uuid-004');
     cy.wait('@getDocumentStatus');
 
-    // Cliquer sur "Renvoyer un document" â†’ retour a la liste documents
+    // Cliquer sur "Renvoyer un document" → retour a la liste documents
     cy.contains('Renvoyer un document').click();
     cy.url().should('include', '/documents');
 
     cy.wait(PAUSE);
   });
 
-  it('Etape 3 â€” Le contractor uploade le nouveau scan corrige', () => {
+  it('Etape 3 — Le contractor uploade le nouveau scan corrige', () => {
     cy.mockContractorApi();
     cy.visit('/documents/upload');
     cy.dismissStepperVideo();
@@ -94,7 +94,7 @@ describe('Rejet admin â†’ le contractor voit le motif exact', () => {
     cy.wait(PAUSE);
   });
 
-  it('Etape 4 â€” Le document est maintenant verifie', () => {
+  it('Etape 4 — Le document est maintenant verifie', () => {
     cy.mockContractorApi();
 
     // Le document est passe en "verified" apres le re-upload

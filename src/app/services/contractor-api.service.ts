@@ -442,7 +442,7 @@ export class ContractorApiService {
     // mode=direct : on enregistre la vidéo depuis le même device (webcam desktop
     // ou caméra mobile), pas de QR-scan intermédiaire. Sans ce flag, le backend
     // considère que le desktop doit générer un QR (is_direct=false) et refuse
-    // l'upload direct â†’ "Challenge token invalide".
+    // l'upload direct → "Challenge token invalide".
     return from(
       this.api.invoke(kycChallenge, { body: { mode: 'direct' } }) as Promise<{ data: any }>
     ).pipe(
@@ -566,7 +566,7 @@ export class ContractorApiService {
   }
 
   /**
-   * Souscrit un plan (actuellement `paid` â†’ Tuita Pro 99â‚¬/mois).
+   * Souscrit un plan (actuellement `paid` → Tuita Pro 99€/mois).
    *
    * Backend renvoie désormais `embedded_checkout: { client_secret, publishable_key }`
    * — le frontend ouvre un MatDialog contenant Stripe Embedded Checkout au

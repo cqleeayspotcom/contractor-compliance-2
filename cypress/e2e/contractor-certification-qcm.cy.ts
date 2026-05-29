@@ -20,6 +20,29 @@
 const ATTEMPT_UUID_1 = '11111111-1111-4111-8111-111111111111';
 const ATTEMPT_UUID_2 = '22222222-2222-4222-8222-222222222222';
 
+/**
+ * Bonnes réponses des 24 questions, dans l'ordre des id (1 → 24).
+ * IMPORTANT : le composant calcule le score EN LOCAL et n'appelle
+ * `POST /certification/complete` avec passed=true QUE si les 24 réponses
+ * sont exactes (`totalCorrect === TOTAL_QUESTIONS`). Cliquer la 1re option
+ * (« A ») partout ne donne donc PAS 24/24 — il faut sélectionner la bonne
+ * option par question. Source : QUIZ_QUESTIONS dans
+ * contractor-certification.component.ts (champ `correctAnswer`).
+ */
+const CORRECT_ANSWERS = [
+  'A', 'A', 'A', 'A', 'A', 'C', 'B', 'A', 'B', 'A',
+  'A', 'A', 'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B',
+  'A', 'B', 'B', 'B',
+];
+
+/** Coche la bonne réponse de chaque question (index option A=0, B=1, C=2). */
+function answerAllCorrect(): void {
+  CORRECT_ANSWERS.forEach((key, idx) => {
+    const optionIndex = key.charCodeAt(0) - 'A'.charCodeAt(0);
+    cy.get(`#question-${idx + 1} mat-radio-button`).eq(optionIndex).click({ force: true });
+  });
+}
+
 /** Helper : mocks par défaut du parcours certification + dashboard.
  *  À appeler dans beforeEach pour avoir une base saine. */
 function mockCertif(opts: {
@@ -125,10 +148,9 @@ describe('Certification TUITA — QCM', () => {
     cy.visit('/certification');
     cy.wait('@startCert');
 
-    // Coche les 24 questions (toute valeur, le mock renvoie passed=true).
-    for (let i = 1; i <= 24; i++) {
-      cy.get(`#question-${i} mat-radio-button`).first().click({ force: true });
-    }
+    // Coche la BONNE réponse aux 24 questions : le composant scorise en
+    // local et n'envoie complete(passed) que si totalCorrect === 24.
+    answerAllCorrect();
 
     cy.get('#quiz-submit-button').click();
     cy.wait('@completeOk').its('request.body.attempt_uuid').should('eq', ATTEMPT_UUID_1);
@@ -169,8 +191,10 @@ describe('Certification TUITA — QCM', () => {
       expect(Object.keys(intercept.request.body.answers).length).to.be.lessThan(24);
     });
 
-    // Le composant bascule sur la review (corrections).
-    cy.contains(/Corrections|Vérifier mes corrections/i, { timeout: 6000 }).should('exist');
+    // Le composant bascule sur la review (écran de correction). Les libellés
+    // réels de cet écran : « Presque ! », « bonnes réponses », bouton
+    // « Recommencer le questionnaire ».
+    cy.contains(/Presque|bonnes réponses|Recommencer le questionnaire/i, { timeout: 6000 }).should('exist');
   });
 
   it('désarme le warn quand on corrige une réponse manquante', () => {
