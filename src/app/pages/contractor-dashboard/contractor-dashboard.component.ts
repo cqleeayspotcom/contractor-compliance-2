@@ -298,18 +298,39 @@ export class ContractorDashboardComponent implements OnInit {
    * passive « Identité vérifiée » qui ne mène à rien.
    */
   readonly showIdentityTile = computed<boolean>(() => {
-    if (this.onboardingActive()) return false;
+    // Symétrique avec showDocumentsTile : cachée seulement pendant la
+    // phase documents (le bandeau Bienvenu pointe alors vers le stepper
+    // qui couvre CNI). Visible dès qu'on est en phase KYC/certif ou
+    // post-onboarding pour servir de porte d'entrée vers /kyc.
+    const action = this.dashboard()?.next_action;
+    if (action === 'upload_missing_documents' || action === 'renew_expired_documents') {
+      return false;
+    }
     return this.identityLocked() || this.identityStatus() !== 'ok';
   });
 
   /**
-   * Tuile documents : cachée pendant l'onboarding pour la même raison que
-   * l'identité — le bandeau Bienvenu route déjà vers `/documents/upload`,
-   * pas besoin d'un doublon. Visible dès que l'onboarding est terminé pour
-   * servir de porte d'entrée vers la gestion / renouvellement des pièces.
+   * Tuile documents : cachée UNIQUEMENT pendant la phase documents de
+   * l'onboarding (next_action = upload_missing_documents ou
+   * renew_expired_documents). Dès que les docs sont OK et que l'artisan
+   * est passé sur la phase KYC ou certification, on RE-AFFICHE la tuile
+   * pour qu'il puisse y revenir au cas où (consulter, remplacer, racheter
+   * un extrait INPI, etc.).
+   *
+   * POURQUOI on ne se contente plus de `!onboardingActive()` (changement
+   * 2026-05-29) : un artisan en phase KYC/certif perdait l'accès à ses
+   * documents — il fallait passer par le menu ou taper l'URL. Cassé pour
+   * lui-même + cassé pour le support qui guide par téléphone.
    */
   readonly showDocumentsTile = computed<boolean>(() => {
-    return !this.onboardingActive();
+    const action = this.dashboard()?.next_action;
+    // Phase docs en cours → le bandeau Bienvenu CTA pousse déjà vers
+    // /documents/upload, doubler avec une tuile redondante violerait la
+    // règle "une seule décision visible à la fois".
+    if (action === 'upload_missing_documents' || action === 'renew_expired_documents') {
+      return false;
+    }
+    return true;
   });
 
   /**
