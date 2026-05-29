@@ -297,17 +297,22 @@ export class ContractorDashboardComponent implements OnInit {
    * Une fois `identityStatus === 'ok'`, on cache aussi — pas de tuile
    * passive « Identité vérifiée » qui ne mène à rien.
    */
-  readonly showIdentityTile = computed<boolean>(() => {
-    // Symétrique avec showDocumentsTile : cachée seulement pendant la
-    // phase documents (le bandeau Bienvenu pointe alors vers le stepper
-    // qui couvre CNI). Visible dès qu'on est en phase KYC/certif ou
-    // post-onboarding pour servir de porte d'entrée vers /kyc.
-    const action = this.dashboard()?.next_action;
-    if (action === 'upload_missing_documents' || action === 'renew_expired_documents') {
-      return false;
-    }
-    return this.identityLocked() || this.identityStatus() !== 'ok';
-  });
+  /**
+   * Tuile identité (KYC) : JAMAIS affichée sur le dashboard. Raison :
+   *   - KYC pas encore fait → le bandeau onboarding pousse déjà vers /kyc
+   *     avec un CTA dédié, doubler avec une tuile crée 2 portes d'entrée
+   *     concurrentes (anti low-literacy).
+   *   - KYC déjà validé → rien à faire côté artisan (juste un recap passif
+   *     « Identité vérifiée le X »), pas la peine de prendre la place d'une
+   *     tuile sur l'écran principal. Accès via le menu si vraiment besoin.
+   *
+   * Cas asymétrique avec showDocumentsTile (qui reste visible une fois les
+   * docs validés) : pour les docs, l'artisan a des actions concrètes
+   * post-validation — remplacement, rachat extrait INPI, consultation pour
+   * un client. Pour le KYC, il n'y a rien à faire après le 24/24 — la
+   * vidéo est archivée, point.
+   */
+  readonly showIdentityTile = computed<boolean>(() => false);
 
   /**
    * Tuile documents : cachée UNIQUEMENT pendant la phase documents de

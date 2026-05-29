@@ -98,35 +98,12 @@
     <!-- Grille 1 col mobile / 2 col tablette / 3 col desktop -->
     <div class="cdash__grid">
 
-      <!-- Tuiles « Mes documents » et « Mon identité » masquées pendant
-           l'onboarding : le bandeau Bienvenu route déjà vers le stepper
-           `/documents/upload` qui couvre CNI + KYC + dossier administratif.
-           Doubler le CTA avec une tuile « verrouillé » sur la home contredit
-           la règle low-literacy (une seule décision visible à la fois). -->
-        <!-- 1. Documents — route adaptative (cf. `documentsRoute()`) :
-             - status `ok` → `/documents` (liste consultable + télécharger
-               + bouton « remplacer » si l'artisan veut MAJ proactivement).
-             - status `warn`/`bad` → `/documents/upload` (stepper assisté
-               qui se positionne sur la pièce à traiter). -->
-        @if (showDocumentsTile()) {
-        <a [routerLink]="documentsRoute()"
-           [attr.aria-label]="'Mes documents administratifs - ' + statusLabel(documentsStatus())"
-           class="tile"
-           [attr.data-status]="documentsStatus()">
-          <span class="tile__badge"
-                [class.tile__badge--pulse]="documentsStatus() !== 'ok'"
-                [attr.data-status]="documentsStatus()">
-            <mat-icon>{{ statusIcon(documentsStatus()) }}</mat-icon>
-            {{ statusLabel(documentsStatus()) }}
-          </span>
-          <span class="tile__ico" aria-hidden="true">
-            <mat-icon>folder_shared</mat-icon>
-          </span>
-          <h3 class="tile__title">Mes documents</h3>
-          <p class="tile__sub">{{ documentsSubtitle() }}</p>
-          <span class="tile__cta">Gérer <mat-icon>arrow_forward</mat-icon></span>
-        </a>
-        }
+      <!-- Tuile « Mes documents » est rendue PLUS BAS, juste avant « Passer
+           en Pro » — choix UX : sur le dashboard d'un artisan en cours
+           d'onboarding (KYC/certif), les chantiers passent en premier (zone
+           consultée au quotidien), puis on positionne l'accès docs en porte
+           secondaire avant l'upsell Pro. Cf. bloc « 4. Mes documents »
+           plus bas dans ce fichier. -->
 
         <!-- 2. Identité (KYC) — toujours visible tant qu'il y a une action
              à mener (verrouillée pour pousser l'upload CNI, ou KYC pas
@@ -237,6 +214,37 @@
           <h3 class="tile__title">Ma certification Tuita</h3>
           <p class="tile__sub">Revoir les consignes et modalités à tout moment.</p>
           <span class="tile__cta">Revoir <mat-icon>arrow_forward</mat-icon></span>
+        </a>
+      }
+
+      <!-- 4. Mes documents — placée ici (juste avant Pro upsell) plutôt
+           qu'en tête de grille : pour un artisan post-onboarding ou en
+           cours de KYC/certif, ses chantiers sont la 1re zone consultée
+           (au-dessus). La porte d'entrée docs reste accessible mais en
+           position secondaire — utile pour : remplacer un doc, racheter
+           un extrait INPI, consulter pour un client. Route adaptative
+           (cf. `documentsRoute()`) :
+             - status `ok` → `/documents` (liste consultable + télécharger
+               + bouton « remplacer » si l'artisan veut MAJ proactivement).
+             - status `warn`/`bad` → `/documents/upload` (stepper assisté
+               qui se positionne sur la pièce à traiter). -->
+      @if (showDocumentsTile()) {
+        <a [routerLink]="documentsRoute()"
+           [attr.aria-label]="'Mes documents administratifs - ' + statusLabel(documentsStatus())"
+           class="tile"
+           [attr.data-status]="documentsStatus()">
+          <span class="tile__badge"
+                [class.tile__badge--pulse]="documentsStatus() !== 'ok'"
+                [attr.data-status]="documentsStatus()">
+            <mat-icon>{{ statusIcon(documentsStatus()) }}</mat-icon>
+            {{ statusLabel(documentsStatus()) }}
+          </span>
+          <span class="tile__ico" aria-hidden="true">
+            <mat-icon>folder_shared</mat-icon>
+          </span>
+          <h3 class="tile__title">Mes documents</h3>
+          <p class="tile__sub">{{ documentsSubtitle() }}</p>
+          <span class="tile__cta">Gérer <mat-icon>arrow_forward</mat-icon></span>
         </a>
       }
 
