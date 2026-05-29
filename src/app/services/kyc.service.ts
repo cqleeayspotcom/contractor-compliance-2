@@ -52,6 +52,16 @@ export interface KycMobileTokenResponse {
   expires_at: string;
 }
 
+export interface KycMobileResult {
+  status: 'pending' | 'processing' | 'pending_retry' | 'approved' | 'rejected' | 'rejected_no_face_source' | 'failed' | string;
+  finished: boolean;
+  ok: boolean;
+  retryable: boolean;
+  headline: string;
+  message: string;
+  failure_reason: string | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class KycService {
   private readonly api = inject(Api);
@@ -229,5 +239,47 @@ export class KycService {
     const url = `${this.apiConfig.rootUrl}${path}`;
 
     return this.http.post<void>(url, formData);
+  }
+
+  /**
+   * Récupère le verdict de la session KYC associée au token mobile.
+   * Endpoint public auth-by-capability (le token suffit, pas de cookie).
+   *
+   * Utilisé par kyc-mobile pour poller le résultat après upload : tant que
+   * `finished=false` (statuts pending/processing/pending_retry), le composant
+   * relance toutes les ~2s ; sinon il affiche `headline`/`message` au
+   * contractor.
+   *
+   * Pas passé par le SDK ng-openapi-gen pour rester déployable sans
+   * régénération côté frontend — on POST/GET directement comme pour
+   * `submitMobileVideo`.
+   */
+  getMobileResult(token: string): Observable<KycMobileResult> {
+    const path = `/contractor-compliance/kyc/mobile/${encodeURIComponent(token)}/result`;
+    const url = `${this.apiConfig.rootUrl}${path}`;
+    return this.http.get<{ data: KycMobileResult }>(url).pipe(
+      map(res => res.data),
+    );
+  }
+
+  /**
+   * Régénère un token mobile sur la même session KYC après un échec —
+   * permet le retry direct depuis le téléphone sans repasser par le PC.
+   *
+   * Retourne le nouveau token + l'URL complète à charger. Le composant
+   * mobile fait simplement `window.location.href = result.url` pour
+   * relancer le flow sur le nouveau token (intro screen frais).
+   *
+   * Refusé côté backend si :
+   *   - statut courant ≠ rejected/failed
+   *   - failure_reason = rejected_no_face_source (manque la CNI →
+   *     l'artisan DOIT redéposer la pièce d'identité depuis son PC)
+   */
+  retryMobile(token: string): Observable<{ token: string; url: string }> {
+    const path = `/contractor-compliance/kyc/mobile/${encodeURIComponent(token)}/retry`;
+    const url = `${this.apiConfig.rootUrl}${path}`;
+    return this.http.post<{ data: { token: string; url: string } }>(url, {}).pipe(
+      map(res => res.data),
+    );
   }
 }

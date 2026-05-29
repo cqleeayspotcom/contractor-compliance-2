@@ -22,7 +22,9 @@ type Step =
   | 'countdown_2'      // décompte 3-2-1 avant enregistrement challenge 2
   | 'recording_2'      // enregistrement challenge 2
   | 'uploading'
-  | 'success'
+  | 'analyzing'        // upload OK, poll du verdict côté serveur
+  | 'verdict_ok'       // session approved
+  | 'verdict_ko'       // session rejected/failed (motif détaillé via verdictMsg)
   | 'error';
 
 const CHALLENGE_LABELS: Record<KycChallenge, string> = {
@@ -92,6 +94,20 @@ export class KycMobileComponent implements OnInit, OnDestroy {
   recordingSecs = signal(0);
   countdown     = signal(0);
 
+  // Verdict final (rempli après polling /result).
+  verdictHeadline = signal('');
+  verdictMessage  = signal('');
+  /** True quand le backend autorise un retry direct mobile (false = doit
+   *  retourner sur PC, ex : pièce d'identité manquante). */
+  verdictRetryable = signal(false);
+  /** True pendant l'appel /retry pour éviter le double-tap. */
+  retrying = signal(false);
+  /** Compteur de polls pour éviter un poll infini si le worker est mort.
+   *  Borné à ~3 min (90 polls × 2s) — au-delà on bascule en step error
+   *  avec un message clair plutôt que de tourner indéfiniment. */
+  private resultPolls = 0;
+  private resultTimer?: ReturnType<typeof setInterval>;
+
   private token      = '';
   private challenge1: KycChallenge = 'turn_left';
   private challenge2: KycChallenge = 'turn_right';
@@ -156,6 +172,7 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     this.stopStream();
     clearInterval(this.recTimer);
     clearInterval(this.countdownTimer);
+    clearInterval(this.resultTimer);
   }
 
   // ── Token validation ───────────────────────────────────────────────────────
@@ -475,7 +492,7 @@ export class KycMobileComponent implements OnInit, OnDestroy {
         // biométrique (`face_mismatch`, `liveness_failed`...) ne peut donc
         // PAS surfacer ici. Le verdict s'affiche côté PC (polling) ou sur
         // le tableau de bord du contractor à son retour.
-        next: () => this.step.set('success'),
+        next: () => this.startResultPolling(),
         error: (err) => {
           const status = err?.status;
           const backendMsg = this.extractBackendMessage(err);
@@ -671,6 +688,96 @@ export class KycMobileComponent implements OnInit, OnDestroy {
       return sourceStream;
     }
     return this.mirrorStream;
+  }
+
+  // ── Verdict polling ───────────────────────────────────────────────────────
+
+  /** Intervalle entre 2 polls /result (ms). 2s : compromis entre charge backend
+   *  et réactivité perçue côté artisan (le worker DeepFace prend ~20-90s). */
+  private static readonly RESULT_POLL_MS = 2000;
+  /** Nombre max de polls avant abandon (~3 min) — au-delà on suppose un
+   *  worker mort ou très saturé. */
+  private static readonly RESULT_MAX_POLLS = 90;
+
+  private startResultPolling(): void {
+    this.step.set('analyzing');
+    this.resultPolls = 0;
+    // 1er poll immédiat (l'utilisateur vient de finir l'upload, certains
+    // workers cache sont quasi-instantanés).
+    this.pollResultOnce();
+    this.resultTimer = setInterval(() => this.pollResultOnce(), KycMobileComponent.RESULT_POLL_MS);
+  }
+
+  private pollResultOnce(): void {
+    this.resultPolls++;
+    if (this.resultPolls > KycMobileComponent.RESULT_MAX_POLLS) {
+      clearInterval(this.resultTimer);
+      // Pas une erreur dure — on dit calmement à l'utilisateur que le résultat
+      // mettra plus de temps que prévu et qu'il sera notifié côté PC.
+      this.verdictHeadline.set('Analyse plus longue que prévu');
+      this.verdictMessage.set(
+        'Le résultat n\'est pas encore prêt. Tu peux fermer cette page — la suite arrivera sur ton ordinateur dès qu\'on l\'aura.',
+      );
+      this.verdictRetryable.set(false);
+      this.step.set('verdict_ko');
+      return;
+    }
+    this.kycService.getMobileResult(this.token)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (r) => {
+          if (!r.finished) return;
+          clearInterval(this.resultTimer);
+          this.verdictHeadline.set(r.headline);
+          this.verdictMessage.set(r.message);
+          this.verdictRetryable.set(r.retryable);
+          this.step.set(r.ok ? 'verdict_ok' : 'verdict_ko');
+        },
+        error: (err) => {
+          // Erreur réseau ponctuelle : on n'interrompt pas le polling pour
+          // un blip 502 ; le prochain tick relancera. Seul l'épuisement
+          // du compteur arrête la boucle (cf. resultPolls > MAX).
+          const status = err?.status;
+          if (status === 404) {
+            // Le token n'existe plus côté DB (purge/admin). Inutile d'insister.
+            clearInterval(this.resultTimer);
+            this.verdictHeadline.set('Session introuvable');
+            this.verdictMessage.set(
+              'Cette session de vérification n\'est plus disponible. Retourne sur ton ordinateur pour en relancer une nouvelle.',
+            );
+            this.verdictRetryable.set(false);
+            this.step.set('verdict_ko');
+          }
+        },
+      });
+  }
+
+  /** Relance un nouveau token mobile + redirige vers la nouvelle URL.
+   *  Bouton « Recommencer » du verdict KO retryable. */
+  retryOnMobile(): void {
+    if (this.retrying()) return;
+    this.retrying.set(true);
+    this.kycService.retryMobile(this.token)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (r) => {
+          // `window.location.href` réinitialise complètement le composant —
+          // exactement ce qu'on veut (caméra fermée, state reset, intro
+          // affichée avec les 2 nouveaux challenges). C'est plus sûr qu'un
+          // router.navigateByUrl qui pourrait préserver des handlers de
+          // MediaRecorder ou de timers.
+          window.location.href = r.url;
+        },
+        error: (err) => {
+          this.retrying.set(false);
+          const backendMsg = this.extractBackendMessage(err);
+          const backendCode = this.extractBackendCode(err);
+          this.verdictMessage.set(
+            (backendMsg ?? 'Impossible de relancer la vérification.')
+            + `\n[code: ${backendCode ?? `HTTP_${err?.status ?? '???'}`}]`,
+          );
+        },
+      });
   }
 
   /**

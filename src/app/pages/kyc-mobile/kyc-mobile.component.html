@@ -149,13 +149,45 @@
     </div>
   }
 
-  <!-- ── Succès ──────────────────────────────────────── -->
-  @if (step() === 'success') {
+  <!-- ── Analyse en cours (polling backend /result) ──────────────────────── -->
+  @if (step() === 'analyzing') {
+    <div class="center-card">
+      <mat-spinner diameter="48" />
+      <h2>Analyse en cours…</h2>
+      <p>On vérifie ton visage et tes mouvements.</p>
+      <p class="small">Pas besoin de fermer la page — le résultat s'affiche ici.</p>
+    </div>
+  }
+
+  <!-- ── Verdict OK ──────────────────────────────────────────────────────── -->
+  @if (step() === 'verdict_ok') {
     <div class="center-card success">
       <mat-icon class="big-icon">check_circle</mat-icon>
-      <h2>Vidéo reçue !</h2>
-      <p>Votre vérification est en cours d'analyse.</p>
-      <p class="small">Vous pouvez fermer cette page.</p>
+      <h2>{{ verdictHeadline() || 'Identité confirmée ✓' }}</h2>
+      <p class="error-text">{{ verdictMessage() }}</p>
+    </div>
+  }
+
+  <!-- ── Verdict KO (avec bouton Recommencer si retryable) ───────────────── -->
+  @if (step() === 'verdict_ko') {
+    <div class="center-card error">
+      <mat-icon class="big-icon">error_outline</mat-icon>
+      <h2>{{ verdictHeadline() || 'Vérification non validée' }}</h2>
+      <p class="error-text">{{ verdictMessage() }}</p>
+      @if (verdictRetryable()) {
+        <button mat-flat-button
+                class="cta-btn"
+                [disabled]="retrying()"
+                (click)="retryOnMobile()">
+          @if (retrying()) {
+            <mat-spinner diameter="20"></mat-spinner>
+            Préparation…
+          } @else {
+            <mat-icon>refresh</mat-icon>
+            Recommencer ici
+          }
+        </button>
+      }
     </div>
   }
 
