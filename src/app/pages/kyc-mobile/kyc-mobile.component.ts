@@ -207,6 +207,39 @@ export class KycMobileComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Preflight cross-platform : iOS Safari < 14.3 + quelques WebViews
+    // Android exotiques n'embarquent pas MediaRecorder du tout. On échoue
+    // tout de suite avec un message explicite plutôt que de laisser le clic
+    // ouvrir la caméra puis crasher à l'enregistrement.
+    if (typeof MediaRecorder === 'undefined') {
+      this.openingCamera.set(false);
+      this.setError(
+        this.formatError(
+          'Ton navigateur ne sait pas enregistrer de vidéo (MediaRecorder absent). Utilise Chrome, Firefox ou Safari à jour.',
+          'CLIENT_MEDIARECORDER_UNAVAILABLE',
+          `ua=${navigator.userAgent}`,
+        ),
+        false,
+      );
+      return;
+    }
+    // Vérifie qu'AU MOINS UN codec parmi webm/mp4 est supporté. Si la liste
+    // est vide, `new MediaRecorder(stream, {mimeType: '...'})` jetterait un
+    // NotSupportedError au début du 1er challenge — trop tard, la caméra
+    // est déjà allumée et l'utilisateur perd 5s à comprendre.
+    if (this.getSupportedMime() === null) {
+      this.openingCamera.set(false);
+      this.setError(
+        this.formatError(
+          'Aucun format vidéo compatible n\'a été trouvé sur ton navigateur.',
+          'CLIENT_NO_SUPPORTED_MIME',
+          `ua=${navigator.userAgent}`,
+        ),
+        false,
+      );
+      return;
+    }
+
     let promise: Promise<MediaStream>;
     try {
       promise = navigator.mediaDevices.getUserMedia({
@@ -299,6 +332,19 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     const targetStep: Step = isFirst ? 'recording_1' : 'recording_2';
 
     const mimeType = this.getSupportedMime();
+    if (!mimeType) {
+      // Sécurité redondante : openCamera() refuse déjà ce cas en preflight,
+      // mais on garde la vérif ici pour ne JAMAIS instancier MediaRecorder
+      // avec un mime non supporté (NotSupportedError).
+      this.setError(
+        this.formatError(
+          'Aucun format vidéo compatible n\'a été trouvé.',
+          'CLIENT_NO_SUPPORTED_MIME',
+        ),
+        false,
+      );
+      return;
+    }
 
     // Enregistrer le flux MIROIRÉ (pas le stream brut) pour que MediaPipe
     // analyse exactement ce que l'utilisateur voit à l'écran. Sans ça :
@@ -306,7 +352,22 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     // sur l'écran miroir son visage va à droite → confusion → il corrige
     // en sens inverse → challenge rejeté.
     const recordStream = this.ensureMirroredStream(this.stream);
-    this.recorder = new MediaRecorder(recordStream, { mimeType });
+    try {
+      this.recorder = new MediaRecorder(recordStream, { mimeType });
+    } catch (err: any) {
+      // Couvre les cas où le navigateur dit supporter le mime via
+      // isTypeSupported() mais rejette quand même la construction (bug
+      // Samsung Internet sur certains Galaxy, vieux WebView Android).
+      this.setError(
+        this.formatError(
+          'Impossible de démarrer l\'enregistrement vidéo.',
+          err?.name ?? 'CLIENT_RECORDER_CONSTRUCT',
+          err?.message ?? String(err),
+        ),
+        true,
+      );
+      return;
+    }
 
     const chunks: Blob[] = [];
     this.recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -318,6 +379,21 @@ export class KycMobileComponent implements OnInit, OnDestroy {
         this.chunks2 = chunks;
         this.onChallenge2Done();
       }
+    };
+    // Sans cet handler, une erreur mi-enregistrement (track terminée par
+    // l'OS, mémoire saturée, etc.) laissait le timer 4s tourner dans le
+    // vide et le `onstop` ne se déclenchait jamais → écran figé en
+    // "Recording..." indéfiniment côté mobile.
+    this.recorder.onerror = (ev: any) => {
+      clearInterval(this.recTimer);
+      this.setError(
+        this.formatError(
+          'L\'enregistrement vidéo a échoué.',
+          ev?.error?.name ?? 'CLIENT_RECORDER_ERROR',
+          ev?.error?.message ?? undefined,
+        ),
+        true,
+      );
     };
 
     this.recorder.start(250);
@@ -533,6 +609,12 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     }
 
     const videoTrack = sourceStream.getVideoTracks()[0];
+    // Garde : si aucune track vidéo (caméra refusée silencieusement,
+    // contraintes échouées sans rejet du Promise getUserMedia), on retombe
+    // sur le stream brut pour ne pas crasher sur .getSettings(). MediaPipe
+    // verra alors l'image NON miroirée — confusion possible sur les
+    // challenges directionnels, mais c'est moins pire qu'un crash total.
+    if (!videoTrack) return sourceStream;
     const settings = videoTrack.getSettings();
     const width = settings.width ?? 1280;
     const height = settings.height ?? 720;
@@ -575,12 +657,32 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     };
     drawFrame();
 
-    this.mirrorStream = canvas.captureStream(30);
+    // canvas.captureStream est absent sur iOS Safari < 14.5 et certains
+    // WebView Android. On retombe sur le stream brut plutôt que de jeter
+    // une TypeError → la qualité d'analyse miroir est dégradée (challenges
+    // directionnels inversés à la perception) mais l'utilisateur n'est pas
+    // bloqué — l'OCR backend reste capable de valider la vidéo.
+    if (typeof canvas.captureStream !== 'function') {
+      return sourceStream;
+    }
+    try {
+      this.mirrorStream = canvas.captureStream(30);
+    } catch {
+      return sourceStream;
+    }
     return this.mirrorStream;
   }
 
-  private getSupportedMime(): string {
+  /**
+   * Cherche le 1er codec supporté par MediaRecorder.
+   * Ordre : webm/vp9 (Android Chrome, qualité) → webm (Firefox/anciens
+   * Chromium) → mp4 (Safari iOS 14.3+, codec natif H264 + AAC).
+   * Retourne `null` si AUCUN n'est supporté — appelant doit afficher une
+   * erreur claire au lieu de crash silencieux dans `new MediaRecorder`.
+   */
+  private getSupportedMime(): string | null {
+    if (typeof MediaRecorder === 'undefined') return null;
     const types = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
-    return types.find(t => MediaRecorder.isTypeSupported(t)) ?? 'video/webm';
+    return types.find(t => MediaRecorder.isTypeSupported(t)) ?? null;
   }
 }
