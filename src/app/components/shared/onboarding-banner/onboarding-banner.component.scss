@@ -375,8 +375,19 @@
     justify-self: end;
     background: linear-gradient(135deg, $t-base-green 0%, darken($t-base-green, 6%) 100%) !important;
     color: #ffffff !important;
-    padding: 0 20px !important;
-    height: 44px !important;
+    // Hauteur élastique : on garde le 44px de référence Material mais on
+    // bascule en `min-height` pour qu'un libellé long (« Recommencer la
+    // vérification ») puisse wrapper en 2 lignes sans rogner le sous-titre
+    // au-dessus. line-height 1.25 + padding vertical 8px gèrent la respiration.
+    min-height: 44px !important;
+    height: auto !important;
+    padding: 8px 18px !important;
+    line-height: 1.25 !important;
+    // Wrap propre au lieu d'overflow : si la place manque, on coupe entre
+    // mots, jamais au milieu d'un mot (anti `Commencer la vérific…`).
+    white-space: normal !important;
+    text-align: center;
+    word-break: keep-all;
     border-radius: 12px !important;
     font-weight: 700 !important;
     box-shadow: 0 4px 12px rgba($t-base-green, 0.35) !important;

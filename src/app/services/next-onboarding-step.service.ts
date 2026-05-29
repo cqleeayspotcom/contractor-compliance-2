@@ -79,7 +79,12 @@ export class NextOnboardingStepService {
           title: 'Vérifie ton identité en vidéo',
           subtitle:
             'Une courte vidéo (~30 s) avec deux gestes simples — c\'est demandé une seule fois.',
-          cta: 'Démarrer',
+          // CTA aligné avec « Commencer le test » de l'étape 3 — 3 mots max
+          // pour ne pas déborder du bouton sur petit écran (la largeur du
+          // bouton est ~50% de la card sur mobile). Le titre au-dessus précise
+          // déjà qu'il s'agit de la vérification d'identité, donc pas besoin
+          // de répéter ici.
+          cta: 'Commencer la vérification',
           route: '/kyc',
           video,
         };
@@ -93,7 +98,7 @@ export class NextOnboardingStepService {
           title: 'Refais ta vérification d\'identité',
           subtitle:
             'Ta dernière tentative n\'a pas abouti. Recommence dans de bonnes conditions (lumière, fond neutre).',
-          cta: 'Reprendre',
+          cta: 'Recommencer la vérification',
           route: '/kyc',
         };
 
