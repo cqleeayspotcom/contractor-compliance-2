@@ -524,8 +524,14 @@ export class ContractorApiService {
 
   getKycStatus(): Observable<KycStatus> {
     return from(
-      this.api.invoke(kycStatus) as Promise<{ data: KycStatus }>
-    ).pipe(map((res) => res.data));
+      this.api.invoke(kycStatus) as Promise<{ data?: KycStatus } | undefined>
+    ).pipe(
+      // Filet : si le backend renvoie une enveloppe vide / inattendue (cas
+      // observé après un 401 intercepté qui résout en undefined côté SDK),
+      // on synthétise un statut neutre `pending` plutôt que de propager
+      // `undefined` au subscriber qui crasherait sur `status.status`.
+      map((res) => (res?.data ?? { status: 'pending' } as KycStatus))
+    );
   }
 
   // --- Billing ---

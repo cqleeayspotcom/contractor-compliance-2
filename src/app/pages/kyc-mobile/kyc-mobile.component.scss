@@ -462,3 +462,12 @@
   color: #F75C03;
   font-weight: 600;
 }
+
+/* Préserve les retours à la ligne ajoutés par formatError() pour que le
+ * `[code: ...]` apparaisse sur sa propre ligne, et autorise le user-select
+ * pour qu'on puisse copier-coller le code dans un ticket support. */
+.error-text {
+  white-space: pre-line;
+  user-select: text;
+  -webkit-user-select: text;
+}

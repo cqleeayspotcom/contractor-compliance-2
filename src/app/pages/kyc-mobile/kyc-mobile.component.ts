@@ -7,7 +7,7 @@ import { MatButtonModule }          from '@angular/material/button';
 import { MatIconModule }            from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { Subject }                  from 'rxjs';
-import { takeUntil }                from 'rxjs/operators';
+import { takeUntil, timeout }       from 'rxjs/operators';
 
 import { KycService, KycChallenge } from '../../services/kyc.service';
 
@@ -170,8 +170,15 @@ export class KycMobileComponent implements OnInit, OnDestroy {
           this.step.set('intro');
         },
         error: (err) => {
-          const msg = err?.error?.message ?? 'Ce lien est invalide ou a expiré.';
-          this.setError(msg, false);
+          const backendMsg = this.extractBackendMessage(err);
+          const backendCode = this.extractBackendCode(err);
+          this.setError(
+            this.formatError(
+              backendMsg ?? 'Ce lien est invalide ou a expiré.',
+              backendCode ?? `HTTP_${err?.status ?? '???'}`,
+            ),
+            false,
+          );
         },
       });
   }
@@ -188,8 +195,13 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     //   l'exception remonte dans la zone Angular, le composant reste bloqué
     //   sur l'écran d'intro, aucun message d'erreur affiché → "rien ne se passe".
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+      this.openingCamera.set(false);
       this.setError(
-        'La caméra ne peut être ouverte qu\'en HTTPS. Ouvre cette page en https://… (ou via localhost en dev) pour autoriser la caméra.',
+        this.formatError(
+          'La caméra ne peut être ouverte qu\'en HTTPS. Ouvre cette page en https://… (ou via localhost en dev).',
+          'CLIENT_NOT_SECURE_CONTEXT',
+          `secureContext=${window.isSecureContext}, mediaDevices=${!!navigator.mediaDevices}`,
+        ),
         false,
       );
       return;
@@ -202,13 +214,22 @@ export class KycMobileComponent implements OnInit, OnDestroy {
         audio: false,
       });
     } catch (err: any) {
+      this.openingCamera.set(false);
       // Filet de sécurité au cas où une implémentation exotique lèverait
       // encore une exception synchrone malgré la garde ci-dessus.
-      this.setError('Impossible d\'accéder à la caméra : ' + (err?.message ?? String(err)), true);
+      this.setError(
+        this.formatError(
+          'Impossible d\'accéder à la caméra.',
+          err?.name ?? 'CLIENT_GUM_THROW',
+          err?.message ?? String(err),
+        ),
+        true,
+      );
       return;
     }
 
     promise.then(stream => {
+      this.openingCamera.set(false);
       this.stream = stream;
       this.step.set('challenge_1');
       setTimeout(() => {
@@ -217,19 +238,38 @@ export class KycMobileComponent implements OnInit, OnDestroy {
         }
       }, 80);
     }).catch((err: any) => {
-      const denied = err?.name === 'NotAllowedError';
+      this.openingCamera.set(false);
+      const name = err?.name ?? 'CLIENT_GUM_REJECT';
+      const denied = name === 'NotAllowedError';
+      // Notre liste des erreurs getUserMedia courantes — toutes affichées avec
+      // leur code DOMException pour qu'on les retrouve à coup sûr dans un
+      // ticket support sans console de debug mobile :
+      //   NotAllowedError, NotFoundError, NotReadableError, OverconstrainedError,
+      //   SecurityError, AbortError, TypeError.
+      const human = denied
+        ? 'Accès à la caméra refusé. Activez-la dans les paramètres de votre navigateur.'
+        : name === 'NotFoundError'
+          ? 'Aucune caméra détectée sur cet appareil.'
+          : name === 'NotReadableError'
+            ? 'La caméra est déjà utilisée par une autre application.'
+            : 'Impossible d\'accéder à la caméra.';
       this.setError(
-        denied
-          ? 'Accès à la caméra refusé. Activez-la dans les paramètres de votre navigateur.'
-          : 'Impossible d\'accéder à la caméra.',
-        !denied
+        this.formatError(human, name, err?.message ?? undefined),
+        !denied,
       );
     });
   }
 
   // ── Intro → Camera ─────────────────────────────────────────────────────────
 
+  /** Garde anti-double-tap : entre le clic et la résolution de getUserMedia
+   * (prompt navigateur), un second tap déclencherait un 2e appel et pourrait
+   * laisser fuiter un MediaStream. Public + signal pour binding template. */
+  readonly openingCamera = signal(false);
+
   startVerification(): void {
+    if (this.openingCamera() || this.stream) return;
+    this.openingCamera.set(true);
     this.openCamera();
   }
 
@@ -294,7 +334,13 @@ export class KycMobileComponent implements OnInit, OnDestroy {
 
   stopCurrentRecording(): void {
     clearInterval(this.recTimer);
-    this.recorder?.stop();
+    // Garde anti-double-stop : MediaRecorder.stop() jette InvalidStateError si
+    // appelé sur un recorder déjà "inactive" (cas : timer 4s atteint + clic
+    // utilisateur sur "Terminer" en même temps). Sans cette garde, l'exception
+    // remonte dans la zone Angular et masque le flux normal.
+    if (this.recorder && this.recorder.state !== 'inactive') {
+      try { this.recorder.stop(); } catch { /* déjà arrêté entre 2 vérifs */ }
+    }
   }
 
   // ── Challenge flow ─────────────────────────────────────────────────────────
@@ -307,13 +353,28 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     }, 1200);
   }
 
+  /** Évite de soumettre deux fois si onstop est rejoué pour une raison X. */
+  private uploadStarted = false;
+
   private onChallenge2Done(): void {
+    if (this.uploadStarted) return;
+    this.uploadStarted = true;
+
     // Merge les 2 enregistrements en un seul Blob
     const allChunks = [...this.chunks1, ...this.chunks2];
-    const blob = new Blob(allChunks, { type: this.recorder?.mimeType ?? 'video/webm' });
+    const mime = this.recorder?.mimeType ?? 'video/webm';
+    const blob = new Blob(allChunks, { type: mime });
 
     if (blob.size < 30_000) {
-      this.setError('Vidéo trop courte. Veuillez réessayer.', true);
+      this.uploadStarted = false; // permet un retry
+      this.setError(
+        this.formatError(
+          'Vidéo trop courte ou vide. Vérifie que ton micro/caméra autorise l\'enregistrement et réessaie.',
+          'CLIENT_VIDEO_TOO_SMALL',
+          `${blob.size} bytes`,
+        ),
+        true,
+      );
       return;
     }
 
@@ -322,9 +383,16 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     this.submitVideo(blob);
   }
 
+  /** Timeout réseau pour l'upload : 90 s couvre largement même un 3G faible
+   *  pour ~3 MB. Au-delà, on N'AURA pas l'aval du backend → retry est sûr. */
+  private static readonly UPLOAD_TIMEOUT_MS = 90_000;
+
   private submitVideo(blob: Blob): void {
     this.kycService.submitMobileVideo(this.token, blob)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        timeout({ each: KycMobileComponent.UPLOAD_TIMEOUT_MS }),
+        takeUntil(this.destroy$),
+      )
       .subscribe({
         // ⚠️ Le job biométrique est ASYNC côté serveur — le 200 arrive dès que
         // la vidéo est uploadée + dispatchée, AVANT toute analyse. Un rejet
@@ -333,29 +401,92 @@ export class KycMobileComponent implements OnInit, OnDestroy {
         // le tableau de bord du contractor à son retour.
         next: () => this.step.set('success'),
         error: (err) => {
-          // ⚠️ Une fois la vidéo POST-ée et acceptée par le serveur, le token QR
-          // est CONSUMED. Tout retry sur la même page échouera en 410. Donc
-          // canRetry=false sauf erreur réseau pré-upload (timeout, offline)
-          // où le serveur n'a peut-être jamais reçu la requête.
-          if (err?.status === 410) {
+          const status = err?.status;
+          const backendMsg = this.extractBackendMessage(err);
+          const backendCode = this.extractBackendCode(err);
+
+          // Timeout RxJS (pas de status HTTP)
+          if (err?.name === 'TimeoutError') {
+            this.uploadStarted = false;
             this.setError(
-              'Ce lien a déjà été utilisé ou a expiré. Retournez sur votre ordinateur pour relancer la vérification.',
-              false,
-            );
-          } else if (err?.status === 0 || err?.status >= 500) {
-            this.setError(
-              err?.error?.message ?? 'Erreur réseau. Vérifiez votre connexion puis réessayez.',
+              this.formatError(
+                'L\'envoi de la vidéo a expiré (réseau trop lent). Réessaie.',
+                'CLIENT_UPLOAD_TIMEOUT',
+                `${KycMobileComponent.UPLOAD_TIMEOUT_MS / 1000}s`,
+              ),
               true,
             );
-          } else {
+            return;
+          }
+
+          // 410 : token consommé/expiré — pas de retry, faut repartir du PC
+          if (status === 410) {
             this.setError(
-              (err?.error?.message ?? 'Erreur lors de l\'envoi.')
-                + ' Si le problème persiste, retournez sur votre ordinateur pour relancer la vérification.',
+              this.formatError(
+                'Ce lien a déjà été utilisé ou a expiré. Retournez sur votre ordinateur pour relancer la vérification.',
+                backendCode ?? 'HTTP_410',
+                backendMsg ?? undefined,
+              ),
               false,
             );
+            return;
           }
+
+          // Réseau coupé (status 0) ou 5xx : retry possible
+          if (status === 0 || status >= 500) {
+            this.uploadStarted = false;
+            this.setError(
+              this.formatError(
+                backendMsg ?? 'Erreur réseau. Vérifie ta connexion puis réessaie.',
+                backendCode ?? (status === 0 ? 'NETWORK_OFFLINE' : `HTTP_${status}`),
+              ),
+              true,
+            );
+            return;
+          }
+
+          // 4xx (autre que 410) : généralement non-retryable côté mobile
+          // (token déjà utilisé, format invalide, fichier vide…). On affiche
+          // explicitement le code backend pour débuguer depuis le mobile.
+          this.setError(
+            this.formatError(
+              backendMsg ?? 'Erreur lors de l\'envoi.',
+              backendCode ?? `HTTP_${status ?? '???'}`,
+              status === 413 ? 'Vidéo trop grosse pour le serveur.' : undefined,
+            ) + ' Si le problème persiste, retournez sur votre ordinateur pour relancer la vérification.',
+            false,
+          );
         },
       });
+  }
+
+  /**
+   * Le backend Tuita renvoie l'enveloppe canonique { error: { code, message } }.
+   * Sur HttpErrorResponse, le body parsé est dans `err.error`, donc le vrai
+   * message est à `err.error.error.message` — NON `err.error.message` (ancienne
+   * convention). On essaie plusieurs chemins pour rester robuste.
+   */
+  private extractBackendMessage(err: any): string | null {
+    return (
+      err?.error?.error?.message ??
+      err?.error?.message ??
+      (typeof err?.error === 'string' ? err.error : null) ??
+      null
+    );
+  }
+
+  private extractBackendCode(err: any): string | null {
+    return err?.error?.error?.code ?? err?.error?.code ?? null;
+  }
+
+  /**
+   * Formate un message d'erreur en y annexant TOUJOURS le code technique
+   * (entre crochets) — sans console mobile, c'est la seule façon pour
+   * l'utilisateur de nous remonter le diagnostic exact.
+   */
+  private formatError(humanMessage: string, code: string, extra?: string): string {
+    const tail = extra ? ` — ${extra}` : '';
+    return `${humanMessage}\n[code: ${code}${tail}]`;
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -366,6 +497,7 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     clearInterval(this.countdownTimer);
     this.chunks1 = [];
     this.chunks2 = [];
+    this.uploadStarted = false;
     this.errorMsg.set('');
     this.openCamera();
   }
@@ -409,7 +541,11 @@ export class KycMobileComponent implements OnInit, OnDestroy {
     sourceVideo.srcObject = sourceStream;
     sourceVideo.muted = true;
     sourceVideo.playsInline = true;
-    sourceVideo.play();
+    // play() retourne une promise qui peut rejeter (autoplay bloqué). On
+    // l'ignore : ce code n'est exécuté qu'après une interaction utilisateur
+    // (clic sur "Je suis prêt") donc l'autoplay est autorisé. Le `.catch`
+    // évite les "Uncaught (in promise)" qui pollueraient la console.
+    sourceVideo.play().catch(() => { /* autoplay edge case, le draw rate cale juste */ });
 
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -426,10 +562,15 @@ export class KycMobileComponent implements OnInit, OnDestroy {
 
     const drawFrame = () => {
       if (!this.mirrorCanvas) return;
-      ctx.save();
-      ctx.scale(-1, 1);
-      ctx.drawImage(sourceVideo, -width, 0, width, height);
-      ctx.restore();
+      // readyState >= HAVE_CURRENT_DATA garantit qu'il y a au moins une frame
+      // décodée — évite les premières secondes en frame noire si la caméra
+      // n'a pas encore poussé d'image au moment où drawFrame() démarre.
+      if (sourceVideo.readyState >= 2) {
+        ctx.save();
+        ctx.scale(-1, 1);
+        ctx.drawImage(sourceVideo, -width, 0, width, height);
+        ctx.restore();
+      }
       this.mirrorAF = requestAnimationFrame(drawFrame);
     };
     drawFrame();

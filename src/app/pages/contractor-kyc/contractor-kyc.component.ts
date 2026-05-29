@@ -539,6 +539,14 @@ export class ContractorKycComponent implements OnDestroy {
 
       this.api.getKycStatus().subscribe({
         next: status => {
+          // Garde défensive : si une réponse malformée (envelope vide, 401
+          // intercepté résolu en undefined, etc.) arrive ici, on retombe sur
+          // un poll suivant au lieu de crasher sur `status.status`.
+          if (!status || typeof status.status !== 'string') {
+            this.pollCount++;
+            this.schedulePoll();
+            return;
+          }
           if (status.status === 'approved') {
             this.stopPolling();
             this.state.set('approved');

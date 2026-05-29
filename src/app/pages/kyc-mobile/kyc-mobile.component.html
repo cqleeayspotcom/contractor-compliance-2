@@ -41,9 +41,16 @@
         </div>
       </div>
 
-      <button mat-flat-button class="cta-btn intro-cta" (click)="startVerification()">
-        <mat-icon>videocam</mat-icon>
-        Commencer
+      <button mat-flat-button class="cta-btn intro-cta"
+              [disabled]="openingCamera"
+              (click)="startVerification()">
+        @if (openingCamera) {
+          <mat-spinner diameter="20"></mat-spinner>
+          Ouverture caméra…
+        } @else {
+          <mat-icon>videocam</mat-icon>
+          Commencer
+        }
       </button>
     </div>
   }
@@ -156,7 +163,10 @@
   @if (step() === 'error') {
     <div class="center-card error">
       <mat-icon class="big-icon">error_outline</mat-icon>
-      <p>{{ errorMsg() }}</p>
+      <!-- `white-space: pre-line` (cf. .scss) préserve les \n du message
+           pour afficher le code technique sur une ligne séparée — sans ça,
+           tout le message s'affiche en un seul bloc illisible. -->
+      <p class="error-text">{{ errorMsg() }}</p>
       @if (canRetry()) {
         <button mat-flat-button (click)="retry()">Réessayer</button>
       }

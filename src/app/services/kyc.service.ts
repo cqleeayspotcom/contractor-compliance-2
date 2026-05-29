@@ -1,7 +1,9 @@
 import { Injectable, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable, from, interval } from 'rxjs';
 import { switchMap, takeWhile, map } from 'rxjs/operators';
 import { Api } from '../api/api';
+import { ApiConfiguration } from '../api/api-configuration';
 
 // SDK functions disponibles cote backend Tuita (post-regeneration ng-openapi-gen).
 // POURQUOI : on ne reference QUE les routes reellement exposees par le module
@@ -13,7 +15,6 @@ import { kycChallenge } from '../api/fn/kyc/kyc-challenge';
 import { kycStatus } from '../api/fn/kyc/kyc-status';
 import { kycVideo } from '../api/fn/kyc/kyc-video';
 import { kycMobileLink } from '../api/fn/kyc/kyc-mobile-link';
-import { kycMobileValidateToken } from '../api/fn/kyc-mobile/kyc-mobile-validate-token';
 import { kycMobileSubmitVideo } from '../api/fn/kyc-mobile/kyc-mobile-submit-video';
 import { kycMobileChallenges } from '../api/fn/kyc-mobile/kyc-mobile-challenges';
 
@@ -54,6 +55,8 @@ export interface KycMobileTokenResponse {
 @Injectable({ providedIn: 'root' })
 export class KycService {
   private readonly api = inject(Api);
+  private readonly http = inject(HttpClient);
+  private readonly apiConfig = inject(ApiConfiguration);
 
   // ---------------------------------------------------------------------------
   // Session management
@@ -183,10 +186,48 @@ export class KycService {
     );
   }
 
-  /** Submit KYC video from mobile using the one-time token (public). */
+  /**
+   * Submit KYC video from mobile using the one-time token (public).
+   *
+   * POURQUOI on contourne le SDK auto-généré `kycMobileSubmitVideo` :
+   *   Le request-builder ng-openapi-gen fait `formData.set('video', blob)`
+   *   sans préciser de filename (3e argument de FormData.append). Le multipart
+   *   produit a alors un Content-Disposition `name="video"` SANS `filename="..."`,
+   *   ce que certains parseurs PSR-7 côté Laminas (Diactoros) interprètent
+   *   comme un champ de formulaire ordinaire et NON comme un UploadedFile.
+   *   Résultat : `$request->getUploadedFiles()` ne contient pas 'video',
+   *   le backend rejette en 400 « Requête invalide. Recharge la page et
+   *   réessaie. » (KycMobileController.php:285 / videoAction).
+   *
+   * Fix : on construit la FormData à la main avec un filename explicite,
+   * et on POST directement via HttpClient sur l'URL du SDK (pour rester
+   * synchronisé si la route change côté backend, on dérive l'URL depuis
+   * `kycMobileSubmitVideo.PATH`).
+   */
   submitMobileVideo(token: string, videoBlob: Blob): Observable<void> {
-    return from(
-      this.api.invoke(kycMobileSubmitVideo, { token, body: { video: videoBlob } })
-    ).pipe(map(() => undefined));
+    // POURQUOI on re-wrap le Blob en strippant le `;codecs=...` :
+    //   MediaRecorder produit un Blob dont le `type` est `video/webm;codecs=vp9`
+    //   (ou similaire). Quand on l'envoie en multipart, le navigateur copie ce
+    //   type tel-quel dans le Content-Type de la part fichier. Côté backend,
+    //   ALLOWED_VIDEO_MIMES est en comparaison stricte sur ['video/mp4',
+    //   'video/webm', 'video/quicktime'] (cf. KycMobileController.php:50) →
+    //   `video/webm;codecs=vp9` est rejeté avec `kyc_video_invalid_format`.
+    const canonicalType = (videoBlob.type.split(';')[0] || 'video/webm').trim();
+    const ext = canonicalType.includes('mp4') ? 'mp4'
+              : canonicalType.includes('quicktime') ? 'mov'
+              : canonicalType.includes('webm') ? 'webm'
+              : 'bin';
+
+    const safeBlob = videoBlob.type === canonicalType
+      ? videoBlob
+      : new Blob([videoBlob], { type: canonicalType });
+
+    const formData = new FormData();
+    formData.append('video', safeBlob, `kyc-mobile.${ext}`);
+
+    const path = kycMobileSubmitVideo.PATH.replace('{token}', encodeURIComponent(token));
+    const url = `${this.apiConfig.rootUrl}${path}`;
+
+    return this.http.post<void>(url, formData);
   }
 }

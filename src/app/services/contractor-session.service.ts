@@ -30,8 +30,13 @@ export class ContractorSessionService {
       }),
       catchError(err => {
         this.isLoading$.next(false);
+        // Garde défensive : un appelant abusif (mock ou cancellation) peut
+        // pousser dans catchError une valeur non-HttpErrorResponse (ex:
+        // undefined). On ne doit jamais crasher sur `err.status`, sous peine
+        // de Uncaught TypeError côté APP_INITIALIZER → écran blanc.
+        const status = err?.status;
         this.error$.next(
-          err.status === 401 ? 'Session expirée' : 'Erreur de chargement'
+          status === 401 ? 'Session expirée' : 'Erreur de chargement'
         );
         return throwError(() => err);
       })
