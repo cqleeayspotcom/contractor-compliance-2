@@ -334,19 +334,14 @@ components:
           $ref: '#/components/schemas/MissionOffersMeta'
     AdminInvitationCodeCreateRequest:
       type: object
-      # Contrat strict : seules ces 4 clés sont acceptées, generated_by_label
-      # obligatoire. additionalProperties=false évite qu'une clé mal nommée
-      # (ex. l'ancien valid_for_days) passe inaperçue côté SDK.
+      # Contrat strict : seules ces clés sont acceptées.
+      # additionalProperties=false évite qu'une clé mal nommée (ex. l'ancien
+      # valid_for_days) passe inaperçue côté SDK.
+      # L'admin créateur n'est PAS transmis dans le body : le backend le
+      # résout via le token OAuth2 (identité non usurpable) et en dérive le
+      # label de traçabilité (generated_by_label) côté serveur.
       additionalProperties: false
-      required: [generated_by_label]
       properties:
-        generated_by_label:
-          type: string
-          minLength: 2
-          description: |
-            Qui crée le code (email/nom Tuita). Obligatoire — le backend
-            rejette la création avec VALIDATION_FAILED
-            « generated_by_label est obligatoire » si le champ est vide.
         note:
           type: string
           nullable: true
@@ -475,7 +470,10 @@ components:
         type: string
     Ref:
       name: ref
-      in: path
+      # in: query (et NON path) : même raison que MissionRef ci-dessus — les
+      # réfs mission Tuita historiques contiennent des slashes (« 14000//Simon-4 »)
+      # qui cassent le routing par segment → 404. En query, tout format passe.
+      in: query
       required: true
       schema:
         type: string
@@ -1313,12 +1311,14 @@ paths:
       responses:
         '200': { $ref: '#/components/responses/ContractorMissionListOk' }
 
-  /contractor-compliance/missions/{ref}:
+  /contractor-compliance/missions/show:
     get:
       tags: [Missions]
       operationId: missionsShow
       summary: Détail d'une mission attribuée par caseNumber.
       security: [{ contractorCookie: [] }]
+      # ref passe en query (cf. components/parameters/Ref) : supporte les réfs
+      # avec slashes (« 14000//Simon-4 ») que le chemin rejetait en 404.
       parameters: [{ $ref: '#/components/parameters/Ref' }]
       responses:
         '200': { $ref: '#/components/responses/ContractorMissionDetailOk' }

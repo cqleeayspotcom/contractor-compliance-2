@@ -16,7 +16,7 @@ export interface MissionsShow$Params {
 export function missionsShow(http: HttpClient, rootUrl: string, params: MissionsShow$Params, context?: HttpContext): Observable<StrictHttpResponse<ContractorMissionDetailResponse>> {
   const rb = new RequestBuilder(rootUrl, missionsShow.PATH, 'get');
   if (params) {
-    rb.path('ref', params.ref, {});
+    rb.query('ref', params.ref, {});
   }
 
   return http.request(
@@ -29,4 +29,4 @@ export function missionsShow(http: HttpClient, rootUrl: string, params: Missions
   );
 }
 
-missionsShow.PATH = '/contractor-compliance/missions/{ref}';
+missionsShow.PATH = '/contractor-compliance/missions/show';

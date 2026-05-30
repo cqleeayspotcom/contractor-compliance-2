@@ -155,13 +155,15 @@ html {
 // ── Push Pro upgrade modal — panel without padding (gradient header flush) ────
 // panelClass: 'push-pro-dialog-panel' must be set in MatDialog.open()
 .push-pro-dialog-panel {
-  max-height: 92vh;
+  max-height: 92vh;   // repli navigateurs sans dvh
+  max-height: 92dvh;  // iOS Safari : hauteur réellement visible → centrage vertical correct
 
   .mat-mdc-dialog-container {
     padding: 0;
     overflow: hidden;
     border-radius: 16px;
     max-height: 92vh;
+    max-height: 92dvh;
   }
 
   .mdc-dialog__surface {
@@ -263,9 +265,11 @@ html {
 @media (max-width: 600px) {
   .push-pro-dialog-panel {
     max-height: 95vh;
+    max-height: 95dvh;
 
     .mat-mdc-dialog-container {
       max-height: 95vh;
+      max-height: 95dvh;
       border-radius: 14px;
     }
 

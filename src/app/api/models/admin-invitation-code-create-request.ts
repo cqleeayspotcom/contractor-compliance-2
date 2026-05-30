@@ -10,13 +10,6 @@ export interface AdminInvitationCodeCreateRequest {
   expires_in_days?: number;
 
   /**
-   * Qui crée le code (email/nom Tuita). Obligatoire — le backend
-   * rejette la création avec VALIDATION_FAILED
-   * « generated_by_label est obligatoire » si le champ est vide.
-   */
-  generated_by_label: string;
-
-  /**
    * Nombre maximal d'usages ; null = illimité.
    */
   max_uses?: number | null;

@@ -82,7 +82,6 @@ export class AdminInvitationCodeService {
     expires_in_days?: number;
     max_uses?: number | null;
     note: string;
-    generated_by_label: string;
   }): Observable<{ data: InvitationCodeRow }> {
     return from(
       this.api.invoke(adminInvitationCodesCreate, { body }).then((env) => ({

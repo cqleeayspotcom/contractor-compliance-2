@@ -13,17 +13,15 @@ import { AdminInvitationCodeService } from '../../services/admin-invitation-code
 
 export type GenerateCodeResult = { action: 'generated'; code: string } | { action: 'cancel' };
 
-const ADMIN_LABEL_STORAGE_KEY = 'tuita.admin.user-label';
-
 /**
  * Dialog de génération d'un code d'invitation racine.
  *
- * Champs requis (BDD garantit la traçabilité) :
- *   - generated_by_label : qui crée le code (email/nom Tuita)
+ * Champ requis :
  *   - note : à qui ce code est destiné (pour audit + heuristique mismatch)
  *
- * UX : `generated_by_label` est mémorisé en sessionStorage après la 1ère
- * saisie pour ne pas réclamer le nom à chaque génération.
+ * L'admin qui génère est résolu côté backend via le token OAuth2 (session) ;
+ * on ne lui demande donc plus son nom/email — le label de traçabilité est
+ * dérivé de l'identité serveur.
  */
 @Component({
   selector: 'app-generate-code-dialog',
@@ -49,7 +47,6 @@ export class GenerateCodeDialogComponent {
   readonly validForDays = signal<number>(7);
   readonly maxUses = signal<string>('50');
   readonly note = signal<string>('');
-  readonly generatedByLabel = signal<string>(this.loadAdminLabel());
 
   readonly isGenerating = signal<boolean>(false);
   readonly generatedCode = signal<string | null>(null);
@@ -58,7 +55,6 @@ export class GenerateCodeDialogComponent {
   readonly canGenerate = computed<boolean>(() => {
     if (this.isGenerating()) return false;
     if (this.note().trim().length < 3) return false;
-    if (this.generatedByLabel().trim().length < 2) return false;
     return true;
   });
 
@@ -86,16 +82,12 @@ export class GenerateCodeDialogComponent {
     this.errorMessage.set(null);
     this.isGenerating.set(true);
 
-    // Persiste l'admin label pour les prochaines générations (sessionStorage,
-    // limité à la session navigateur courante — sécurité raisonnable).
-    this.persistAdminLabel(this.generatedByLabel().trim());
-
     this.api.create({
       // Clé attendue par le backend (createAction lit `expires_in_days`).
+      // L'admin créateur est résolu côté backend via le token OAuth2.
       expires_in_days: days,
       max_uses: max,
       note: this.note().trim(),
-      generated_by_label: this.generatedByLabel().trim(),
     }).subscribe({
       next: (res) => {
         this.isGenerating.set(false);
@@ -117,26 +109,5 @@ export class GenerateCodeDialogComponent {
   close(): void {
     const code = this.generatedCode();
     this.ref.close(code ? { action: 'generated', code } : { action: 'cancel' });
-  }
-
-  // ── Persistence admin label ────────────────────────────────────────────
-  private loadAdminLabel(): string {
-    try {
-      if (typeof window === 'undefined' || !window.sessionStorage) return '';
-      return window.sessionStorage.getItem(ADMIN_LABEL_STORAGE_KEY) ?? '';
-    } catch {
-      return '';
-    }
-  }
-
-  private persistAdminLabel(label: string): void {
-    try {
-      if (typeof window === 'undefined' || !window.sessionStorage) return;
-      if (label.length === 0) return;
-      window.sessionStorage.setItem(ADMIN_LABEL_STORAGE_KEY, label);
-    } catch {
-      // sessionStorage indispo — on perd juste le pré-remplissage à la
-      // prochaine ouverture, pas critique.
-    }
   }
 }

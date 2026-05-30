@@ -833,7 +833,8 @@ export class ContractorApiService {
   }
 
   getMission(mid: string): Observable<ContractorMission> {
-    // Backend Tuita : route paramï¿½trï¿½e `/missions/:ref`.
+    // Backend : GET /missions/show?ref=... (ref en query, pas en chemin, pour
+    // supporter les réfs Tuita à slashes ex « 14000//Simon-4 »).
     return from(
       this.api.invoke(missionsShow, { ref: mid }) as Promise<{ data: ContractorMission }>
     ).pipe(map((res) => res.data));

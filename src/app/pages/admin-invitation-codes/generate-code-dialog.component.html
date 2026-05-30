@@ -7,19 +7,6 @@
         Ce code permettra à un contractor de s'inscrire sur le portail Tuita.
       </p>
 
-      <!-- Doit etre detecte automatiquement backend detecte l'admin qui a generer... -->
-      <mat-form-field appearance="outline" class="generate-dialog__form-field">
-        <mat-label>Ton nom ou email Tuita *</mat-label>
-        <input matInput
-               type="text"
-               required
-               maxlength="255"
-               placeholder="ex. moussa@tuita.fr"
-               [ngModel]="generatedByLabel()"
-               (ngModelChange)="generatedByLabel.set($event)">
-        <mat-icon matSuffix>person</mat-icon>
-      </mat-form-field>
-
       <div class="generate-dialog__field">
         <label>Validité du code</label>
         <div class="ttl-buttons">
