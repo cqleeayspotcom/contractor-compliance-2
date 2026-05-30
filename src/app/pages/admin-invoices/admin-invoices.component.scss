@@ -108,6 +108,23 @@
 .invoices-table {
   width: 100%;
 
+  // Lignes compactes : Material laisse par défaut ~52px de hauteur + un gros
+  // padding vertical de cellule. On réduit la hauteur de ligne et le padding
+  // pour densifier la liste (surtout utile quand il y a peu de chips).
+  .mat-mdc-header-row {
+    min-height: 40px;
+  }
+
+  .mat-mdc-row {
+    min-height: 44px;
+  }
+
+  .mat-mdc-cell,
+  .mat-mdc-header-cell {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
   .actions-col {
     width: 56px;
     text-align: right;
@@ -121,18 +138,24 @@
   .link-btn {
     padding: 0;
     min-width: unset;
+    height: auto;
     line-height: 1.2;
     font-weight: 500;
     text-decoration: underline;
   }
 
   .validators-row {
-    margin-top: 4px;
+    margin-top: 2px;
 
     mat-chip {
       font-size: 11px;
       min-height: 20px;
       padding: 2px 8px;
+    }
+
+    .mat-mdc-chip-set .mdc-evolution-chip {
+      margin-top: 2px;
+      margin-bottom: 2px;
     }
   }
 }

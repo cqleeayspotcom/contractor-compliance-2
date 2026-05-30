@@ -175,6 +175,29 @@ html {
   }
 }
 
+// ── Admin entity dialogs (facture, mission) — header/footer fixes, body scrolle ─
+// panelClass: 'admin-dialog' (cf. AdminDialogService). La coquille
+// `app-admin-dialog-shell` est déjà en flex column avec un body `overflow-y:auto`,
+// mais il manquait de borner la hauteur de la surface MDC et de la passer en flex
+// column : sans ça le dialog grandit avec le contenu et le header/footer sortent
+// de l'écran. Même recette éprouvée que .push-pro-dialog-panel / .review-dialog-panel.
+.admin-dialog {
+  max-height: 92vh;
+
+  .mat-mdc-dialog-container {
+    padding: 0;
+    overflow: hidden;
+    max-height: 92vh;
+  }
+
+  .mdc-dialog__surface {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
 // ── Help dialogs — body scrolls, outer container doesn't ────────────────────
 // panelClass: 'kyc-help-dialog-panel' OR 'help-dialog-panel' must be set in
 // MatDialog.open(). Sans cette règle, le mdc-dialog-content (wrapper par défaut
