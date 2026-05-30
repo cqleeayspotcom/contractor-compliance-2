@@ -471,7 +471,7 @@ export class AdminInvoiceService {
     // `amount_min`, `amount_max`, `missing_validations`, `stale_days`. Tous
     // ces params étaient SILENCIEUSEMENT IGNORÉS par le backend (pas de 422
     // ni log), si bien que la search bar, les chips ≥3j/7j/14j, les sliders
-    // €, la checkbox Bloquées et les chips Approbations 0/3 1/3 2/3 ne
+    // €, le filtre « bloquées » et les chips Approbations 0/3 1/3 2/3 ne
     // filtraient rien. On accepte les deux noms côté interface (rétrocompat)
     // mais on n'envoie au backend que les noms qu'il comprend.
     const params = {

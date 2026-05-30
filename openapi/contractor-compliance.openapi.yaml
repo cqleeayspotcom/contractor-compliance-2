@@ -464,7 +464,12 @@ components:
         type: integer
     MissionRef:
       name: missionRef
-      in: path
+      # in: query (et NON path) : les réfs mission Tuita historiques contiennent
+      # des slashes (ex « 14000//Simon-4 »). En segment de chemin, le slash
+      # encodé (%2F) casse le routing Laminas (Segment coupe sur « / » + la
+      # contrainte route exclut « / ») → 404 brut « Ressource non trouvée ».
+      # En query string, le slash encodé passe sans souci pour tout format.
+      in: query
       required: true
       schema:
         type: string
@@ -1916,11 +1921,14 @@ paths:
       security: [{ bearerAuth: [] }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 
-  /contractor-compliance/admin/missions/{missionRef}:
+  /contractor-compliance/admin/missions/show:
     get:
       tags: [Admin]
       operationId: adminMissionShow
       security: [{ bearerAuth: [] }]
+      # missionRef passe en query (cf. components/parameters/MissionRef) :
+      # supporte les réfs avec slashes (« 14000//Simon-4 ») que le chemin
+      # rejetait en 404.
       parameters: [{ $ref: '#/components/parameters/MissionRef' }]
       responses: { '200': { $ref: '#/components/responses/JsonOk' } }
 

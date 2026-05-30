@@ -106,10 +106,6 @@
       </mat-chip-listbox>
     }
 
-    @if (mode() === 'pending' || mode() === 'ready' || mode() === 'inprogress' || mode() === 'all') {
-      <mat-checkbox [ngModel]="stuck()" (ngModelChange)="stuck.set($event)">Bloquées</mat-checkbox>
-    }
-
     @if (mode() === 'disputed' || mode() === 'all') {
       <mat-checkbox [ngModel]="paidDisputed()" (ngModelChange)="paidDisputed.set($event)">Litige</mat-checkbox>
     }

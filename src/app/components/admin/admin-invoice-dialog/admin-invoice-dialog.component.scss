@@ -20,7 +20,7 @@
 // ── Corps : 2 colonnes (infos + PDF) ──────────────────────────────────────
 .inv-body {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr 600px;
   gap: 16px;
   align-items: start;
 }

@@ -33,7 +33,7 @@ export class AdminDialogService {
       AdminInvoiceDialogComponent,
       {
         data: { invoiceUuid },
-        width: '1100px',
+        width: '1280px',
         maxWidth: '95vw',
         maxHeight: '92vh',
         panelClass: 'admin-dialog',

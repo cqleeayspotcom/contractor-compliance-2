@@ -16,7 +16,7 @@ export interface AdminMissionShow$Params {
 export function adminMissionShow(http: HttpClient, rootUrl: string, params: AdminMissionShow$Params, context?: HttpContext): Observable<StrictHttpResponse<SuccessEnvelope>> {
   const rb = new RequestBuilder(rootUrl, adminMissionShow.PATH, 'get');
   if (params) {
-    rb.path('missionRef', params.missionRef, {});
+    rb.query('missionRef', params.missionRef, {});
   }
 
   return http.request(
@@ -29,4 +29,4 @@ export function adminMissionShow(http: HttpClient, rootUrl: string, params: Admi
   );
 }
 
-adminMissionShow.PATH = '/contractor-compliance/admin/missions/{missionRef}';
+adminMissionShow.PATH = '/contractor-compliance/admin/missions/show';

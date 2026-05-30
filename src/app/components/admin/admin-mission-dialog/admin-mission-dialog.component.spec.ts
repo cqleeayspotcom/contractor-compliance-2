@@ -54,12 +54,23 @@ describe('AdminMissionDialogComponent', () => {
     sessionStorage.removeItem('tuita_admin_token');
   });
 
+  // La réf mission voyage en QUERY (?missionRef=...) et non plus en segment
+  // de chemin : c'est le seul moyen de transporter une réf contenant des
+  // slashes (« 14000//Simon-4 ») sans casser le routing backend. Ce matcher
+  // vérifie le chemin littéral ET la valeur exacte du param.
+  const expectMissionShow = (ref: string) =>
+    http.expectOne(
+      (r) =>
+        r.url === '/contractor-compliance/admin/missions/show' &&
+        r.params.get('missionRef') === ref,
+    );
+
   // Le composant charge le détail via `api.invoke` (Promise) → il faut
   // `await fixture.whenStable()` après le flush pour laisser la microtask
   // résoudre avant d'asserter le rendu.
-  it('fetches /admin/missions/{ref} on init and renders mission_ref + KPIs + invoices', async () => {
+  it('fetches /admin/missions/show?missionRef= on init and renders mission_ref + KPIs + invoices', async () => {
     fixture.detectChanges();
-    const req = http.expectOne('/contractor-compliance/admin/missions/M-1');
+    const req = expectMissionShow('M-1');
     req.flush({ data: fakeDetail });
     await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
@@ -72,7 +83,7 @@ describe('AdminMissionDialogComponent', () => {
 
   it('shows 404 friendly state when mission unknown', async () => {
     fixture.detectChanges();
-    const req = http.expectOne('/contractor-compliance/admin/missions/M-1');
+    const req = expectMissionShow('M-1');
     req.flush({ error: { code: 'mission.unknown' } }, { status: 404, statusText: 'Not Found' });
     await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
@@ -81,7 +92,7 @@ describe('AdminMissionDialogComponent', () => {
 
   it('clicking an invoice row emits openInvoice with uuid', async () => {
     fixture.detectChanges();
-    http.expectOne('/contractor-compliance/admin/missions/M-1').flush({ data: fakeDetail });
+    expectMissionShow('M-1').flush({ data: fakeDetail });
     await new Promise((r) => setTimeout(r));
     fixture.detectChanges();
     let captured: string | null = null;
@@ -93,9 +104,54 @@ describe('AdminMissionDialogComponent', () => {
 
   it('disables tuita.fr button with tooltip', () => {
     fixture.detectChanges();
-    http.expectOne('/contractor-compliance/admin/missions/M-1').flush({ data: fakeDetail });
+    expectMissionShow('M-1').flush({ data: fakeDetail });
     fixture.detectChanges();
     const btn = fixture.nativeElement.querySelector('button[data-test="tuita-live"]');
     expect(btn.disabled).toBe(true);
+  });
+});
+
+// Régression — bug « Ressource non trouvée » sur une mission dont la réf
+// contient des slashes (« 14000//Simon-4 », format Tuita historique réel).
+// La réf doit voyager en query string ; en segment de chemin le slash encodé
+// (%2F) cassait le routing Laminas → 404 brut. On vérifie ici que la requête
+// part bien sur /missions/show avec missionRef intact dans les params.
+describe('AdminMissionDialogComponent — réf avec slashes', () => {
+  let http: HttpTestingController;
+  const closeSpy = { close: () => {} };
+
+  afterEach(() => {
+    http.verify();
+    sessionStorage.removeItem('tuita_admin_token');
+  });
+
+  it('envoie une réf à slashes en query param sans casser le chemin', () => {
+    const slashRef = '14000//Simon-4';
+    sessionStorage.setItem('tuita_admin_token', 'k');
+    TestBed.configureTestingModule({
+      imports: [AdminMissionDialogComponent],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        { provide: MAT_DIALOG_DATA, useValue: { missionRef: slashRef } },
+        { provide: MatDialogRef, useValue: closeSpy },
+      ],
+    });
+    const fixture = TestBed.createComponent(AdminMissionDialogComponent);
+    http = TestBed.inject(HttpTestingController);
+
+    fixture.detectChanges();
+
+    const req = http.expectOne(
+      (r) =>
+        r.url === '/contractor-compliance/admin/missions/show' &&
+        r.params.get('missionRef') === slashRef,
+    );
+    // Le chemin ne doit PAS contenir la réf (donc aucun « // » parasite).
+    expect(req.request.url).toBe('/contractor-compliance/admin/missions/show');
+    req.flush({ data: { mission_ref: slashRef, snapshot: null, contractor: null,
+      kpis: { expected_ttc: 0, total_invoiced_ttc: 0, deviation_pct: null,
+        reopens_count: 0, age_days: null }, anomalies: [], invoices: [] } });
   });
 });

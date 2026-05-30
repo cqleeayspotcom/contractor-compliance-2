@@ -57,7 +57,6 @@ export class AdminInvoiceFilterBarComponent {
   /** Pivot 2026-05-13 — factures pending depuis > N jours (7 = warning, 14 = critical). */
   readonly staleDays = signal<number | null>(null);
   readonly plan = signal<'free' | 'pro' | null>(null);
-  readonly stuck = signal<boolean>(false);
   readonly paidDisputed = signal<boolean>(false);
 
   private debounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -86,7 +85,6 @@ export class AdminInvoiceFilterBarComponent {
         ...(this.missingValidations() !== null && { missing_approvals: this.missingValidations()! }),
         ...(this.staleDays() !== null && { pending_since: this.staleDays()! }),
         ...(this.plan() && { plan: this.plan()! }),
-        ...(this.stuck() && { stuck: true }),
         ...(this.paidDisputed() && { paid_disputed: true }),
       };
       // Debounce 300ms (handles fast typing on `q`)
@@ -107,7 +105,6 @@ export class AdminInvoiceFilterBarComponent {
     this.missingValidations.set(null);
     this.staleDays.set(null);
     this.plan.set(null);
-    this.stuck.set(false);
     this.paidDisputed.set(false);
   }
 
@@ -137,7 +134,6 @@ export class AdminInvoiceFilterBarComponent {
     if (this.missingValidations() !== null) n++;
     if (this.staleDays() !== null) n++;
     if (this.plan()) n++;
-    if (this.stuck()) n++;
     if (this.paidDisputed()) n++;
     return n;
   }

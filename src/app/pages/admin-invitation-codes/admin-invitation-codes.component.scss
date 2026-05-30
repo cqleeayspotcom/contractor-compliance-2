@@ -126,6 +126,15 @@
 // ── Table ────────────────────────────────────────────────────────────────
 .invitation-table {
   width: 100%;
+  table-layout: auto;
+
+  // Padding homogène + pas de retour à la ligne par défaut : chaque colonne
+  // garde sa donnée sur une seule ligne (la note est la seule exception).
+  .mat-mdc-header-cell,
+  .mat-mdc-cell {
+    padding: 12px 16px;
+    white-space: nowrap;
+  }
 
   th {
     background: $t-back-grey-medium !important;
@@ -140,6 +149,25 @@
     font-size: 0.875rem;
     color: $t-text-black;
     vertical-align: middle;
+  }
+
+  // Largeurs de colonnes : tout reste compact, seule la note absorbe l'espace
+  // libre (avec ellipsis) pour que les 8 colonnes tiennent sans scroll.
+  .mat-column-note {
+    width: 100%;
+    white-space: normal;
+  }
+
+  .mat-column-usage,
+  .mat-column-expires,
+  .mat-column-status {
+    width: 1%;
+  }
+
+  .mat-column-actions {
+    width: 1%;
+    text-align: right;
+    padding-left: 8px;
   }
 
   &__row {
@@ -177,9 +205,11 @@
   }
 
   mat-icon {
+    flex-shrink: 0;
     font-size: 14px;
     width: 14px;
     height: 14px;
+    line-height: 14px;
     color: rgba($t-logo-blue, 0.55);
   }
 }
@@ -190,11 +220,14 @@
   gap: 6px;
   font-size: 0.825rem;
   color: rgba($t-logo-blue, 0.85);
+  white-space: nowrap;
 
   mat-icon {
+    flex-shrink: 0;
     font-size: 16px;
     width: 16px;
     height: 16px;
+    line-height: 16px;
     color: rgba($t-logo-blue, 0.6);
   }
 
